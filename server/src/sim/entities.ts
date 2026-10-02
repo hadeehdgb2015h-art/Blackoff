@@ -65,6 +65,8 @@ export class SimPlayer {
   shotsFired = 0;
   downs = 0;
   revives = 0;
+  /** owned perk ids (lost when downed) */
+  perks: string[] = [];
 
   constructor(readonly id: number, public name: string) {}
 

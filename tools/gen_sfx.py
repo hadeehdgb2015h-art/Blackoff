@@ -119,6 +119,13 @@ if __name__ == "__main__":
     write("shotgun_shot", gunshot(r, 0.5, 80, 0.11, 1.0, 0.3))
     write("smg_shot", gunshot(r, 0.22, 160, 0.04, 0.9, 0.55))
     write("box_open", concat(click(r, 0.12, 300, 0.06), lowpass([r.uniform(-1, 1) * math.exp(-(i / SR) / 0.25) for i in range(int(SR * 0.6))], 0.08)))
+    write("lmg_shot", gunshot(r, 0.32, 95, 0.07, 1.0, 0.45))
+    write("sniper_shot", gunshot(r, 0.7, 70, 0.16, 1.0, 0.3))
+    # energy bolt: a bright rising zap over a low hum
+    write("arc_shot", [(math.sin(2 * math.pi * (900 + 2200 * (i / SR) / 0.25) * i / SR) * 0.7 + math.sin(2 * math.pi * 110 * i / SR) * 0.3) * math.exp(-(i / SR) / 0.09) for i in range(int(SR * 0.3))])
+    # wind blast: a deep whoosh, noise swept down with a slow decay
+    write("gale_shot", lowpass([r.uniform(-1, 1) * (0.3 + 0.7 * math.sin(math.pi * min(1.0, (i / SR) / 0.5))) * math.exp(-(i / SR) / 0.35) for i in range(int(SR * 0.9))], 0.12))
+    write("powerup", concat(tone(0.08, [660, 990], 0.05), tone(0.08, [880, 1320], 0.05), tone(0.25, [1175, 1760, 2349], 0.12)))
     write("box_roll", concat(*[tone(0.07, [600 + 90 * k, 900 + 60 * k], 0.04) for k in range(10)], gap=0.06))
     write("thunder", thunder(r))
     write("box_offer", concat(tone(0.12, [523, 784], 0.08), tone(0.12, [659, 988], 0.08), tone(0.35, [784, 1175], 0.2)))

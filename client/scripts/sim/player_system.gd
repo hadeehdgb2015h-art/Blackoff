@@ -15,6 +15,27 @@ func _init(world: SimWorld) -> void:
 	c_econ = w.constants.economy
 
 
+## Product of a perk multiplier over the player's perks (1 without perks).
+func perk_mul(p: SimPlayer, key: String) -> float:
+	var m := 1.0
+	for id in p.perks:
+		m *= float(w.defs.perks.get(id, {}).get(key, 1.0))
+	return m
+
+
+func _give_perk(p: SimPlayer, id: String) -> void:
+	p.perks.append(id)
+	var max_hp := float(c_player.maxHealth) * perk_mul(p, "maxHealthMul")
+	p.hp += max_hp - p.max_hp  # more health: the extra is granted at once
+	p.max_hp = max_hp
+
+
+func clear_perks(p: SimPlayer) -> void:
+	p.perks = []
+	p.max_hp = float(c_player.maxHealth)
+	p.hp = minf(p.hp, p.max_hp)
+
+
 func update(p: SimPlayer) -> void:
 	p.prev_pos = p.pos
 	var inp := p.input
@@ -97,7 +118,7 @@ func _move(p: SimPlayer, inp: PlayerIntent) -> void:
 	if not p.moving:
 		return
 	var dir := SimMath.right(p.yaw) * mv.x + SimMath.forward(p.yaw) * mv.y
-	var delta := dir * float(c_player.moveSpeed) * w.dt
+	var delta := dir * float(c_player.moveSpeed) * perk_mul(p, "moveSpeedMul") * w.dt
 	p.pos = w.map.move_circle(p.pos, delta, float(c_player.radius))
 
 
@@ -111,7 +132,7 @@ func _switch(p: SimPlayer) -> void:
 		return
 	p.slot = (p.slot + 1) % p.weapons.size()
 	p.reload_end = 0.0
-	p.switch_end = w.time + float(c_player.weaponSwitchSec)
+	p.switch_end = w.time + float(c_player.weaponSwitchSec) * perk_mul(p, "switchMul")
 	w.emit({"type": "weapon_switched", "pid": p.id, "weapon": p.weapon().id})
 
 
@@ -119,8 +140,9 @@ func _start_reload(p: SimPlayer) -> bool:
 	var wp := p.weapon()
 	if wp == null or p.is_reloading() or w.time < p.switch_end or not wp.can_reload():
 		return false
-	p.reload_end = w.time + float(wp.def.reloadSec)
-	w.emit({"type": "reload_started", "pid": p.id, "duration": float(wp.def.reloadSec)})
+	var duration := float(wp.def.reloadSec) * perk_mul(p, "reloadMul")
+	p.reload_end = w.time + duration
+	w.emit({"type": "reload_started", "pid": p.id, "duration": duration})
 	return true
 
 
@@ -154,8 +176,11 @@ func _fire(p: SimPlayer, inp: PlayerIntent, pressed: bool) -> void:
 func _shoot(p: SimPlayer, wp: WeaponState, inp: PlayerIntent) -> void:
 	wp.mag -= 1
 	p.shots_fired += 1
-	var spread := deg_to_rad(float(wp.def.moveSpreadDeg if p.moving else wp.def.spreadDeg))
 	var origin := Vector3(p.pos.x, float(c_player.eyeHeight), p.pos.y)
+	if float(wp.def.get("coneDeg", 0.0)) > 0.0:
+		_shoot_cone(p, wp, inp, origin)
+		return
+	var spread := deg_to_rad(float(wp.def.moveSpreadDeg if p.moving else wp.def.spreadDeg))
 	var rng_max := float(wp.def.range)
 	var pellets := maxi(1, int(wp.def.pellets))
 	var ends: Array[Vector3] = []
@@ -191,10 +216,44 @@ func _shoot(p: SimPlayer, wp: WeaponState, inp: PlayerIntent) -> void:
 			any_wall = true
 	w.emit({"type": "shot", "pid": p.id, "weapon": wp.id, "from": origin, "to": ends[0], "ends": ends,
 		"hit": "zombie" if not hits.is_empty() else ("wall" if any_wall else "none")})
+	# Energy weapons: area damage around the first pellet's end point, hitting
+	# every other zombie in range (the direct target takes the direct damage).
+	var splash := float(wp.def.get("splashRadius", 0.0))
+	if splash > 0.0:
+		var end: Vector3 = ends[0]
+		for z in w.zombies.values():
+			if hits.has(z.id):
+				continue
+			if z.pos.distance_squared_to(Vector2(end.x, end.z)) > splash * splash:
+				continue
+			hits[z.id] = {"z": z, "dmg": float(wp.def.get("splashDamage", 0.0)), "head": false, "point": Vector3(z.pos.x, 1.2, z.pos.y)}
 	# One damage application per zombie per trigger pull (pellets are summed).
 	for h in hits.values():
 		if w.zombies.has(h.z.id):
 			w.zombie_sys.apply_damage(h.z, h.dmg, h.head, p, h.point)
+
+
+## Wind weapons: a blast that hits every zombie inside a cone in front of
+## the player (within range, inside coneDeg, not behind a wall).
+func _shoot_cone(p: SimPlayer, wp: WeaponState, inp: PlayerIntent, origin: Vector3) -> void:
+	var half := deg_to_rad(float(wp.def.coneDeg) / 2.0)
+	var rng_max := float(wp.def.range)
+	var dir := SimMath.dir3(inp.yaw, 0.0)
+	var victims: Array = []
+	for z in w.zombies.values():
+		if p.pos.distance_to(z.pos) > rng_max:
+			continue
+		if absf(SimMath.wrap_angle(SimMath.yaw_to(p.pos, z.pos) - inp.yaw)) > half:
+			continue
+		if not w.map.segment_clear(p.pos, z.pos, 0.05):
+			continue
+		victims.append(z)
+	var to := Vector3(origin.x + dir.x * rng_max, origin.y, origin.z + dir.z * rng_max)
+	w.emit({"type": "shot", "pid": p.id, "weapon": wp.id, "from": origin, "to": to, "ends": [to],
+		"hit": "zombie" if not victims.is_empty() else "none"})
+	for z in victims:
+		if w.zombies.has(z.id):
+			w.zombie_sys.apply_damage(z, float(wp.def.damage), false, p, Vector3(z.pos.x, 1.2, z.pos.y))
 
 
 ## Gives a weapon: refills it if owned, fills a free slot, else replaces the held one.
@@ -237,6 +296,9 @@ func interact_option(p: SimPlayer) -> Dictionary:
 	var opt := {"id": best.id, "kind": best.kind, "item": best.item}
 	if best.kind == "box":
 		opt.merge(w.box_sys.option(w.box_sys.boxes[best.id], p), true)
+	elif best.kind == "perk":
+		var pdef: Dictionary = w.defs.perks[best.item]
+		opt.merge({"action": "perk", "cost": int(pdef.price), "label": str(pdef.displayName), "full": best.item in p.perks}, true)
 	elif best.kind == "weapon":
 		var def: Dictionary = w.defs.weapons[best.item]
 		var owned := p.find_weapon(best.item)
@@ -276,6 +338,8 @@ func _interact(p: SimPlayer) -> void:
 		return
 	if opt.action == "weapon":
 		give_weapon(p, item)
+	elif opt.action == "perk":
+		_give_perk(p, item)
 	else:
 		var wp: WeaponState = p.weapons[p.find_weapon(item)]
 		wp.reserve = int(wp.def.reserveMax)

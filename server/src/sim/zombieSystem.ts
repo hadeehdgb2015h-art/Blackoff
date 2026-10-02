@@ -166,6 +166,7 @@ export class ZombieSystem {
   applyDamage(z: SimZombie, dmg: number, head: boolean, by: SimPlayer, point: V3): void {
     const w = this.w;
     z.hp -= dmg;
+    if (w.powerups.isActive("instaKill")) z.hp = 0;
     w.emit({ type: "zombie_hit", zid: z.id, pid: by.id, damage: dmg, head, point });
     if (z.hp > 0) {
       w.addCurrency(by, w.constants.economy.hitReward, "hit");
@@ -178,6 +179,7 @@ export class ZombieSystem {
     w.zombies.delete(z.id);
     w.director.killed += 1;
     w.emit({ type: "zombie_killed", zid: z.id, pid: by.id, head, ztype: z.type, pos: { ...z.pos }, yaw: z.yaw });
+    w.powerups.onKill(z.pos);
   }
 
   private blocked(p: V2, r: number): boolean {

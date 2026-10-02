@@ -23,7 +23,7 @@ export class Rect {
 
 export interface Box3 { min: V3; max: V3 }
 export interface ZombieEntry { id: string; pos: V2; inside: V2 }
-export interface Interactable { id: string; kind: "weapon" | "ammo" | "box"; item: string; pos: V2; radius: number }
+export interface Interactable { id: string; kind: "weapon" | "ammo" | "box" | "perk"; item: string; pos: V2; radius: number; yaw: number }
 
 export class MapData {
   id: string;
@@ -54,7 +54,7 @@ export class MapData {
       this.zombieEntries.push({ id: e.id, pos: { x: e.pos[0], y: e.pos[1] }, inside: { x: e.inside[0], y: e.inside[1] } });
     }
     for (const it of d.interactables) {
-      this.interactables.push({ id: it.id, kind: it.kind, item: it.item ?? "", pos: { x: it.pos[0], y: it.pos[1] }, radius: it.radius });
+      this.interactables.push({ id: it.id, kind: it.kind, item: it.item ?? "", pos: { x: it.pos[0], y: it.pos[1] }, radius: it.radius, yaw: it.yaw ?? 0 });
     }
     this.safeArea = Rect.fromMinMax(d.safeArea.min, d.safeArea.max);
     this.buildBuckets();

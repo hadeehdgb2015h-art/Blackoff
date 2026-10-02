@@ -38,6 +38,8 @@ var _revived := {}           ## downed player id -> true while a teammate revive
 var _self_revive: float = 0.0  ## server's revive progress for the local player (0..1)
 var _self_bleed: float = 0.0   ## server's bleed-out seconds for the local player
 var _scores: Array = []      ## final table from the server's scoreboard message
+var _powerup_types: Array = []
+var _drop_until := {}        ## powerup id -> sim time it vanishes (from the drop event)
 
 
 func _init(shared_defs: Dictionary, map_id: String) -> void:
@@ -53,6 +55,7 @@ func _init(shared_defs: Dictionary, map_id: String) -> void:
 			_box_ids.append(it.id)
 	for e in map.zombie_entries:
 		_entry_ids.append(e.id)
+	_powerup_types = powerups.types
 	var kinds: Dictionary = defs.protocol.enums.eventKind
 	for k in kinds:
 		_ev[int(kinds[k])] = k
@@ -228,11 +231,16 @@ func _render_remote() -> void:
 		seen[id] = true
 		if eb.kind == 1:
 			_place_zombie(id, eb, pos, yaw)
+		elif eb.kind == 2:
+			_place_powerup(id, eb)
 		elif id != local_pid:
 			_place_player(id, eb, pos, yaw)
 	for id in zombies.keys():
 		if not seen.has(id):
 			zombies.erase(id)
+	for id in powerups.drops.keys():
+		if not seen.has(id):
+			powerups.drops.erase(id)
 	for id in players.keys():
 		if id != local_pid and not seen.has(id):
 			players.erase(id)
@@ -277,6 +285,17 @@ func _place_player(id: int, e: Dictionary, pos: Vector2, yaw: float) -> void:
 	if p.weapons.is_empty() or p.weapons[0].id != wid:
 		p.weapons = [WeaponState.create(wid, defs.weapons[wid])]
 		p.slot = 0
+
+
+func _place_powerup(id: int, e: Dictionary) -> void:
+	if powerups.drops.has(id):
+		return
+	var d := PowerupSystem.Powerup.new()
+	d.id = id
+	d.type = _powerup_types[clampi(int(e.sub), 0, _powerup_types.size() - 1)]
+	d.pos = e.pos
+	d.until = float(_drop_until.get(id, time + float(constants.powerups.lifetimeSec)))
+	powerups.drops[id] = d
 
 
 static func _state_from_flags(flags: int) -> SimPlayer.State:
@@ -377,7 +396,12 @@ func _on_snapshot(m: Dictionary) -> void:
 	elif zone_state == ZoneState.INTERMISSION:
 		director.phase = WaveDirector.Phase.INTERMISSION
 		director.phase_end = time + float(m.timer) / 10.0
-	else:
+	for t in ["instaKill", "doublePoints", "fireSale"]:
+		if int(m.get(t, 0)) > 0:
+			powerups.active[t] = time + float(m[t])
+		else:
+			powerups.active.erase(t)
+	if zone_state != ZoneState.WAVE and zone_state != ZoneState.INTERMISSION:
 		director.phase = WaveDirector.Phase.STOPPED
 	var me: Dictionary = ents.get(local_pid, {})
 	if me.is_empty():
@@ -403,6 +427,13 @@ func _on_self(m: Dictionary) -> void:
 	p.state = int(m.state) as SimPlayer.State
 	_self_revive = float(m.revive) / 255.0
 	_self_bleed = float(m.bleedout)
+	var bits := int(m.get("perks", 0))
+	var owned: Array[String] = []
+	for i in perk_ids.size():
+		if bits & (1 << i) != 0:
+			owned.append(perk_ids[i])
+	p.perks = owned
+	p.max_hp = float(constants.player.maxHealth) * player_sys.perk_mul(p, "maxHealthMul")
 	var cur := int(m.currency)
 	if _last_currency >= 0 and cur != _last_currency:
 		emit({"type": "currency", "pid": local_pid, "amount": cur - _last_currency, "reason": "server"})
@@ -495,7 +526,27 @@ func _on_event(m: Dictionary) -> void:
 		"reloadDone": emit({"type": "reload_done", "pid": a})
 		"weaponSwitched": emit({"type": "weapon_switched", "pid": a, "weapon": weapon.call(b)})
 		"dryFire": emit({"type": "dry_fire", "pid": a})
-		"purchase": emit({"type": "purchase", "pid": a, "action": "ammo" if f == 1 else "weapon", "item": weapon.call(b), "cost": v})
+		"purchase":
+			if f == 3:
+				var perk: String = perk_ids[clampi(b, 0, maxi(0, perk_ids.size() - 1))] if not perk_ids.is_empty() else ""
+				var buyer: SimPlayer = players.get(a)
+				if buyer and perk != "" and not buyer.perks.has(perk):
+					buyer.perks.append(perk)
+				emit({"type": "purchase", "pid": a, "action": "perk", "item": perk, "cost": v})
+			else:
+				emit({"type": "purchase", "pid": a, "action": "ammo" if f == 1 else "weapon", "item": weapon.call(b), "cost": v})
+		"powerupDropped":
+			_drop_until[a] = time + v / 10.0
+			var d: PowerupSystem.Powerup = powerups.drops.get(a)
+			if d:
+				d.until = _drop_until[a]
+			emit({"type": "powerup_dropped", "id": a, "ptype": _powerup_types[clampi(b, 0, _powerup_types.size() - 1)], "until": _drop_until[a]})
+		"powerupTaken":
+			emit({"type": "powerup_taken", "pid": a, "ptype": _powerup_types[clampi(b, 0, _powerup_types.size() - 1)]})
+		"powerupExpired":
+			powerups.drops.erase(a)
+			_drop_until.erase(a)
+			emit({"type": "powerup_expired", "id": a})
 		"purchaseDenied": emit({"type": "purchase_denied", "pid": a, "reason": "full" if f == 1 else "funds"})
 		"boxOpened":
 			var bx = box_sys.boxes.get(box.call(b))

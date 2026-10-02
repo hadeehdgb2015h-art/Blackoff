@@ -32,6 +32,7 @@ var headshots: int = 0
 var shots_fired: int = 0
 var downs: int = 0
 var revives: int = 0
+var perks: Array[String] = []  ## owned perk ids (lost when downed)
 
 
 func weapon() -> WeaponState:

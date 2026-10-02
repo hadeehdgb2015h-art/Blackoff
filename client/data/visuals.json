@@ -81,6 +81,89 @@
       "recoilKick": 0.025,
       "recoilPitch": 0.012,
       "sound": "smg_shot"
+    },
+    "lmg": {
+      "model": "res://assets/models/vm_lmg.glb",
+      "shape": "rifle",
+      "body": "#2e3134",
+      "accent": "#4a5a4c",
+      "glove": "#1c1d1f",
+      "offset": [
+        0.16,
+        -0.15,
+        -0.3
+      ],
+      "muzzle": [
+        0.0,
+        0.03,
+        -0.55
+      ],
+      "recoilKick": 0.04,
+      "recoilPitch": 0.025,
+      "sound": "lmg_shot"
+    },
+    "sniper": {
+      "model": "res://assets/models/vm_sniper.glb",
+      "shape": "rifle",
+      "body": "#3a3b36",
+      "accent": "#6b5c3f",
+      "glove": "#1c1d1f",
+      "offset": [
+        0.16,
+        -0.15,
+        -0.3
+      ],
+      "muzzle": [
+        0.0,
+        0.03,
+        -0.7
+      ],
+      "recoilKick": 0.11,
+      "recoilPitch": 0.08,
+      "sound": "sniper_shot"
+    },
+    "arc": {
+      "model": "res://assets/models/vm_arc.glb",
+      "shape": "arc",
+      "body": "#2a2f3a",
+      "accent": "#55c8ff",
+      "glove": "#1c1d1f",
+      "offset": [
+        0.16,
+        -0.15,
+        -0.3
+      ],
+      "muzzle": [
+        0.0,
+        0.03,
+        -0.5
+      ],
+      "recoilKick": 0.05,
+      "recoilPitch": 0.03,
+      "sound": "arc_shot",
+      "fx": "bolt",
+      "tracer": "#7fe3ff"
+    },
+    "gale": {
+      "model": "res://assets/models/vm_gale.glb",
+      "shape": "gale",
+      "body": "#3b3a33",
+      "accent": "#b8a06a",
+      "glove": "#1c1d1f",
+      "offset": [
+        0.16,
+        -0.15,
+        -0.3
+      ],
+      "muzzle": [
+        0.0,
+        0.03,
+        -0.5
+      ],
+      "recoilKick": 0.14,
+      "recoilPitch": 0.1,
+      "sound": "gale_shot",
+      "fx": "blast"
     }
   },
   "zombies": {
@@ -142,7 +225,11 @@
         "pistol": "pistol",
         "smg": "smg",
         "rifle": "long",
-        "shotgun": "long"
+        "shotgun": "long",
+        "lmg": "long",
+        "sniper": "long",
+        "arc": "long",
+        "gale": "long"
       }
     }
   }

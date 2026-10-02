@@ -25,6 +25,8 @@ var _next_id: int = 1
 var player_sys: PlayerSystem
 var zombie_sys: ZombieSystem
 var box_sys: BoxSystem
+var powerups: PowerupSystem
+var perk_ids: Array = []  ## sorted perk ids (bit order of selfState.perks)
 
 
 ## defs = SharedLoader.load_all() result; map_id selects defs.maps entry.
@@ -39,6 +41,9 @@ func _init(shared_defs: Dictionary, map_id: String, seed: int) -> void:
 	player_sys = PlayerSystem.new(self)
 	zombie_sys = ZombieSystem.new(self)
 	box_sys = BoxSystem.new(self)
+	powerups = PowerupSystem.new(self)
+	perk_ids = defs.get("perks", {}).keys()
+	perk_ids.sort()
 
 
 func add_player(display_name: String) -> int:
@@ -76,6 +81,7 @@ func step() -> void:
 	for p in players.values():
 		player_sys.update(p)
 	box_sys.update()
+	powerups.update()
 	_update_director()
 	zombie_sys.update_all()
 	zombie_sys.separate_from_players()
@@ -98,6 +104,8 @@ func emit(e: Dictionary) -> void:
 func add_currency(p: SimPlayer, amount: int, reason: String) -> void:
 	if amount == 0:
 		return
+	if amount > 0 and powerups.is_active("doublePoints"):
+		amount *= 2
 	p.currency += amount
 	emit({"type": "currency", "pid": p.id, "amount": amount, "reason": reason})
 
@@ -116,6 +124,7 @@ func damage_player(p: SimPlayer, amount: float, source_id: int) -> void:
 		p.revive_target = 0
 		p.revive_ticks = 0
 		p.downs += 1
+		player_sys.clear_perks(p)  # perks are lost when you go down
 		emit({"type": "player_downed", "pid": p.id})
 
 

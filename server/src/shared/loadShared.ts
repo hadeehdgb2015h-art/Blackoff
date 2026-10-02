@@ -2,8 +2,8 @@ import fs from "node:fs";
 import path from "node:path";
 import type { z } from "zod";
 import {
-  ConstantsSchema, MapSchema, ProtocolSchema, WavesSchema, WeaponsSchema, ZombiesSchema,
-  type Constants, type MapDef, type ProtocolDef, type WavesDef, type WeaponDef, type ZombieDef,
+  ConstantsSchema, MapSchema, PerksSchema, ProtocolSchema, WavesSchema, WeaponsSchema, ZombiesSchema,
+  type Constants, type MapDef, type PerkDef, type ProtocolDef, type WavesDef, type WeaponDef, type ZombieDef,
 } from "./schemas.js";
 
 export interface SharedData {
@@ -12,6 +12,7 @@ export interface SharedData {
   weapons: Record<string, WeaponDef>;
   zombies: Record<string, ZombieDef>;
   waves: WavesDef;
+  perks: Record<string, PerkDef>;
   maps: Record<string, MapDef>;
 }
 
@@ -38,6 +39,7 @@ export function loadShared(dir: string): SharedData {
   const weapons = readJson(dir, "weapons.json", WeaponsSchema).weapons;
   const zombies = readJson(dir, "zombies.json", ZombiesSchema).zombies;
   const waves = readJson(dir, "waves.json", WavesSchema);
+  const perks = readJson(dir, "perks.json", PerksSchema).perks;
   const maps: Record<string, MapDef> = {};
   const mapDir = path.join(dir, "maps");
   const mapFiles = fs.existsSync(mapDir) ? fs.readdirSync(mapDir).filter((f) => f.endsWith(".json")) : [];
@@ -63,6 +65,7 @@ export function loadShared(dir: string): SharedData {
   for (const m of Object.values(maps)) {
     for (const it of m.interactables) {
       if (it.kind === "weapon" && (!it.item || !weapons[it.item])) errors.push(`map ${m.id}: interactable ${it.id} unknown weapon`);
+      if (it.kind === "perk" && (!it.item || !perks[it.item])) errors.push(`map ${m.id}: interactable ${it.id} unknown perk`);
     }
   }
   if (waves.mix[0]?.fromWave !== 1) errors.push("waves.mix must start at fromWave 1");
@@ -75,5 +78,5 @@ export function loadShared(dir: string): SharedData {
   }
   if (errors.length) throw new Error(`shared data cross-check failed: ${errors.join("; ")}`);
 
-  return { constants, protocol, weapons, zombies, waves, maps };
+  return { constants, protocol, weapons, zombies, waves, perks, maps };
 }

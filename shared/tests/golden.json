@@ -179,204 +179,190 @@
      52833,
      20567,
      45140
-    ]
+    ],
+    "instaKill": 141,
+    "doublePoints": 125,
+    "fireSale": 118
    },
-   "hex": "4237276842a1287894098cbcf1380126a2a9112d41b7be4da2bef5df0361ce575054b0"
+   "hex": "4237276842a1287894098cbcf1380126a2a9112d41b7be4da2bef5df0361ce575054b08d7d76"
   },
   {
    "dir": "S2C",
    "name": "snapshot",
    "msg": {
-    "tick": 1299693197,
-    "ackSeq": 23933,
-    "zoneState": 118,
-    "wave": 20443,
-    "remaining": 28253,
-    "timer": 31157,
+    "tick": 208424923,
+    "ackSeq": 28253,
+    "zoneState": 181,
+    "wave": 49839,
+    "remaining": 9275,
+    "timer": 37499,
     "entities": [
      {
-      "id": 9275,
-      "kind": 123,
-      "sub": 208,
-      "x": 311.046875,
-      "y": 276.484375,
-      "floor": 225,
-      "yaw": 3.622016261595727,
-      "hp": 175,
-      "flags": 87
-     },
-     {
-      "id": 52921,
-      "kind": 20,
-      "sub": 211,
-      "x": 301.53125,
-      "y": 505.390625,
-      "floor": 7,
-      "yaw": 3.2794591769010153,
-      "hp": 169,
-      "flags": 103
-     },
-     {
-      "id": 54946,
-      "kind": 120,
-      "sub": 146,
-      "x": -314.34375,
-      "y": 38.078125,
-      "floor": 4,
-      "yaw": 6.241576078308189,
-      "hp": 148,
-      "flags": 197
+      "id": 52675,
+      "kind": 31,
+      "sub": 225,
+      "x": 78.296875,
+      "y": 134.734375,
+      "floor": 87,
+      "yaw": 5.073737329731001,
+      "hp": 20,
+      "flags": 211
      }
     ],
     "removed": [
-     37858,
-     13948
-    ]
+     65113,
+     41479
+    ],
+    "instaKill": 158,
+    "doublePoints": 169,
+    "fireSale": 103
    },
-   "hex": "428dbe774d7d5d76db4f5d6eb579033b247bd0c34d1f45e19393af57b9ce14d3624b597e079e85a967a2d678926ab18509044efe94c502e2937c36"
+   "hex": "42db4f6c0c5d6eb5afc23b247b9201c3cd1fe19313af2157b9ce14d30259fe07a29ea967"
   },
   {
    "dir": "S2C",
    "name": "selfState",
    "msg": {
-    "hp": 91,
-    "state": 110,
-    "currency": 821541266,
-    "slot": 202,
+    "hp": 162,
+    "state": 120,
+    "currency": 283405714,
+    "slot": 106,
     "weapons": [
      {
-      "weapon": 165,
-      "mag": 189,
-      "reserve": 52914
+      "weapon": 4,
+      "mag": 78,
+      "reserve": 50836
      },
      {
-      "weapon": 193,
-      "mag": 48,
-      "reserve": 48018
+      "weapon": 197,
+      "mag": 216,
+      "reserve": 37858
+     },
+     {
+      "weapon": 124,
+      "mag": 91,
+      "reserve": 58990
      }
     ],
-    "flags": 232,
-    "revive": 231,
-    "bleedout": 212
+    "flags": 146,
+    "revive": 202,
+    "bleedout": 134,
+    "perks": 165
    },
-   "hex": "435b6e92b9f730ca02a5bdb2cec13092bbe8e7d4"
+   "hex": "43a278926de4106a03044e94c6c5d8e2937c5b6ee692ca86a5"
   },
   {
    "dir": "S2C",
    "name": "selfState",
    "msg": {
-    "hp": 205,
-    "state": 93,
-    "currency": 4111932242,
-    "slot": 63,
+    "hp": 189,
+    "state": 178,
+    "currency": 1497513665,
+    "slot": 48,
     "weapons": [
      {
-      "weapon": 234,
-      "mag": 135,
-      "reserve": 9215
+      "weapon": 232,
+      "mag": 231,
+      "reserve": 14292
      },
      {
-      "weapon": 114,
-      "mag": 208,
-      "reserve": 55935
-     },
-     {
-      "weapon": 80,
-      "mag": 105,
-      "reserve": 54127
+      "weapon": 205,
+      "mag": 93,
+      "reserve": 6994
      }
     ],
-    "flags": 24,
-    "revive": 107,
-    "bleedout": 77
+    "flags": 63,
+    "revive": 254,
+    "bleedout": 234,
+    "perks": 135
    },
-   "hex": "43cd5d521b17f53f03ea87ff2372d07fda50696fd3186b4d"
+   "hex": "43bdb2c13e42593002e8e7d437cd5d521b3ffeea87"
   },
   {
    "dir": "S2C",
    "name": "event",
    "msg": {
-    "kind": 252,
-    "a": 2823,
-    "b": 16429,
-    "value": 17155,
-    "flags": 179
+    "kind": 255,
+    "a": 60530,
+    "b": 4816,
+    "value": 23167,
+    "flags": 80
    },
-   "hex": "44fc070b2d400343b3"
+   "hex": "44ff72ecd0127f5a50"
   },
   {
    "dir": "S2C",
    "name": "event",
    "msg": {
-    "kind": 199,
-    "a": 32399,
-    "b": 28910,
-    "value": 22588,
-    "flags": 228
+    "kind": 105,
+    "a": 54127,
+    "b": 4632,
+    "value": -9109,
+    "flags": 77
    },
-   "hex": "44c78f7eee703c58e4"
+   "hex": "44696fd318126bdc4d"
   },
   {
    "dir": "S2C",
    "name": "pong",
    "msg": {
-    "clientTime": 2322853405,
-    "serverTick": 295870424
+    "clientTime": 1873922556,
+    "serverTick": 928254727
    },
-   "hex": "451dee738ad89fa211"
+   "hex": "45fcc9b16f070b5437"
   },
   {
    "dir": "S2C",
    "name": "pong",
    "msg": {
-    "clientTime": 2186643331,
-    "serverTick": 715511673
+    "clientTime": 3416735789,
+    "serverTick": 2125775619
    },
-   "hex": "458387558279d7a52a"
+   "hex": "452d40a7cb03c3b47e"
   },
   {
    "dir": "S2C",
    "name": "error",
    "msg": {
-    "code": 91,
-    "message": "hello world"
-   },
-   "hex": "465b0b68656c6c6f20776f726c64"
-  },
-  {
-   "dir": "S2C",
-   "name": "error",
-   "msg": {
-    "code": 105,
+    "code": 179,
     "message": "Ali_99"
    },
-   "hex": "466906416c695f3939"
+   "hex": "46b306416c695f3939"
+  },
+  {
+   "dir": "S2C",
+   "name": "error",
+   "msg": {
+    "code": 143,
+    "message": "zombie"
+   },
+   "hex": "468f067a6f6d626965"
   },
   {
    "dir": "S2C",
    "name": "shot",
    "msg": {
-    "playerId": 6263,
-    "weapon": 246,
-    "toX": 96.046875,
-    "toY": -373.453125,
-    "toZ": -353.265625,
-    "hit": 192
+    "playerId": 55356,
+    "weapon": 228,
+    "toX": 440.453125,
+    "toY": 127.375,
+    "toZ": 30.046875,
+    "hit": 121
    },
-   "hex": "477718f60318a3a2afa7c0"
+   "hex": "473cd8e41d6ed81f830779"
   },
   {
    "dir": "S2C",
    "name": "shot",
    "msg": {
-    "playerId": 36628,
-    "weapon": 45,
-    "toX": -428.5,
-    "toY": -436.859375,
-    "toZ": 177.953125,
-    "hit": 217
+    "playerId": 36187,
+    "weapon": 60,
+    "toX": 301.640625,
+    "toY": 11.15625,
+    "toZ": -414.140625,
+    "hit": 246
    },
-   "hex": "47148f2de094c9927d2cd9"
+   "hex": "475b8d3c694bca027798f6"
   },
   {
    "dir": "S2C",
@@ -384,12 +370,16 @@
    "msg": {
     "players": [
      {
-      "id": 51745,
-      "name": "Ali_99"
+      "id": 8867,
+      "name": "علي"
+     },
+     {
+      "id": 57024,
+      "name": "hello world"
      }
     ]
    },
-   "hex": "480121ca06416c695f3939"
+   "hex": "4802a32206d8b9d984d98ac0de0b68656c6c6f20776f726c64"
   },
   {
    "dir": "S2C",
@@ -397,57 +387,69 @@
    "msg": {
     "players": [
      {
-      "id": 33550,
+      "id": 5344,
+      "name": "علي"
+     },
+     {
+      "id": 44157,
       "name": ""
      }
     ]
    },
-   "hex": "48010e8300"
+   "hex": "4802e01406d8b9d984d98a7dac00"
   },
   {
    "dir": "S2C",
    "name": "profile",
    "msg": {
-    "games": 2769883604,
-    "kills": 89679576,
-    "bestWave": 46502
+    "games": 3164080137,
+    "kills": 3295070753,
+    "bestWave": 64281
    },
-   "hex": "49d41119a5d8665805a6b5"
+   "hex": "49090898bc21ca66c419fb"
   },
   {
    "dir": "S2C",
    "name": "profile",
    "msg": {
-    "games": 4208424834,
-    "kills": 2763511811,
-    "bestWave": 61506
+    "games": 419477841,
+    "kills": 842040078,
+    "bestWave": 49019
    },
-   "hex": "498277d7fa03d8b7a442f0"
+   "hex": "4951b900190e8330327bbf"
   },
   {
    "dir": "S2C",
    "name": "scoreboard",
    "msg": {
-    "wave": 7064,
+    "wave": 4564,
     "players": [
      {
-      "id": 13784,
+      "id": 46502,
       "name": "hello world",
-      "kills": 1508,
-      "headshots": 57410,
-      "downs": 250,
-      "revives": 124
+      "kills": 55299,
+      "headshots": 61506,
+      "downs": 152,
+      "revives": 91
      }
     ]
    },
-   "hex": "4a981b01d8350b68656c6c6f20776f726c64e40542e0fa7c"
+   "hex": "4ad41101a6b50b68656c6c6f20776f726c6403d842f0985b"
   },
   {
    "dir": "S2C",
    "name": "scoreboard",
    "msg": {
-    "wave": 37574,
+    "wave": 13784,
     "players": [
+     {
+      "id": 1508,
+      "name": "",
+      "kills": 28666,
+      "headshots": 50556,
+      "downs": 198,
+      "revives": 85
+     },
      {
       "id": 29158,
       "name": "zombie",
@@ -458,7 +460,7 @@
      }
     ]
    },
-   "hex": "4ac69201e671067a6f6d62696529617b3501ac"
+   "hex": "4ad83502e40500fa6f7cc5c655e671067a6f6d62696529617b3501ac"
   }
  ],
  "waves": [
@@ -2220,8 +2222,8 @@
    },
    "radius": 0.35,
    "result": {
-    "x": 8.5,
-    "y": -4.658129
+    "x": 9.3,
+    "y": -4.55
    }
   },
   {
@@ -2787,7 +2789,7 @@
     "z": -0.666035
    },
    "max": 60,
-   "t": 2.540632
+   "t": 1.468131
   },
   {
    "o": {

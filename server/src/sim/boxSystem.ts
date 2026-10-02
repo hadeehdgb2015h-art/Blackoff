@@ -24,6 +24,12 @@ export class BoxSystem {
 
   private get cfg() { return this.w.constants.supplyBox; }
 
+  /** Current price: the fire-sale price while that power-up is active. */
+  price(): number {
+    const sale = this.w.constants.powerups.types.fireSale;
+    return sale && this.w.powerups.isActive("fireSale") ? (sale.boxPrice ?? this.cfg.price) : this.cfg.price;
+  }
+
   update(): void {
     const w = this.w;
     for (const b of this.boxes.values()) {
@@ -38,8 +44,8 @@ export class BoxSystem {
     }
   }
 
-  option(b: Box, p: SimPlayer): { action: string; cost: number; label: string; full: boolean; busy?: boolean; item?: string } {
-    if (b.state === BoxState.IDLE) return { action: "box", cost: this.cfg.price, label: "Supply Cache", full: false };
+  option(b: Box, p: SimPlayer): { action: "box" | "wait" | "take"; cost: number; label: string; full: boolean; busy?: boolean; item?: string } {
+    if (b.state === BoxState.IDLE) return { action: "box", cost: this.price(), label: "Supply Cache", full: false };
     if (b.state === BoxState.ROLLING && b.ownerPid === p.id) return { action: "wait", cost: 0, label: "Rolling...", full: false, busy: true };
     if (b.state === BoxState.OFFER && b.ownerPid === p.id) {
       return { action: "take", item: b.result, cost: 0, label: this.w.defs.weapons[b.result]!.displayName, full: false };
@@ -56,8 +62,9 @@ export class BoxSystem {
     b.ownerPid = p.id;
     b.result = result;
     b.phaseEnd = w.time + this.cfg.rollSec;
-    w.addCurrency(p, -this.cfg.price, "supply_box");
-    w.emit({ type: "box_opened", box: b.id, pid: p.id, cost: this.cfg.price, until: b.phaseEnd });
+    const cost = this.price();
+    w.addCurrency(p, -cost, "supply_box");
+    w.emit({ type: "box_opened", box: b.id, pid: p.id, cost, until: b.phaseEnd });
     return true;
   }
 

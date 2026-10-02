@@ -39,7 +39,8 @@ static func from_dict(d: Dictionary, step_height: float) -> MapData:
 	for e in d.zombieEntries:
 		m.zombie_entries.append({"id": e.id, "pos": _v2(e.pos), "inside": _v2(e.inside)})
 	for it in d.interactables:
-		m.interactables.append({"id": it.id, "kind": it.kind, "item": it.get("item", ""), "pos": _v2(it.pos), "radius": float(it.radius)})
+		m.interactables.append({"id": it.id, "kind": it.kind, "item": it.get("item", ""), "pos": _v2(it.pos), "radius": float(it.radius),
+			"yaw": float(it.get("yaw", 0.0))})
 	m.safe_area = _rect(d.safeArea)
 	m._build_buckets()
 	return m

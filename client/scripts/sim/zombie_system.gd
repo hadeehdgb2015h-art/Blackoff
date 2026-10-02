@@ -167,6 +167,8 @@ func separate_from_players() -> void:
 
 func apply_damage(z: SimZombie, dmg: float, head: bool, by: SimPlayer, point: Vector3) -> void:
 	z.hp -= dmg
+	if w.powerups.is_active("instaKill"):
+		z.hp = 0.0
 	w.emit({"type": "zombie_hit", "zid": z.id, "pid": by.id, "damage": dmg, "head": head, "point": point})
 	if z.hp > 0.0:
 		w.add_currency(by, int(w.constants.economy.hitReward), "hit")
@@ -180,6 +182,7 @@ func apply_damage(z: SimZombie, dmg: float, head: bool, by: SimPlayer, point: Ve
 	w.director.killed += 1
 	w.emit({"type": "zombie_killed", "zid": z.id, "pid": by.id, "head": head, "ztype": z.type,
 		"pos": z.pos, "yaw": z.yaw})
+	w.powerups.on_kill(z.pos)
 
 
 func _blocked(p: Vector2, r: float) -> bool:

@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "protocolVersion": 3,
+  "protocolVersion": 4,
   "endianness": "little",
   "frame": "u8 messageId followed by fields in declared order; one message per WebSocket binary frame. Decoders reject unknown ids, short frames and trailing bytes.",
   "primitives": {
@@ -26,7 +26,8 @@
   "enums": {
     "entityKind": {
       "player": 0,
-      "zombie": 1
+      "zombie": 1,
+      "powerup": 2
     },
     "playerState": {
       "alive": 0,
@@ -72,7 +73,10 @@
       "gameOver": 20,
       "playerDamaged": 21,
       "zombieSpawned": 22,
-      "playerRespawned": 23
+      "playerRespawned": 23,
+      "powerupDropped": 24,
+      "powerupTaken": 25,
+      "powerupExpired": 26
     },
     "entityFlags": {
       "moving": 1,
@@ -344,6 +348,18 @@
           [
             "removed",
             "array8:u16"
+          ],
+          [
+            "instaKill",
+            "u8"
+          ],
+          [
+            "doublePoints",
+            "u8"
+          ],
+          [
+            "fireSale",
+            "u8"
           ]
         ]
       },
@@ -380,6 +396,10 @@
           ],
           [
             "bleedout",
+            "u8"
+          ],
+          [
+            "perks",
             "u8"
           ]
         ]
@@ -510,7 +530,9 @@
     "weapon": "index into the sorted keys of weapons.json",
     "zombieType": "index into the sorted keys of zombies.json",
     "box": "index into the map's interactables of kind 'box', in file order",
-    "entry": "index into the map's zombieEntries, in file order"
+    "entry": "index into the map's zombieEntries, in file order",
+    "powerupTypes": "sorted keys of constants.powerups.types",
+    "perks": "sorted keys of perks.json perks"
   },
   "eventFields": {
     "hit": "a=zombie id, b=player id, value=damage (rounded), flags bit0=head",
@@ -520,7 +542,7 @@
     "playerDied": "a=player id",
     "waveStart": "a=wave, value=zombie count",
     "waveEnd": "a=wave",
-    "purchase": "a=player id, b=weapon index, value=cost, flags 0=weapon 1=ammo 2=box",
+    "purchase": "a=player id, b=weapon index (flags 0/1) or perk index (flags 3), value=cost, flags 0=weapon 1=ammo 2=box 3=perk",
     "reloadDone": "a=player id",
     "playerJoined": "a=player id",
     "playerLeft": "a=player id",
@@ -536,11 +558,17 @@
     "gameOver": "a=wave reached",
     "playerDamaged": "a=player id, b=source entity id, value=damage (rounded)",
     "zombieSpawned": "a=zombie id, b=zombieType index, value=entry index",
-    "playerRespawned": "a=player id"
+    "playerRespawned": "a=player id",
+    "powerupDropped": "a=powerup entity id, b=powerupType index, value=lifetime in 0.1 s (position: snapshot entity of kind powerup)",
+    "powerupTaken": "a=player id, b=powerupType index",
+    "powerupExpired": "a=powerup entity id"
   },
   "snapshotFields": {
     "ackSeq": "seq of the last input the server applied for this player (client prediction replays inputs after it)",
     "remaining": "zombies left in the current wave",
-    "timer": "seconds until the next wave x10 (intermission only)"
+    "timer": "seconds until the next wave x10 (intermission only)",
+    "instaKill": "seconds left (0 = off)",
+    "doublePoints": "seconds left",
+    "fireSale": "seconds left"
   }
 }

@@ -31,7 +31,21 @@ export const ConstantsSchema = z.object({
     reconnectGraceSec: pos, clientInterpDelayMs: pos, inputRate: pos, maxInputsPerSecond: pos,
   }),
   anticheat: z.object({ speedToleranceFactor: num.min(1), fireRateToleranceMs: pos, logOnly: z.boolean() }),
+  powerups: z.object({
+    dropChance: num.min(0).max(1), minSecondsBetween: pos, lifetimeSec: num.positive(), pickupRadius: num.positive(),
+    maxOnGround: z.number().int().positive(),
+    types: z.record(z.string(), z.object({
+      displayName: z.string(), weight: pos, durationSec: pos, reward: pos.optional(), boxPrice: z.number().int().nonnegative().optional(),
+    })),
+  }),
 });
+
+export const PerkSchema = z.object({
+  displayName: z.string(), price: z.number().int().nonnegative(), color: z.string(),
+  maxHealthMul: num.positive().optional(), reloadMul: num.positive().optional(), moveSpeedMul: num.positive().optional(),
+  switchMul: num.positive().optional(),
+});
+export const PerksSchema = z.object({ schemaVersion: z.literal(1), perks: z.record(z.string(), PerkSchema) });
 
 export const WeaponSchema = z.object({
   displayName: z.string(),
@@ -42,6 +56,10 @@ export const WeaponSchema = z.object({
   reloadSec: pos, range: num.positive(), spreadDeg: pos, moveSpreadDeg: pos, pellets: z.number().int().positive(),
   price: z.number().int().nonnegative(), ammoPrice: z.number().int().nonnegative(),
   boxWeight: z.number().nonnegative(),
+  /** area damage around the hit point (energy weapons) */
+  splashRadius: pos.default(0), splashDamage: pos.default(0),
+  /** a cone blast instead of a ray: every zombie within `range` and this angle is hit */
+  coneDeg: pos.default(0),
 });
 export const WeaponsSchema = z.object({ schemaVersion: z.literal(1), weapons: z.record(z.string(), WeaponSchema) });
 
@@ -95,8 +113,9 @@ export const MapSchema = z.object({
   playerSpawns: z.array(z.object({ pos: v2, yaw: num })).min(1),
   zombieEntries: z.array(z.object({ id: z.string(), pos: v2, inside: v2 })).min(1),
   interactables: z.array(z.object({
-    id: z.string(), kind: z.enum(["weapon", "ammo", "box"]), item: z.string().optional(), pos: v2, radius: num.positive(),
+    id: z.string(), kind: z.enum(["weapon", "ammo", "box", "perk"]), item: z.string().optional(), pos: v2, radius: num.positive(), yaw: num.optional(),
   })),
   safeArea: z.object({ min: v2, max: v2 }),
 });
 export type MapDef = z.infer<typeof MapSchema>;
+export type PerkDef = z.infer<typeof PerkSchema>;

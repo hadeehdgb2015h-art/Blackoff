@@ -252,6 +252,21 @@ func _markers() -> void:
 	box.set_meta("interact_id", "box_storage")
 	box.set_meta("kind", "box")
 	box.set_meta("radius", 1.9)
+	# Perk machines (phase 8): the visible machine is spawned by the game
+	# (PerkMachineView); the hidden box only blocks movement.
+	# yaw turns the machine's front (local -Z) towards the room: -PI/2 faces +X.
+	for pm in [["ironhide", Vector2(-4.5, 12.4), -PI / 2], ["quickhands", Vector2(-17.5, 0.6), -PI / 2],
+			["longstride", Vector2(8.5, -4.6), -PI / 2], ["switchblade", Vector2(21.5, -15.0), PI / 2]]:
+		var c: Vector2 = pm[1]
+		var along := Vector2(0.45, 0.4) if pm[2] == 0.0 else Vector2(0.45, 0.4)
+		var blk := _box("PerkMachine_block_" + pm[0], Vector3(c.x - along.x, 0, c.y - along.y), Vector3(c.x + along.x, 2.0, c.y + along.y), "crate", "map_wall")
+		blk.visible = false
+		var mk := _marker("Perk_" + pm[0], c, "map_interact")
+		mk.set_meta("interact_id", "perk_" + pm[0])
+		mk.set_meta("kind", "perk")
+		mk.set_meta("item", pm[0])
+		mk.set_meta("radius", 1.8)
+		mk.set_meta("yaw", pm[2])
 	var safe := _marker("SafeArea", Vector2(0, 14), "map_safe_area")
 	safe.set_meta("min", Vector2(-5, 10))
 	safe.set_meta("max", Vector2(5, 18))

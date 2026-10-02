@@ -22,6 +22,7 @@ var _shuffle_step: float = 0.08
 var _roll_left: float = 0.0
 var _pool: Array = []
 var _t: float = 0.0
+var _beam: MeshInstance3D
 
 
 func setup(id: String, pos: Vector2, facing_yaw: float, weapon_pool: Array) -> void:
@@ -50,6 +51,22 @@ func setup(id: String, pos: Vector2, facing_yaw: float, weapon_pool: Array) -> v
 		n.visible = false
 		_weapon.add_child(n)
 		_weapon_nodes[wid] = n
+	# Green beacon beam into the sky so the cache can be found from anywhere.
+	_beam = MeshInstance3D.new()
+	var cyl := CylinderMesh.new()
+	cyl.top_radius = 0.22
+	cyl.bottom_radius = 0.34
+	cyl.height = 70.0
+	cyl.radial_segments = 12
+	cyl.rings = 1
+	_beam.mesh = cyl
+	var bm := ShaderMaterial.new()
+	bm.shader = load("res://shaders/fx_beam.gdshader")
+	_beam.material_override = bm
+	_beam.position = Vector3(0, 35.0, 0)
+	_beam.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	_beam.extra_cull_margin = 80.0
+	add_child(_beam)
 
 
 func on_open(roll_sec: float) -> void:
@@ -83,6 +100,8 @@ func _process(delta: float) -> void:
 		_lid.rotation.x = lerpf(_lid.rotation.x, _lid_target, minf(1.0, delta * 6.0))
 	if _glow.visible:
 		_glow.light_energy = 1.6 + sin(_t * 9.0) * 0.4
+	if _beam:
+		_beam.visible = not (_rolling or _offer)  # the beam is the "free" signal
 	if _rolling:
 		_roll_left -= delta
 		_shuffle_t -= delta

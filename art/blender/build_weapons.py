@@ -254,7 +254,153 @@ def smg(k):
             "kick": 0.8}
 
 
-WEAPONS = {"rifle": rifle, "pistol": pistol, "shotgun": shotgun, "smg": smg}
+def lmg(k):
+    """BR-80 Mauler: belt-fed light machine gun with a heavy barrel, heat shield,
+    box magazine and folded bipod."""
+    k.prism("Weapon", METAL, [(-0.09, 0.0), (0.17, 0.0), (0.17, 0.092), (-0.095, 0.092), (-0.1, 0.03)], 0.04, bevel=0.0025)  # receiver
+    k.box("Weapon", METAL, (0, 0.03, 0.098), (0.024, 0.26, 0.012), 0.001)                      # top rail
+    for i in range(18):
+        k.box("Weapon", METAL, (0, -0.08 + i * 0.0135, 0.1055), (0.026, 0.0065, 0.004), 0.0004)
+    k.prism("Weapon", METAL, [(-0.02, 0.105), (0.1, 0.105), (0.09, 0.15), (0.0, 0.15)], 0.012, bevel=0.0015)   # carry handle
+    k.box("Weapon", METAL, (0.0215, 0.0, 0.05), (0.004, 0.09, 0.03), 0.001)                    # feed-tray cover side
+    hs = k.cyl("Weapon", METAL, (0, 0.17, 0.066), (0, 0.5, 0.066), 0.03, 10, 0.002)             # heat shield
+    k.cut(hs, [k.box("cut", METAL, (side * 0.03, 0.2 + i * 0.03, 0.066), (0.02, 0.014, 0.012), 0) for i in range(9) for side in (-1, 1)])
+    k.cyl("Weapon", METAL, (0, 0.18, 0.066), (0, 0.5, 0.066), 0.0115, 14, 0.001)               # barrel inside
+    k.cyl("Weapon", METAL, (0, 0.5, 0.066), (0, 0.69, 0.066), 0.011, 14, 0.001)
+    fh = k.cyl("Weapon", METAL, (0, 0.69, 0.066), (0, 0.74, 0.066), 0.015, 12, 0.0015)          # flash hider
+    k.cut(fh, [k.box("cut", METAL, (0, 0.71 + i * 0.012, 0.075), (0.036, 0.004, 0.01), 0) for i in range(3)])
+    for sx in (-1, 1):                                                                         # folded bipod legs
+        k.cyl("Weapon", METAL, (sx * 0.014, 0.44, 0.036), (sx * 0.014, 0.66, 0.03), 0.0045, 8, 0.0006)
+        k.box("Weapon", METAL, (sx * 0.014, 0.44, 0.045), (0.01, 0.02, 0.025), 0.001)
+    # box magazine with a belt peeking out at the feed
+    k.prism("Mag", POLY, [(0.02, -0.004), (0.13, -0.004), (0.135, -0.11), (0.015, -0.11)], 0.07, bevel=0.003)
+    k.box("Mag", METAL, (0, 0.075, -0.015), (0.062, 0.1, 0.012), 0.001)
+    for i in range(5):
+        k.cyl("Mag", BRASS, (0.028, 0.045 + i * 0.013, -0.012), (0.028, 0.045 + i * 0.013, 0.004), 0.004, 8, 0.0004)
+    k.prism("Weapon", POLY, [(-0.035, 0.002), (0.005, 0.002), (-0.018, -0.105), (-0.058, -0.1)], 0.031, bevel=0.004)  # grip
+    k.box("Weapon", METAL, (0, 0.04, -0.03), (0.024, 0.075, 0.005), 0.001)
+    k.box("Weapon", METAL, (0, 0.076, -0.015), (0.008, 0.006, 0.03), 0.001)
+    k.prism("Weapon", METAL, [(0.03, -0.002), (0.038, -0.002), (0.036, -0.022), (0.03, -0.026)], 0.005, bevel=0.0006)
+    k.prism("Weapon", ACCENT, [(-0.1, 0.09), (-0.33, 0.1), (-0.345, 0.07), (-0.34, -0.05), (-0.27, -0.05), (-0.17, 0.03), (-0.1, 0.03)], 0.046, bevel=0.004)
+    k.box("Weapon", POLY, (0, -0.349, 0.025), (0.048, 0.014, 0.14), 0.003)                     # butt pad
+    k.box("Slide", METAL, (0.028, -0.03, 0.06), (0.012, 0.04, 0.014), 0.001)                   # charging handle (right side)
+    right_hand(k, top=(-0.015, 0.0), bottom=(-0.039, -0.1), trigger=(0.034, -0.014))
+    left_hand(k, palm=(0.0, 0.3, 0.0), forearm_dir=(-0.26, -0.3, -0.32))
+    return {"muzzle": (0, 0.745, 0.066), "mag_out": (0.0, 0.02, -0.32), "place": ((0.122, 0.25, -0.142), (1.5, 3.0, 7.0)),
+            "kick": 1.15}
+
+
+def sniper(k):
+    """LR-50 Longshot: bolt-action precision rifle with a long fluted barrel
+    and a variable scope."""
+    k.prism("Weapon", METAL, [(-0.11, 0.0), (0.12, 0.0), (0.12, 0.064), (-0.11, 0.064)], 0.034, bevel=0.0025)   # receiver
+    k.box("Weapon", METAL, (0, 0.0, 0.07), (0.022, 0.22, 0.012), 0.001)                       # scope rail
+    k.cyl("Weapon", METAL, (0, 0.12, 0.05), (0, 0.78, 0.05), 0.013, 16, 0.001, r2=0.0095)       # tapered barrel
+    for i in range(6):                                                                         # flutes
+        a = i / 6 * 2 * math.pi
+        k.cyl("cut", METAL, (math.cos(a) * 0.0125, 0.25, 0.05 + math.sin(a) * 0.0125), (math.cos(a) * 0.0105, 0.6, 0.05 + math.sin(a) * 0.0105), 0.003, 6, 0)
+    br = k.cyl("Weapon", METAL, (0, 0.78, 0.05), (0, 0.85, 0.05), 0.016, 12, 0.0015)           # muzzle brake
+    k.cut(br, [k.box("cut", METAL, (side * 0.016, 0.795 + i * 0.016, 0.05), (0.012, 0.007, 0.014), 0) for i in range(3) for side in (-1, 1)])
+    # scope
+    k.cyl("Weapon", METAL, (0, -0.09, 0.11), (0, 0.13, 0.11), 0.017, 18, 0.0012)
+    k.cyl("Weapon", METAL, (0, 0.11, 0.11), (0, 0.19, 0.11), 0.017, 18, 0.0012, r2=0.026)       # objective bell
+    k.cyl("Weapon", METAL, (0, -0.12, 0.11), (0, -0.09, 0.11), 0.021, 18, 0.0012)               # ocular
+    k.sphere("Weapon", LENS, (0, 0.191, 0.11), 0.0245, scale=(1, 0.15, 1))
+    k.sphere("Weapon", LENS, (0, -0.121, 0.11), 0.019, scale=(1, 0.15, 1))
+    k.cyl("Weapon", METAL, (0, 0.0, 0.11), (0, 0.0, 0.14), 0.008, 10, 0.0008)                  # elevation turret
+    k.cyl("Weapon", METAL, (0, 0.0, 0.11), (0.03, 0.0, 0.11), 0.008, 10, 0.0008)               # windage turret
+    for y in (-0.05, 0.07):                                                                     # scope rings
+        k.box("Weapon", METAL, (0, y, 0.095), (0.03, 0.018, 0.04), 0.0012)
+    # bolt (Slide) with a ball handle
+    k.cyl("Slide", METAL, (0.012, -0.03, 0.052), (0.05, -0.045, 0.03), 0.0055, 10, 0.0006)
+    k.sphere("Slide", METAL, (0.052, -0.046, 0.028), 0.0095)
+    k.prism("Mag", METAL, [(0.03, -0.002), (0.095, -0.002), (0.098, -0.06), (0.028, -0.06)], 0.026, bevel=0.002)
+    k.prism("Weapon", POLY, [(-0.035, 0.002), (0.005, 0.002), (-0.018, -0.105), (-0.058, -0.1)], 0.031, bevel=0.004)  # grip
+    k.box("Weapon", METAL, (0, 0.04, -0.03), (0.024, 0.075, 0.005), 0.001)
+    k.box("Weapon", METAL, (0, 0.076, -0.015), (0.008, 0.006, 0.03), 0.001)
+    k.prism("Weapon", METAL, [(0.03, -0.002), (0.038, -0.002), (0.036, -0.022), (0.03, -0.026)], 0.005, bevel=0.0006)
+    k.prism("Weapon", ACCENT, [(-0.11, 0.064), (-0.36, 0.078), (-0.375, 0.04), (-0.37, -0.06), (-0.3, -0.06), (-0.17, 0.016), (-0.11, 0.016)], 0.042, bevel=0.004)
+    k.box("Weapon", POLY, (0, -0.22, 0.09), (0.03, 0.12, 0.024), 0.003)                        # cheek riser
+    k.box("Weapon", POLY, (0, -0.378, 0.0), (0.046, 0.014, 0.14), 0.003)                       # butt pad
+    k.prism("Weapon", ACCENT, [(0.12, 0.0), (0.4, 0.0), (0.4, 0.034), (0.12, 0.04)], 0.036, bevel=0.003)   # fore-end
+    right_hand(k, top=(-0.015, 0.0), bottom=(-0.039, -0.1), trigger=(0.034, -0.014))
+    left_hand(k, palm=(0.0, 0.33, 0.0), forearm_dir=(-0.26, -0.3, -0.32))
+    return {"muzzle": (0, 0.855, 0.05), "mag_out": (0.0, 0.0, -0.26), "place": ((0.118, 0.26, -0.138), (1.5, 3.0, 7.0)),
+            "kick": 2.0}
+
+
+def arc(k):
+    """Arc Lance: box-only energy weapon. A coil housing with glowing rings,
+    a forked emitter and a glowing cell as the magazine."""
+    k.prism("Weapon", METAL, [(-0.08, 0.0), (0.2, 0.0), (0.225, 0.03), (0.225, 0.085), (-0.085, 0.085), (-0.09, 0.04)], 0.05, bevel=0.003)  # body
+    k.box("Weapon", POLY, (0, 0.06, 0.092), (0.03, 0.2, 0.012), 0.0015)                        # top housing
+    k.box("Weapon", POLY, (0, 0.11, 0.106), (0.026, 0.06, 0.012), 0.0015)                      # sight block
+    k.sphere("Weapon", EMIT, (0, 0.142, 0.112), 0.002)
+    k.cyl("Weapon", POLY, (0, 0.225, 0.045), (0, 0.47, 0.045), 0.03, 18, 0.002)                 # coil housing
+    for i in range(3):                                                                         # glowing rings
+        y = 0.27 + i * 0.065
+        k.cyl("Weapon", EMIT, (0, y - 0.004, 0.045), (0, y + 0.004, 0.045), 0.0325, 18, 0.0005)
+        k.cyl("Weapon", METAL, (0, y + 0.016, 0.045), (0, y + 0.026, 0.045), 0.034, 18, 0.001)
+    for sx in (-1, 1):                                                                         # emitter fork
+        k.cyl("Weapon", METAL, (sx * 0.02, 0.47, 0.045), (sx * 0.02, 0.58, 0.045), 0.006, 10, 0.0006)
+        k.sphere("Weapon", EMIT, (sx * 0.02, 0.582, 0.045), 0.005)
+    k.cyl("Weapon", EMIT, (0, 0.472, 0.045), (0, 0.5, 0.045), 0.012, 12, 0.0006)                # arc core
+    for sx in (-1, 1):                                                                         # side cables
+        k.cyl("Weapon", POLY, (sx * 0.028, 0.0, 0.07), (sx * 0.033, 0.2, 0.06), 0.004, 8, 0.0004)
+        k.cyl("Weapon", POLY, (sx * 0.033, 0.2, 0.06), (sx * 0.03, 0.26, 0.045), 0.004, 8, 0.0004)
+    # energy cell (Mag): a glowing cylinder in a metal sleeve under the body
+    k.cyl("Mag", METAL, (0, 0.07, -0.005), (0, 0.07, -0.125), 0.024, 14, 0.0012)
+    k.cyl("Mag", EMIT, (0, 0.07, -0.02), (0, 0.07, -0.11), 0.0255, 14, 0.0005)
+    k.cyl("Mag", METAL, (0, 0.07, -0.125), (0, 0.07, -0.14), 0.02, 14, 0.001)
+    k.prism("Weapon", POLY, [(-0.035, 0.002), (0.005, 0.002), (-0.018, -0.105), (-0.058, -0.1)], 0.031, bevel=0.004)  # grip
+    k.box("Weapon", METAL, (0, 0.04, -0.03), (0.024, 0.075, 0.005), 0.001)
+    k.box("Weapon", METAL, (0, 0.076, -0.015), (0.008, 0.006, 0.03), 0.001)
+    k.prism("Weapon", METAL, [(0.03, -0.002), (0.038, -0.002), (0.036, -0.022), (0.03, -0.026)], 0.005, bevel=0.0006)
+    k.prism("Weapon", POLY, [(-0.09, 0.085), (-0.27, 0.09), (-0.285, 0.055), (-0.28, -0.03), (-0.22, -0.03), (-0.16, 0.03), (-0.09, 0.03)], 0.044, bevel=0.004)
+    k.box("Weapon", METAL, (0, -0.288, 0.03), (0.046, 0.012, 0.11), 0.002)
+    right_hand(k, top=(-0.015, 0.0), bottom=(-0.039, -0.1), trigger=(0.034, -0.014))
+    left_hand(k, palm=(0.0, 0.3, -0.005), forearm_dir=(-0.26, -0.3, -0.32))
+    return {"muzzle": (0, 0.585, 0.045), "mag_out": (0.0, 0.0, -0.3), "place": ((0.12, 0.25, -0.14), (1.5, 3.0, 7.0)),
+            "kick": 0.9}
+
+
+def gale(k):
+    """Gale Cannon: box-only wind weapon. Twin pressure tanks feed a flared
+    bell barrel; the magazine is a swappable charge canister."""
+    k.prism("Weapon", METAL, [(-0.1, 0.0), (0.16, 0.0), (0.17, 0.03), (0.17, 0.095), (-0.1, 0.095), (-0.105, 0.04)], 0.06, bevel=0.003)   # body
+    k.cyl("Weapon", METAL, (0, 0.17, 0.05), (0, 0.36, 0.05), 0.03, 18, 0.002)                   # barrel
+    k.cyl("Weapon", METAL, (0, 0.36, 0.05), (0, 0.52, 0.05), 0.03, 18, 0.002, r2=0.08)           # bell
+    k.cyl("Weapon", EMIT, (0, 0.5, 0.05), (0, 0.515, 0.05), 0.07, 18, 0.0005)                    # glowing mouth ring
+    for i in range(4):                                                                          # bell bands
+        k.cyl("Weapon", BRASS, (0, 0.38 + i * 0.04, 0.05), (0, 0.388 + i * 0.04, 0.05), 0.038 + i * 0.011, 18, 0.0008)
+    for sx in (-1, 1):                                                                          # pressure tanks
+        k.cyl("Weapon", ACCENT, (sx * 0.05, -0.04, 0.03), (sx * 0.05, 0.22, 0.03), 0.026, 16, 0.002)
+        k.sphere("Weapon", ACCENT, (sx * 0.05, -0.04, 0.03), 0.026)
+        k.sphere("Weapon", ACCENT, (sx * 0.05, 0.22, 0.03), 0.026)
+        k.cyl("Weapon", METAL, (sx * 0.05, 0.22, 0.03), (sx * 0.03, 0.3, 0.045), 0.006, 8, 0.0006)   # feed pipes
+        k.cyl("Weapon", BRASS, (sx * 0.05, 0.05, 0.03), (sx * 0.05, 0.07, 0.03), 0.028, 16, 0.001)   # band
+    k.box("Weapon", METAL, (0, 0.0, 0.1), (0.03, 0.05, 0.02), 0.0015)                           # gauge mount
+    k.cyl("Weapon", METAL, (0, 0.0, 0.1), (0, 0.0, 0.13), 0.02, 16, 0.001)
+    k.sphere("Weapon", LENS, (0, 0.0, 0.131), 0.018, scale=(1, 1, 0.2))
+    k.sphere("Weapon", EMIT, (0, 0.0, 0.134), 0.003)
+    k.cyl("Weapon", POLY, (0, 0.3, 0.0), (0, 0.31, -0.09), 0.015, 14, 0.002)                    # vertical foregrip
+    # charge canister (Mag) in the side port
+    k.cyl("Mag", METAL, (0.0, 0.08, -0.01), (0.0, 0.08, -0.1), 0.02, 14, 0.001)
+    k.cyl("Mag", EMIT, (0.0, 0.08, -0.03), (0.0, 0.08, -0.08), 0.021, 14, 0.0005)
+    k.prism("Weapon", POLY, [(-0.035, 0.002), (0.005, 0.002), (-0.018, -0.105), (-0.058, -0.1)], 0.031, bevel=0.004)  # grip
+    k.box("Weapon", METAL, (0, 0.04, -0.03), (0.024, 0.075, 0.005), 0.001)
+    k.box("Weapon", METAL, (0, 0.076, -0.015), (0.008, 0.006, 0.03), 0.001)
+    k.prism("Weapon", METAL, [(0.03, -0.002), (0.038, -0.002), (0.036, -0.022), (0.03, -0.026)], 0.005, bevel=0.0006)
+    k.prism("Weapon", ACCENT, [(-0.105, 0.095), (-0.32, 0.1), (-0.335, 0.06), (-0.33, -0.05), (-0.26, -0.05), (-0.17, 0.03), (-0.105, 0.03)], 0.05, bevel=0.004)
+    k.box("Weapon", POLY, (0, -0.338, 0.025), (0.05, 0.014, 0.14), 0.003)
+    right_hand(k, top=(-0.015, 0.0), bottom=(-0.039, -0.1), trigger=(0.034, -0.014))
+    left_hand(k, palm=(0.0, 0.3, -0.07), forearm_dir=(-0.26, -0.3, -0.3))
+    return {"muzzle": (0, 0.52, 0.05), "mag_out": (0.0, 0.0, -0.3), "place": ((0.122, 0.25, -0.145), (1.5, 3.0, 7.0)),
+            "kick": 2.6}
+
+
+WEAPONS = {"rifle": rifle, "pistol": pistol, "shotgun": shotgun, "smg": smg, "lmg": lmg, "sniper": sniper, "arc": arc, "gale": gale}
+EMIT_COLORS = {"arc": "#59d9ff", "gale": "#ffb347"}
 
 
 # ---------------------------------------------------------------- texturing
@@ -303,8 +449,11 @@ def paint(P, part, edges, seed):
     metal[part == BRASS] = 1.0
     col[part == LENS] = pt.hexc("#0f1a1a")
     rough[part == LENS] = 0.08
-    col[part == EMIT] = pt.hexc("#ff2a1a")
+    col[part == EMIT] = pt.hexc(EMIT_COLORS.get(seed_wid[0], "#ff2a1a"))
     return np.clip(col, 0, 1), rough, metal
+
+
+seed_wid = ["rifle"]  # weapon being textured (paint() has no other way to know)
 
 
 def texture(ob, wid):
@@ -326,7 +475,9 @@ def texture(ob, wid):
     alb = pt.to_image(bpy, "vm_%s_albedo" % wid, rgb, valid)
     ormi = pt.to_image(bpy, "vm_%s_orm" % wid, orm, valid, non_color=True)
     mat = lib.pbr_material("vm_" + wid, alb, ormi)
-    emit = lib.flat_material("sight_dot", "#ff2a1a", emission="#ff2a1a", strength=12.0)
+    seed_wid[0] = wid
+    ec = EMIT_COLORS.get(wid, "#ff2a1a")
+    emit = lib.flat_material("sight_dot", ec, emission=ec, strength=12.0 if wid not in EMIT_COLORS else 6.0)
     lens = lib.flat_material("lens", "#0f1a1a", roughness=0.05)
     lens.blend_method = 'BLEND' if hasattr(lens, "blend_method") else None
     for i in range(len(ob.data.materials)):

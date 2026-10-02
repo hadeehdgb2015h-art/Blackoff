@@ -33,6 +33,8 @@ var _markers: Markers
 var _revive_back: ColorRect
 var _revive_bar: ColorRect
 var _revive_label: Label
+var _boosts: Label
+var _perks: Label
 
 var _banner_t: float = 0.0
 var _toast_t: float = 0.0
@@ -157,6 +159,7 @@ func _ready() -> void:
 	# Wave (top-centre)
 	_wave_label = _top_centered(40, UiTheme.ACCENT, 10)
 	_wave_sub = _top_centered(20, UiTheme.MUTED, 60)
+	_boosts = _top_centered(22, Color(1.0, 0.8, 0.3), 86)
 
 	# Credits (top-right, left of the pause button)
 	_credits = _right_label(28, UiTheme.GOLD, 24, 100)
@@ -185,6 +188,10 @@ func _ready() -> void:
 	_fps = UiTheme.label("", 18, UiTheme.MUTED)
 	_fps.position = Vector2(24, 52)
 	add_child(_fps)
+
+	_perks = UiTheme.label("", 18, Color(0.95, 0.9, 0.8))
+	_perks.position = Vector2(24, 190)
+	add_child(_perks)
 
 	_team = TeamPanel.new()
 	_team.font = ThemeDB.fallback_font
@@ -252,11 +259,25 @@ func update_state(p: SimPlayer, w: SimWorld, interact: Dictionary, delta: float)
 				_prompt.text = "Take %s" % interact.label
 			"wait":
 				_prompt.text = str(interact.label)
+			"perk":
+				_prompt.text = ("%s  (owned)" % interact.label) if interact.full else "Buy %s  $%d" % [interact.label, interact.cost]
+			"revive":
+				_prompt.text = str(interact.label)
 			_:
 				var verb := "Buy" if interact.action == "weapon" else "Refill"
 				var suffix := "  (full)" if interact.full else ""
 				_prompt.text = "%s %s  $%d%s" % [verb, interact.label, interact.cost, suffix]
 		_prompt.add_theme_color_override("font_color", UiTheme.TEXT if interact.affordable and not interact.full else UiTheme.MUTED)
+	var boosts := PackedStringArray()
+	for t in ["instaKill", "doublePoints", "fireSale"]:
+		var left := w.powerups.seconds_left(t)
+		if left > 0:
+			boosts.append("%s %d" % [str(w.constants.powerups.types[t].displayName), left])
+	_boosts.text = "   ".join(boosts)
+	var chips := PackedStringArray()
+	for id in p.perks:
+		chips.append(str(w.defs.perks.get(id, {}).get("displayName", id)).to_upper())
+	_perks.text = "  ·  ".join(chips)
 	_cross.spread = 1.6 if p.moving else 1.0
 	_cross.visible = p.is_alive()
 	var mates := 0
@@ -340,6 +361,8 @@ func on_event(e: Dictionary, local_pid: int) -> void:
 		"player_respawned":
 			if e.pid == local_pid:
 				_show_banner("BACK IN THE FIGHT")
+		"powerup_taken":
+			_show_banner(str(e.ptype).to_upper().replace("INSTAKILL", "INSTA-KILL").replace("DOUBLEPOINTS", "DOUBLE POINTS").replace("MAXAMMO", "MAX AMMO").replace("FIRESALE", "FIRE SALE"))
 
 
 ## Positions of downed teammates on screen (computed by the game from its camera).

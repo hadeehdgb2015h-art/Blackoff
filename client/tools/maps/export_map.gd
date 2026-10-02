@@ -62,6 +62,8 @@ func _export(scene: Node3D, errors: PackedStringArray) -> Dictionary:
 			"pos": _r2(_xz(n)), "radius": float(n.get_meta("radius", 1.8))}
 		if n.has_meta("item"):
 			it["item"] = str(n.get_meta("item"))
+		if n.has_meta("yaw"):
+			it["yaw"] = snappedf(float(n.get_meta("yaw")), 0.001)
 		interact.append(it)
 	var safe := _group(scene, "map_safe_area")
 	if safe.size() != 1:

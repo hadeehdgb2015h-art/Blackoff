@@ -43,10 +43,18 @@ func update() -> void:
 
 
 ## Option shown to player p at box b (merged into PlayerSystem.interact_option).
+## Current price: the fire-sale price while that power-up is active.
+func price() -> int:
+	var sale: Dictionary = w.constants.powerups.types.get("fireSale", {})
+	if not sale.is_empty() and w.powerups.is_active("fireSale"):
+		return int(sale.get("boxPrice", cfg.price))
+	return int(cfg.price)
+
+
 func option(b: Box, p: SimPlayer) -> Dictionary:
 	match b.state:
 		State.IDLE:
-			return {"action": "box", "cost": int(cfg.price), "label": "Supply Cache", "full": false}
+			return {"action": "box", "cost": price(), "label": "Supply Cache", "full": false}
 		State.ROLLING:
 			if b.owner_pid == p.id:
 				return {"action": "wait", "cost": 0, "label": "Rolling...", "full": false, "busy": true}
@@ -67,8 +75,9 @@ func open(b: Box, p: SimPlayer) -> bool:
 	b.owner_pid = p.id
 	b.result = result
 	b.phase_end = w.time + float(cfg.rollSec)
-	w.add_currency(p, -int(cfg.price), "supply_box")
-	w.emit({"type": "box_opened", "box": b.id, "pid": p.id, "cost": int(cfg.price), "until": b.phase_end})
+	var cost := price()
+	w.add_currency(p, -cost, "supply_box")
+	w.emit({"type": "box_opened", "box": b.id, "pid": p.id, "cost": cost, "until": b.phase_end})
 	return true
 
 

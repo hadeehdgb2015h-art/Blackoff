@@ -26,6 +26,8 @@ var _showcase_soldiers: Array = []
 var _showcase_t: float = 0.0
 var _defs: Dictionary
 var _boxes := {}   ## box id -> BoxView
+var _puviews := {} ## power-up id -> PowerupView
+var _machines := {} ## perk id -> PerkMachineView
 var _acc: float = 0.0
 var _paused: bool = false
 var _pause_menu: Control
@@ -82,6 +84,7 @@ func _ready() -> void:
 		# Online: the server owns the zone; we wait for our slot (zoneJoined + first snapshot).
 		world = NetWorld.new(defs, map_id)
 		_spawn_box_views(defs)
+		_spawn_machine_views(defs)
 		_apply_quality()
 		_hud.show_status("Connecting...")
 		Net.failed.connect(_on_net_failed)
@@ -93,6 +96,7 @@ func _ready() -> void:
 		return
 	world = SimWorld.new(defs, map_id, randi())
 	_spawn_box_views(defs)
+	_spawn_machine_views(defs)
 	pid = world.add_player("You")
 	_on_player_ready()
 	_apply_quality()
@@ -170,6 +174,9 @@ func _process(delta: float) -> void:
 		v.update_view(alpha, delta)
 	for v in _pviews.values():
 		v.update_view(alpha, delta)
+	_sync_powerup_views()
+	for v in _puviews.values():
+		v.update_view(world.time, delta)
 	var opt := world.interact_option(pid)
 	var revive: bool = not opt.is_empty() and opt.action == "revive"
 	_controls.revive_available = revive
@@ -216,6 +223,32 @@ func _publish_debug(p: SimPlayer, delta: float) -> void:
 		"mag": p.weapon().mag, "hp": p.hp, "wave": world.director.wave, "zombies": world.zombies.size(),
 		"tick": world.tick, "online": _online, "players": world.players.size(), "rtt": Net.rtt_ms}
 	JavaScriptBridge.eval("window.__blackoff = %s;" % JSON.stringify(d), true)
+
+
+func _spawn_machine_views(defs: Dictionary) -> void:
+	for it in world.map.interactables:
+		if it.kind != "perk" or not defs.get("perks", {}).has(it.item):
+			continue
+		var v := PerkMachineView.new()
+		add_child(v)
+		v.setup(it.item, defs.perks[it.item], it.pos, float(it.get("yaw", 0.0)))
+		_machines[it.item] = v
+
+
+func _sync_powerup_views() -> void:
+	for id in _puviews.keys():
+		if not world.powerups.drops.has(id):
+			_puviews[id].queue_free()
+			_puviews.erase(id)
+	for d in world.powerups.drops.values():
+		var v: PowerupView = _puviews.get(d.id)
+		if v == null:
+			v = PowerupView.new()
+			add_child(v)
+			var def: Dictionary = world.constants.powerups.types.get(d.type, {})
+			v.setup(d.id, d.type, str(def.get("displayName", d.type)), d.pos, d.until)
+			_puviews[d.id] = v
+		v.until = d.until
 
 
 func _spawn_box_views(defs: Dictionary) -> void:
@@ -266,19 +299,25 @@ func _on_event(e: Dictionary) -> void:
 	var local: bool = e.get("pid", -1) == pid
 	match e.type:
 		"shot":
+			var wvis := Visuals.weapon(e.weapon)
+			var from: Vector3 = _rig.muzzle_position() if local else e.from + Vector3(0, -0.2, 0)
 			if not local:
-				var from: Vector3 = e.from + Vector3(0, -0.2, 0)
-				_effects.tracer(from, e.to)
-				_sfx.play_at(Visuals.weapon(e.weapon).get("sound", "pistol_shot"), from, -6.0)
+				_sfx.play_at(wvis.get("sound", "pistol_shot"), from, -6.0)
 				var pv: RemotePlayerView = _pviews.get(e.pid)
 				if pv:
 					pv.on_fire()
-			if local:
+			else:
 				_rig.on_fire()
-				var vis := Visuals.weapon(e.weapon)
-				_sfx.play(vis.get("sound", "pistol_shot"), -2.0)
-				_controls.add_recoil(float(vis.get("recoilPitch", 0.02)) * randf_range(0.6, 1.0), randf_range(-0.006, 0.006))
-				_effects.tracer(_rig.muzzle_position(), e.to)
+				_sfx.play(wvis.get("sound", "pistol_shot"), -2.0)
+				_controls.add_recoil(float(wvis.get("recoilPitch", 0.02)) * randf_range(0.6, 1.0), randf_range(-0.006, 0.006))
+			var fx := str(wvis.get("fx", "tracer"))
+			if fx == "blast":
+				_effects.blast(from, e.to - e.from, from.distance_to(e.to))
+			elif fx == "bolt":
+				_effects.bolt(from, e.to, Color(str(wvis.get("tracer", "#88e0ff"))))
+				_effects.impact(e.to, false)
+			else:
+				_effects.tracer(from, e.to)
 			if e.hit == "wall":
 				_effects.impact(e.to, false)
 		"zombie_hit":
@@ -329,7 +368,13 @@ func _on_event(e: Dictionary) -> void:
 		"purchase":
 			if local:
 				_sfx.play("buy", -4.0)
-				_rig.on_switch(world.players[pid].weapon().id)
+				if e.action != "perk":
+					_rig.on_switch(world.players[pid].weapon().id)
+		"powerup_taken":
+			_sfx.play("powerup", -2.0)
+			print("[game] power-up %s taken by %d" % [e.ptype, e.pid])
+		"powerup_dropped":
+			_sfx.play_at("box_offer", Vector3(e.get("pos", Vector2.ZERO).x, 1.0, e.get("pos", Vector2.ZERO).y) if e.has("pos") else _rig.camera.global_position, -8.0)
 		"purchase_denied":
 			if local:
 				_sfx.play("deny", -6.0)

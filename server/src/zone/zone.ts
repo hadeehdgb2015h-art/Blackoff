@@ -55,6 +55,8 @@ export class Zone {
   private readonly zombieIdx = new Map<string, number>();
   private readonly boxIdx = new Map<string, number>();
   private readonly entryIdx = new Map<string, number>();
+  private readonly perkIdx = new Map<string, number>();
+  private readonly powerupIdx = new Map<string, number>();
   private readonly snapEvery: number;
 
   constructor(readonly id: number, private readonly shared: SharedData, private readonly codec: Codec, readonly mapId: string, seed: number, now: number) {
@@ -65,6 +67,8 @@ export class Zone {
     Object.keys(shared.zombies).sort().forEach((k, i) => this.zombieIdx.set(k, i));
     this.world.map.interactables.filter((it) => it.kind === "box").forEach((it, i) => this.boxIdx.set(it.id, i));
     this.world.map.zombieEntries.forEach((e, i) => this.entryIdx.set(e.id, i));
+    this.world.perkIds.forEach((k, i) => this.perkIdx.set(k, i));
+    this.world.powerups.types.forEach((k, i) => this.powerupIdx.set(k, i));
     if (Object.keys(EV).length === 0) Object.assign(EV, shared.protocol.enums.eventKind);
     this.snapEvery = shared.constants.sim.tickRate / shared.constants.sim.snapshotRate;
   }
@@ -233,7 +237,13 @@ export class Zone {
       case "reload_done": return this.event("reloadDone", n("pid"));
       case "weapon_switched": return this.event("weaponSwitched", n("pid"), wIdx("weapon"));
       case "dry_fire": return this.event("dryFire", n("pid"));
-      case "purchase": return this.event("purchase", n("pid"), wIdx("item"), n("cost"), e.action === "ammo" ? 1 : 0);
+      case "purchase":
+        if (e.action === "perk") return this.event("purchase", n("pid"), this.perkIdx.get(String(e.item)) ?? 0, n("cost"), 3);
+        return this.event("purchase", n("pid"), wIdx("item"), n("cost"), e.action === "ammo" ? 1 : 0);
+      case "powerup_dropped":
+        return this.event("powerupDropped", n("id"), this.powerupIdx.get(String(e.ptype)) ?? 0, Math.round((n("until") - this.world.time) * 10));
+      case "powerup_taken": return this.event("powerupTaken", n("pid"), this.powerupIdx.get(String(e.ptype)) ?? 0);
+      case "powerup_expired": return this.event("powerupExpired", n("id"));
       case "purchase_denied": return this.event("purchaseDenied", n("pid"), 0, 0, e.reason === "full" ? 1 : 0);
       case "box_opened":
         return this.event("boxOpened", n("pid"), this.boxIdx.get(String(e.box)) ?? 0, Math.round((n("until") - this.world.time) * 10));
@@ -281,6 +291,10 @@ export class Zone {
           hp: pct(z.hp, z.maxHp), flags: (z.moving ? 1 : 0) | (z.state === ZombieState.WINDUP ? 2 : 0),
         });
       }
+      for (const d of w.powerups.drops.values()) {
+        if ((d.pos.x - self.pos.x) ** 2 + (d.pos.y - self.pos.y) ** 2 > r2) continue;
+        entities.push({ id: d.id, kind: 2, sub: this.powerupIdx.get(d.type) ?? 0, x: d.pos.x, y: d.pos.y, floor: 0, yaw: 0, hp: 0, flags: 0 });
+      }
       const ids = new Set(entities.map((e) => e.id as number));
       const removed = [...m.known].filter((id) => !ids.has(id)).slice(0, 255);
       m.known = ids;
@@ -290,6 +304,8 @@ export class Zone {
         remaining: u16(d.phase === Phase.WAVE ? d.remaining() : 0),
         timer: u16(d.phase === Phase.INTERMISSION ? Math.max(0, d.phaseEnd - w.time) * 10 : 0),
         entities: entities.slice(0, 255), removed,
+        instaKill: Math.min(255, w.powerups.secondsLeft("instaKill")), doublePoints: Math.min(255, w.powerups.secondsLeft("doublePoints")),
+        fireSale: Math.min(255, w.powerups.secondsLeft("fireSale")),
       });
       this.sendTo(m, "selfState", {
         hp: Math.max(0, Math.min(255, Math.round(self.hp))), state: self.state, currency: Math.max(0, Math.min(0xffffffff, self.currency)),
@@ -297,6 +313,7 @@ export class Zone {
         weapons: self.weapons.map((wp) => ({ weapon: this.weaponIdx.get(wp.id) ?? 0, mag: Math.min(255, wp.mag), reserve: u16(wp.reserve) })),
         flags: (self.isReloading() ? 1 : 0) | (w.time < self.switchEnd ? 2 : 0),
         revive: this.reviveProgress(self),
+        perks: self.perks.reduce((m, id) => m | (1 << (this.perkIdx.get(id) ?? 0)), 0) & 0xff,
         bleedout: self.state === PlayerState.DOWNED ? Math.min(255, Math.ceil(w.bleedoutLeft(self))) : 0,
       });
     }

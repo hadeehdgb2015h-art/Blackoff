@@ -41,11 +41,11 @@
 ## Owner expansion list (received after phase 5), scheduled as phases 7–13
 ## Phase 7: client caching ✅ done
 - [x] Content-hashed engine and pack files, immutable headers, service worker; revisit downloads nothing, update downloads only the changed file (CI-tested)
-## Phase 8: zombies classic
-- [ ] Power-up drops from zombies (insta-kill, double points, max ammo, nuke, carpenter-like), timed
-- [ ] Perk machines (health, reload speed, sprint, fast swap…): permanent until downed; map spots
-- [ ] New weapons incl. a rare box-only energy weapon and a wind weapon (original designs/names)
-- [ ] Green light beam over the supply cache
+## Phase 8: zombies classic ✅ done
+- [x] Power-up drops from zombies (insta-kill, double points, max ammo, nuke, fire sale), timed, zone-wide
+- [x] Perk machines (Ironhide Brew, Quickhand Soda, Longstride Tonic, Switchblade Fizz) on the map; lost when downed
+- [x] New weapons: BR-80 Mauler (LMG), LR-50 Longshot (sniper), Arc Lance (rare, splash), Gale Cannon (rare, cone blast)
+- [x] Green beacon beam over the supply cache
 ## Phase 9: UI and audio
 - [ ] Professional main menu (modes, profile, settings, how to play)
 - [ ] Movable HUD buttons (layout editor in settings, like the owner's screenshot)

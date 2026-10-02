@@ -13,6 +13,7 @@ import { PlayerState, SimPlayer, WeaponState, type PlayerIntent, type SimEvent, 
 import { PlayerSystem, type InteractOption } from "./playerSystem.js";
 import { ZombieSystem } from "./zombieSystem.js";
 import { BoxSystem } from "./boxSystem.js";
+import { PowerupSystem } from "./powerupSystem.js";
 
 export enum ZoneState { LOBBY = 0, INTERMISSION = 1, WAVE = 2, GAME_OVER = 3 }
 
@@ -32,6 +33,9 @@ export class SimWorld {
   readonly playerSys: PlayerSystem;
   readonly zombieSys: ZombieSystem;
   readonly boxSys: BoxSystem;
+  readonly powerups: PowerupSystem;
+  /** sorted perk ids (bit order of selfState.perks) */
+  readonly perkIds: string[];
   private nextId = 1;
 
   constructor(readonly defs: SharedData, mapId: string, seed: number) {
@@ -46,6 +50,8 @@ export class SimWorld {
     this.playerSys = new PlayerSystem(this);
     this.zombieSys = new ZombieSystem(this);
     this.boxSys = new BoxSystem(this);
+    this.powerups = new PowerupSystem(this);
+    this.perkIds = Object.keys(defs.perks).sort();
   }
 
   addPlayer(displayName: string): number {
@@ -85,6 +91,7 @@ export class SimWorld {
     if (this.zoneState === ZoneState.GAME_OVER) return;
     for (const p of this.players.values()) this.playerSys.update(p);
     this.boxSys.update();
+    this.powerups.update();
     this.updateDirector();
     this.zombieSys.updateAll();
     this.zombieSys.separateFromPlayers();
@@ -102,6 +109,7 @@ export class SimWorld {
 
   addCurrency(p: SimPlayer, amount: number, reason: string): void {
     if (amount === 0) return;
+    if (amount > 0 && this.powerups.isActive("doublePoints")) amount *= 2;
     p.currency += amount;
     this.emit({ type: "currency", pid: p.id, amount, reason });
   }
@@ -119,6 +127,7 @@ export class SimWorld {
       p.reviveTarget = 0;
       p.reviveTicks = 0;
       p.downs += 1;
+      this.playerSys.clearPerks(p); // perks are lost when you go down
       this.emit({ type: "player_downed", pid: p.id });
     }
   }

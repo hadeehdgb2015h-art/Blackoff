@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 1,
+  "_comment": "Perk machines (phase 8). Bought once, kept until the player goes down. Effects multiply player constants.",
+  "perks": {
+    "ironhide": {
+      "displayName": "Ironhide Brew",
+      "price": 2500,
+      "color": "#d9372b",
+      "maxHealthMul": 1.6
+    },
+    "quickhands": {
+      "displayName": "Quickhand Soda",
+      "price": 3000,
+      "color": "#2fb34a",
+      "reloadMul": 0.5
+    },
+    "longstride": {
+      "displayName": "Longstride Tonic",
+      "price": 2000,
+      "color": "#e9c23a",
+      "moveSpeedMul": 1.12
+    },
+    "switchblade": {
+      "displayName": "Switchblade Fizz",
+      "price": 1500,
+      "color": "#3a8ee9",
+      "switchMul": 0.4
+    }
+  }
+}

@@ -3,10 +3,10 @@ extends RefCounted
 ## Loads and cross-checks the shared JSON data (see /shared/README.md).
 ## Pure function, usable from autoloads, tests and tools.
 
-const FILES := ["constants", "protocol", "weapons", "zombies", "waves"]
+const FILES := ["constants", "protocol", "weapons", "zombies", "waves", "perks"]
 
 
-## Returns {constants, protocol, weapons, zombies, waves, maps: {id: dict}, errors: PackedStringArray}.
+## Returns {constants, protocol, weapons, zombies, waves, perks, maps: {id: dict}, errors: PackedStringArray}.
 static func load_all(dir: String = "res://shared/") -> Dictionary:
 	var errors := PackedStringArray()
 	var out := {}
@@ -14,6 +14,7 @@ static func load_all(dir: String = "res://shared/") -> Dictionary:
 		out[file_name] = _read_json(dir + file_name + ".json", errors)
 	out["weapons"] = out["weapons"].get("weapons", {})
 	out["zombies"] = out["zombies"].get("zombies", {})
+	out["perks"] = out["perks"].get("perks", {})
 	var maps := {}
 	var map_dir := dir + "maps/"
 	for f in DirAccess.get_files_at(map_dir):
@@ -58,3 +59,5 @@ static func _cross_check(d: Dictionary, errors: PackedStringArray) -> void:
 		for it in m.get("interactables", []):
 			if it.kind == "weapon" and not d["weapons"].has(it.get("item", "")):
 				errors.append("map %s: interactable %s references unknown weapon" % [m.id, it.id])
+			if it.kind == "perk" and not d["perks"].has(it.get("item", "")):
+				errors.append("map %s: interactable %s references unknown perk" % [m.id, it.id])

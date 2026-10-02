@@ -82,6 +82,10 @@
     {"min": [-21.15, 0.0, -3.65], "max": [-17.85, 3.0, -3.35]},
     {"min": [20.85, 0.0, -3.65], "max": [21.15, 3.0, -0.35]},
     {"min": [-21.15, 0.0, -3.65], "max": [-20.85, 3.0, -0.35]},
+    {"min": [-4.95, 0.0, 12.0], "max": [-4.05, 2.0, 12.8]},
+    {"min": [8.05, 0.0, -5.0], "max": [8.95, 2.0, -4.2]},
+    {"min": [-17.95, 0.0, 0.2], "max": [-17.05, 2.0, 1.0]},
+    {"min": [21.05, 0.0, -15.4], "max": [21.95, 2.0, -14.6]},
     {"min": [7.85, 0.0, -6.15], "max": [8.15, 3.0, 2.15]},
     {"min": [-8.15, 0.0, -6.15], "max": [-7.85, 3.0, 2.15]},
     {"min": [7.85, 0.0, -6.15], "max": [11.9, 3.0, -5.85]},
@@ -120,6 +124,38 @@
   "interactables": [
     {"id": "ammo_safe", "kind": "ammo", "pos": [0.0, 11.3], "radius": 1.8},
     {"id": "buy_rifle", "kind": "weapon", "pos": [-8.6, -2.0], "radius": 1.8, "item": "rifle"},
+    {
+      "id": "perk_ironhide",
+      "kind": "perk",
+      "pos": [-4.5, 12.4],
+      "radius": 1.8,
+      "item": "ironhide",
+      "yaw": -1.571
+    },
+    {
+      "id": "perk_longstride",
+      "kind": "perk",
+      "pos": [8.5, -4.6],
+      "radius": 1.8,
+      "item": "longstride",
+      "yaw": -1.571
+    },
+    {
+      "id": "perk_quickhands",
+      "kind": "perk",
+      "pos": [-17.5, 0.6],
+      "radius": 1.8,
+      "item": "quickhands",
+      "yaw": -1.571
+    },
+    {
+      "id": "perk_switchblade",
+      "kind": "perk",
+      "pos": [21.5, -15.0],
+      "radius": 1.8,
+      "item": "switchblade",
+      "yaw": 1.571
+    },
     {"id": "box_storage", "kind": "box", "pos": [16.5, 0.2], "radius": 1.9}
   ],
   "safeArea": {"min": [-5.0, 10.0], "max": [5.0, 18.0]}
