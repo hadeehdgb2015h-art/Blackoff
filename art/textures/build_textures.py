@@ -186,6 +186,25 @@ def ceiling():
     write("ceiling", base, height, 2.0)
 
 
+def stone_blocks():
+    """Old dressed-stone wall: staggered dark blocks with pale mortar, moss and damp (crypt, chapel, cloister)."""
+    lines, tx, ty = grid_lines(6, 2.2, offset_rows=True)
+    var = pnoise(6, 61)
+    block_tone = var[(ty * S / 6 + S / 12).astype(int) % S, (tx * S / 6 + S / 12).astype(int) % S]
+    base = lerp(hexc("#4a4852"), hexc("#2f2e36"), block_tone)
+    chip = smooth(0.55, 0.8, fbm(14, 62, 4))
+    base = lerp(base, hexc("#5c5a62"), chip * 0.35)
+    moss = smooth(0.62, 0.85, fbm(5, 63, 4)) * smooth(0.4, 0.6, 1 - ty)
+    base = lerp(base, hexc("#3a4a30"), moss * 0.55)
+    damp = smooth(0.5, 0.75, fbm(3, 64, 3))
+    base = lerp(base, hexc("#232228"), damp * 0.4)
+    speck = pnoise(96, 65)
+    base *= (0.93 + 0.07 * speck)[..., None]
+    base = lerp(base, hexc("#8a8578"), lines * 0.9)   # mortar
+    height = (1 - lines) * 0.7 + fbm(20, 66, 3) * 0.2 - chip * 0.15
+    write("stone_blocks", base, height, 3.5)
+
+
 if __name__ == "__main__":
     os.makedirs(OUT, exist_ok=True)
     floor_tiles()
@@ -193,3 +212,4 @@ if __name__ == "__main__":
     metal_plate()
     ground()
     ceiling()
+    stone_blocks()

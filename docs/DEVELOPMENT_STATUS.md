@@ -4,7 +4,7 @@ Read this first in a new session. Then read `docs/TECHNICAL_ARCHITECTURE.md`, `d
 
 ## Current phase
 
-**Phases 5, 7, 8 and 9 done** (revive and HUD; client caching; zombies classic; main menu, controls layout editor, audio system). The owner's expansion list (13 items) is scheduled as phases 7–13 in `docs/TODO.md`; phase 10 (map ×2 with new dark-fantasy areas, 5 players per zone) is next. Phase 6 (performance tiers, anti-cheat logging) is folded into phase 11. **Phase 4 (Telegram, DB, deploy): built and rehearsed in CI; waiting for the owner to run the installer.** The owner's server (from `deploy/check.sh`): Ubuntu 22.04, 2 CPUs, 3.9 GB RAM (1.5 GB free), 3.4 GB disk free, Node 20.20, pm2 7.0.1 with ~25 apps, nginx 1.18 with 8 sites, certbot 1.21, Postgres on 5432, public IP 93.115.22.64, free port 8787. They run one command (`deploy/install.sh`, see `docs/systems/deploy.md`); the default address `blackoff.93-115-22-64.sslip.io` needs no DNS work. Then they create a bot with @BotFather and paste the token when asked.
+**Phases 5 and 7–10 done** (revive and HUD; client caching; zombies classic; main menu, controls layout editor, audio system; the map doubled with the old grounds and 5 players per zone). The owner's expansion list (13 items) is scheduled as phases 7–13 in `docs/TODO.md`; phase 11 (TON points, weekly leaderboard, anti-cheat logging) is next. Phase 6 (performance tiers, anti-cheat logging) is folded into phase 11. **Phase 4 (Telegram, DB, deploy): built and rehearsed in CI; waiting for the owner to run the installer.** The owner's server (from `deploy/check.sh`): Ubuntu 22.04, 2 CPUs, 3.9 GB RAM (1.5 GB free), 3.4 GB disk free, Node 20.20, pm2 7.0.1 with ~25 apps, nginx 1.18 with 8 sites, certbot 1.21, Postgres on 5432, public IP 93.115.22.64, free port 8787. They run one command (`deploy/install.sh`, see `docs/systems/deploy.md`); the default address `blackoff.93-115-22-64.sslip.io` needs no DNS work. Then they create a bot with @BotFather and paste the token when asked.
 
 | Phase | State |
 |---|---|
@@ -17,7 +17,8 @@ Read this first in a new session. Then read `docs/TECHNICAL_ARCHITECTURE.md`, `d
 | 7 Client caching | done (`docs/systems/deploy.md`) |
 | 8 Zombies classic | done (`docs/systems/simulation.md`, `presentation.md`) |
 | 9 Menu, controls layout, audio | done (`docs/systems/presentation.md`, `input-and-hud.md`) |
-| 10–13 Expansion (owner list) | planned in `docs/TODO.md` |
+| 10 Map ×2, 5 players | done (`docs/systems/maps.md`) |
+| 11–13 Expansion (owner list) | planned in `docs/TODO.md` |
 
 ## Live preview
 
@@ -28,7 +29,7 @@ URL flags: `?autostart=1` (skip menu), `?bot=1` (test bot plays), `?debug=1` (ex
 
 | Area | State |
 |---|---|
-| Map | `facility_01` (art stage 3: textured, prop-dressed, bright with a violet dark-fantasy tint): safe room (spawn, ammo, Ironhide machine), 2 corridors, lab (AR-7 wall-buy, Quickhand machine), storage (supply cache with beacon beam, Longstride machine), yard (Switchblade machine), 4 zombie entries. Pipeline: generator → scene → `shared/maps/facility_01.json` (`docs/systems/maps.md`). |
+| Map | `facility_01` (textured, prop-dressed, violet dark-fantasy tint): safe room (5 spawns, ammo, Ironhide machine), 2 corridors, lab (AR-7 wall-buy, Quickhand machine), storage (supply cache with beacon beam, Longstride machine), yard (Switchblade machine), and since phase 10 the old grounds to the south: graveyard cloister, crypt, chapel (shotgun wall-buy), catacomb (SMG wall-buy); 7 zombie entries; 262 batched meshes. Pipeline: generator → scene → `shared/maps/facility_01.json` (`docs/systems/maps.md`). |
 | Sim | `client/scripts/sim/`: authoritative rules at 20 Hz (movement, weapons, zombies, waves, economy, downed → game over). `server/src/sim/` mirrors it; `shared/tests/golden.json` pins the contract (`docs/systems/simulation.md`). |
 | Presentation | first-person rig, procedural zombie and weapon placeholders, tracers and impacts, generated SFX, map mesh batching, quality tiers (`docs/systems/presentation.md`). |
 | Input / UI | multi-touch stick, aim, fire-aim, reload, swap, use, pause; keyboard/mouse; movable/resizable controls with an editor; HUD; pause; settings (look, volumes, quality, layout); game over; main menu with profile card (`docs/systems/input-and-hud.md`). |

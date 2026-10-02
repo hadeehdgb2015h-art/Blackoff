@@ -123,7 +123,7 @@ describe("combat", () => {
     const w = world();
     const pid = w.addPlayer("t");
     const p = w.players.get(pid)!;
-    p.pos = { ...w.map.interactables.find((i) => i.kind === "weapon")!.pos };
+    p.pos = { ...w.map.interactables.find((i) => i.kind === "weapon" && i.item === "rifle")!.pos };
     const press = () => {
       w.setInput(pid, intent());
       w.step();
@@ -310,7 +310,10 @@ describe("revive and respawn", () => {
 
   it("bled-out players respawn at the next wave while a teammate lives; all down ends the game", () => {
     const { w, a, b } = setup();
-    for (let i = 0; i < (defs().constants.player.downedBleedoutSec + 1) * defs().constants.sim.tickRate; i++) w.step();
+    for (let i = 0; i < (defs().constants.player.downedBleedoutSec + 1) * defs().constants.sim.tickRate; i++) {
+      w.step();
+      for (const z of [...w.zombies.values()]) w.zombies.delete(z.id); // nobody attacks A meanwhile
+    }
     expect(b.state).toBe(2); // dead
     // skip to the next wave start
     for (const z of [...w.zombies.values()]) w.zombies.delete(z.id);

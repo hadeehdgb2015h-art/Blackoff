@@ -318,6 +318,68 @@ def banner(k):
     k.sphere(n, SOCKET, (0, 0.085, 1.6), 0.045, scale=(0.6, 0.3, 1.0), segs=8)
 
 
+@prop
+def sarcophagus(k):
+    """Stone coffin with a cracked-open lid and a skull resting on it (crypt)."""
+    n = "Sarcophagus"
+    k.box(n, STONE, (0, 0, 0.42), (2.1, 0.9, 0.84), 0.015)
+    k.box(n, STONE, (0, 0, 0.06), (2.3, 1.1, 0.12), 0.01)                       # plinth
+    k.box(n, STONE, (0.08, 0.05, 0.92), (2.0, 0.84, 0.16), 0.012, rot=(3, 0, 2))  # lid, pushed askew
+    for x in (-0.6, 0.0, 0.6):                                                   # carved panels
+        k.box(n, SOCKET, (x, -0.46, 0.45), (0.4, 0.01, 0.4), 0.001)
+        k.box(n, SOCKET, (x, 0.46, 0.45), (0.4, 0.01, 0.4), 0.001)
+    skull(k, n, (-0.55, 0.0, 1.05), 0.8, eyes=True, jaw_open=0.4)
+    bone(k, n, (0.3, -0.15, 1.02), (0.85, 0.1, 1.04), 0.035)
+
+
+@prop
+def pew(k):
+    """Wooden church bench, worn and tilted (chapel)."""
+    n = "Pew"
+    k.box(n, BARK, (0, 0.1, 0.45), (1.8, 0.42, 0.06), 0.008)                    # seat
+    k.box(n, BARK, (0, -0.17, 0.75), (1.8, 0.05, 0.5), 0.008, rot=(-8, 0, 0))    # backrest
+    for sx in (-1, 1):
+        k.box(n, BARK, (sx * 0.9, 0.0, 0.42), (0.06, 0.5, 0.84), 0.006)          # side panels
+    k.box(n, BARK, (0, 0.32, 0.2), (1.7, 0.05, 0.3), 0.006)                      # kneeler rail
+    k.box(n, IRON, (0, 0.1, 0.03), (1.8, 0.3, 0.06), 0.004)                      # iron base
+
+
+@prop
+def obelisk(k):
+    """Tapered black stone monument on a plinth with a glowing violet eye slit."""
+    n = "Obelisk"
+    k.box(n, STONE, (0, 0, 0.2), (1.3, 1.3, 0.4), 0.015)
+    k.box(n, STONE, (0, 0, 0.55), (0.9, 0.9, 0.3), 0.012)
+    k.cyl(n, STONE, (0, 0, 0.7), (0, 0, 3.4), 0.32, 4, 0.012, r2=0.2)
+    k.cyl(n, STONE, (0, 0, 3.4), (0, 0, 3.75), 0.2, 4, 0.008, r2=0.01)
+    for z in (1.2, 1.9, 2.6):                                                    # carved bands
+        k.box(n, SOCKET, (0, -0.3, z), (0.3, 0.02, 0.05), 0.001)
+        k.box(n, SOCKET, (0, 0.3, z), (0.3, 0.02, 0.05), 0.001)
+    k.sphere(n, E_EYE, (0, -0.27, 3.0), 0.09, scale=(1.4, 0.3, 0.5), segs=10)
+
+
+@prop
+def gibbet(k):
+    """Iron gallows arm with a hanging cage and the remains of its tenant."""
+    n = "Gibbet"
+    k.box(n, STONE, (0, 0, 0.15), (0.5, 0.5, 0.3), 0.015)
+    k.cyl(n, IRON, (0, 0, 0.3), (0, 0, 3.4), 0.07, 8, 0.004)
+    k.cyl(n, IRON, (0, 0, 3.4), (0, 1.3, 3.4), 0.05, 8, 0.004)                   # arm
+    k.cyl(n, IRON, (0, 0.2, 3.1), (0, 1.0, 3.38), 0.03, 6, 0.002)                # brace
+    for i in range(6):                                                           # chain links
+        k.cyl(n, IRON, (0, 1.3, 3.35 - i * 0.12), (0, 1.3, 3.25 - i * 0.12), 0.018, 6, 0.0)
+    cz = 2.6
+    torus(k, n, IRON, (0, 1.3, cz), 0.28, 0.02)                                  # cage rings
+    torus(k, n, IRON, (0, 1.3, cz - 0.6), 0.3, 0.02)
+    torus(k, n, IRON, (0, 1.3, cz - 1.25), 0.26, 0.02)
+    for i in range(8):                                                           # bars
+        a = i / 8 * math.tau
+        k.cyl(n, IRON, (math.cos(a) * 0.28, 1.3 + math.sin(a) * 0.28, cz), (math.cos(a) * 0.26, 1.3 + math.sin(a) * 0.26, cz - 1.3), 0.012, 4, 0.0)
+    skull(k, n, (0, 1.3, cz - 0.25), 0.85, eyes=True, jaw_open=0.5)
+    bone(k, n, (-0.1, 1.2, cz - 1.1), (0.12, 1.35, cz - 0.55), 0.03)
+    bone(k, n, (0.08, 1.4, cz - 1.15), (-0.08, 1.25, cz - 0.6), 0.028)
+
+
 # ---------------------------------------------------------------- painting
 
 def paint(P, N_, part, edges, seed):
@@ -424,7 +486,8 @@ def main():
         os.makedirs(d, exist_ok=True)
         layout = {"SkeletonSit": (0, 0), "Bones": (1.5, 0), "Candles": (3, 0), "Tombstone": (4.5, 0),
                   "TombstoneTall": (6, 0), "Brazier": (7.5, 0), "Banner": (9, 0.5),
-                  "DeadTree": (1, -5), "GothicArch": (5, -5), "GothicLamp": (8.5, -4), "SpikeRow": (11, -2)}
+                  "DeadTree": (1, -5), "GothicArch": (5, -5), "GothicLamp": (8.5, -4), "SpikeRow": (11, -2),
+                  "Sarcophagus": (0, -10), "Pew": (3, -10), "Obelisk": (6, -10), "Gibbet": (9, -10)}
         for name, o in nodes.items():
             x, y = layout.get(name, (12, 0))
             o.location = (x, y, 0)

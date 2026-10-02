@@ -7,7 +7,7 @@
     "gravity": 0
   },
   "zone": {
-    "maxPlayers": 4,
+    "maxPlayers": 5,
     "maxPlayersHardCap": 8,
     "maxAliveZombies": 24,
     "emptyZoneTtlSec": 60,

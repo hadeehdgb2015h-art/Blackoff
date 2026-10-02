@@ -13,6 +13,7 @@ const T := 0.3          # wall thickness
 const H := 3.0          # wall height = floor height
 const FENCE_H := 2.4
 
+var _outdoor := false  ## while true, new boxes are tagged open-air (moonlight layer)
 var map_root: Node3D
 var geo: Node3D
 var markers: Node3D
@@ -30,11 +31,16 @@ func _initialize() -> void:
 	lights = _child(map_root, "Lights")
 	_environment()
 	_floors()
+	_wing_floors()
 	_walls()
+	_wing_walls()
 	_props()
+	_wing_props()
 	_markers()
 	_lights()
+	_wing_lights()
 	_fx()
+	_wing_fx()
 	var packed := PackedScene.new()
 	var err := packed.pack(map_root)
 	if err == OK:
@@ -69,7 +75,7 @@ func _floors() -> void:
 func _walls() -> void:
 	# Safe room (centre pieces + mirrored side walls)
 	_hwall("SafeN", 10, -5, 5, [])
-	_hwall("SafeS", 18, -5, 5, [])
+	_hwall("SafeS", 18, -5, 5, [[0.0, 2.5]])  # door to the old grounds (phase 10)
 	_mirror_v("SafeSide", -5, 10, 18, [[14.0, 2.0]])
 	# Corridors (west side, mirrored east)
 	_mirror_h("CorrS", 15, -14, -5, [])
@@ -218,7 +224,7 @@ func _prop(prop_name: String, pos: Vector3, yaw: float) -> void:
 
 
 func _markers() -> void:
-	var spawns := [Vector2(-1.5, 15.5), Vector2(1.5, 15.5), Vector2(-1.5, 17.0), Vector2(1.5, 17.0)]
+	var spawns := [Vector2(-1.5, 15.5), Vector2(1.5, 15.5), Vector2(-1.5, 17.0), Vector2(1.5, 17.0), Vector2(0.0, 13.8)]
 	for i in spawns.size():
 		var m := _marker("PlayerSpawn%d" % (i + 1), spawns[i], "map_player_spawn")
 		m.rotation.y = 0.0
@@ -227,6 +233,10 @@ func _markers() -> void:
 		["yard_ne", Vector2(10, -25.8), Vector2(10, -22.5)],
 		["lab_window", Vector2(-19.8, -2), Vector2(-16.5, -2)],
 		["storage_window", Vector2(19.8, -2), Vector2(16.5, -2)],
+		# the old grounds (phase 10): crypt and chapel gates, the catacomb mouth
+		["crypt_gate", Vector2(-31.5, 25.0), Vector2(-28.5, 25.0)],
+		["chapel_gate", Vector2(31.5, 25.0), Vector2(28.5, 25.0)],
+		["catacomb_gate", Vector2(0.0, 44.8), Vector2(0.0, 41.8)],
 	]
 	for e in entries:
 		var m := _marker("ZombieEntry_" + e[0], e[1], "map_zombie_entry")
@@ -252,6 +262,21 @@ func _markers() -> void:
 	box.set_meta("interact_id", "box_storage")
 	box.set_meta("kind", "box")
 	box.set_meta("radius", 1.9)
+	# wall-buys in the old grounds: SMG in the catacomb, shotgun in the chapel
+	var buy_smg := _marker("Buy_smg", Vector2(2.3, 36.0), "map_interact")
+	buy_smg.set_meta("interact_id", "buy_smg")
+	buy_smg.set_meta("kind", "weapon")
+	buy_smg.set_meta("item", "smg")
+	buy_smg.set_meta("radius", 1.8)
+	_box("BuyPanel_smg", Vector3(2.75, 1.0, 35.2), Vector3(2.85, 1.9, 36.8), "panel_buy", "map_visual")
+	_label("BuyLabel_smg", Vector3(2.7, 2.15, 36.0), "VX-9 RIPPER", -PI / 2)
+	var buy_sg := _marker("Buy_shotgun", Vector2(23.0, 19.3), "map_interact")
+	buy_sg.set_meta("interact_id", "buy_shotgun")
+	buy_sg.set_meta("kind", "weapon")
+	buy_sg.set_meta("item", "shotgun")
+	buy_sg.set_meta("radius", 1.8)
+	_box("BuyPanel_shotgun", Vector3(22.2, 1.0, SOUTH + 0.16), Vector3(23.8, 1.9, SOUTH + 0.26), "panel_buy", "map_visual")
+	_label("BuyLabel_shotgun", Vector3(23.0, 2.15, SOUTH + 0.3), "KS-12 BREACHER", 0.0)
 	# Perk machines (phase 8): the visible machine is spawned by the game
 	# (PerkMachineView); the hidden box only blocks movement.
 	# yaw turns the machine's front (local -Z) towards the room: -PI/2 faces +X.
@@ -400,7 +425,7 @@ func _fx() -> void:
 	_fxm("backdrop", Vector3(0, -2.0, 0), Vector3.ZERO, {"node": "Mountains"})
 	_fxm("backdrop", Vector3(-62, -3.0, -178), Vector3(0, PI + 0.25, 0), {"node": "CastleHill"})
 	_fxm("backdrop", Vector3(80, -4.0, -195), Vector3(0, PI - 0.35, 0), {"node": "GiantHand"})
-	_fxm("forest", Vector3.ZERO, Vector3.ZERO, {"count": 320, "r_min": 40.0, "r_max": 145.0, "seed": 5})
+	_fxm("forest", Vector3.ZERO, Vector3.ZERO, {"count": 340, "r_min": 54.0, "r_max": 150.0, "seed": 5})
 	_fxm("moon", MOON_DIR.normalized() * 450.0, Vector3.ZERO, {"size": 110.0, "energy": 1.35})
 	_fxm("storm", Vector3.ZERO, Vector3.ZERO, {"radius": 230.0})
 	# light shafts under the ceiling lamps
@@ -432,6 +457,9 @@ func _hwall(name: String, z: float, x0: float, x1: float, gaps: Array, h := H, m
 	if h == H and mat == "wall":
 		for g in gaps:
 			_prop("DoorFrame25" if g[1] > 2.2 else "DoorFrame2", Vector3(g[0], 0, z), 0.0)
+	elif mat == "stone_wall":
+		for g in gaps:
+			_prop("GothicArch", Vector3(g[0], 0, z), 0.0)
 
 
 func _vwall(name: String, x: float, z0: float, z1: float, gaps: Array, h := H, mat := "wall") -> void:
@@ -441,13 +469,16 @@ func _vwall(name: String, x: float, z0: float, z1: float, gaps: Array, h := H, m
 	if h == H and mat == "wall":
 		for g in gaps:
 			_prop("DoorFrame25" if g[1] > 2.2 else "DoorFrame2", Vector3(x, 0, g[0]), PI / 2)
+	elif mat == "stone_wall":
+		for g in gaps:
+			_prop("GothicArch", Vector3(x, 0, g[0]), PI / 2)
 
 
 ## Visual wall dressing (no collision): baseboard, cornice and pillars on both
 ## faces of interior walls; posts on fences. `vertical` = wall runs along Z.
 func _dress(a: float, b: float, at: float, vertical: bool, h: float, mat: String) -> void:
 	var boxes := []
-	if mat == "wall" and h == H:
+	if mat in ["wall", "stone_wall"] and h == H:
 		boxes.append([a, b, 0.0, 0.22, T / 2 + 0.03, "trim"])
 		boxes.append([a, b, H - 0.18, H, T / 2 + 0.05, "trim"])
 		var n := int((b - a) / 3.0)
@@ -501,8 +532,10 @@ func _split(a: float, b: float, gaps: Array) -> Array:
 	return segs
 
 
-func _floor(name: String, r: Rect2, mat: String) -> void:
-	_box("Floor_" + name, Vector3(r.position.x, -0.2, r.position.y), Vector3(r.end.x, 0, r.end.y), mat, "map_floor")
+func _floor(name: String, r: Rect2, mat: String, outdoor := false) -> void:
+	var f := _box("Floor_" + name, Vector3(r.position.x, -0.2, r.position.y), Vector3(r.end.x, 0, r.end.y), mat, "map_floor")
+	if outdoor:
+		f.set_meta("outdoor", true)
 
 
 func _box(name: String, mn: Vector3, mx: Vector3, mat: String, group: String) -> MeshInstance3D:
@@ -514,6 +547,8 @@ func _box(name: String, mn: Vector3, mx: Vector3, mat: String, group: String) ->
 	mi.material_override = mats[mat]
 	mi.position = (mn + mx) / 2.0
 	mi.add_to_group(group, true)
+	if _outdoor:
+		mi.set_meta("outdoor", true)  # moonlit layer (MapBatcher)
 	_add(geo, mi)
 	return mi
 
@@ -585,6 +620,10 @@ func _make_materials() -> void:
 		"hazard": [Color(1, 1, 1), hazard, 0.5, 0.0],
 		"ammo": [Color(0.25, 0.32, 0.18), grime, 1.0, 0.0],
 		"panel_buy": [Color(0.9, 0.7, 0.2), null, 1.0, 0.0],
+		# the old grounds (phase 10): dressed stone, flagstones, crypt floor
+		"stone_wall": [Color(1, 1, 1), "stone_blocks", 0.5, 0.0],
+		"floor_cloister": [Color(0.78, 0.78, 0.84), "floor_tiles", 0.3, 0.0],
+		"floor_crypt": [Color(0.62, 0.6, 0.66), "stone_blocks", 0.33, 0.0],
 	}
 	for k in defs:
 		var d: Array = defs[k]
@@ -609,3 +648,162 @@ func _make_materials() -> void:
 			m.emission = Color(1.0, 0.65, 0.15)
 			m.emission_energy_multiplier = 1.4
 		mats[k] = m
+
+
+# ---------------------------------------------------------------- the old grounds (phase 10)
+# South of the safe room: a walled graveyard cloister, a crypt to the west, a
+# chapel to the east and a catacomb tunnel to a southern gate. Doubles the
+# playable area; three more zombie entries; two wall-buys.
+
+const SOUTH := 18.3   # north edge of the cloister
+const S_END := 32.3   # south edge of the cloister, crypt and chapel
+const CAT_END := 43.3 # south end of the catacomb
+
+
+func _wing_floors() -> void:
+	# the floor starts at the safe room's wall line, so the door strip is walkable
+	_floor("Cloister", Rect2(-16, 18.0, 32, S_END - 18.0), "floor_cloister", true)
+	for f in [["Crypt", Rect2(-30, SOUTH, 14, S_END - SOUTH)], ["Chapel", Rect2(16, SOUTH, 14, S_END - SOUTH)],
+			["Catacomb", Rect2(-3, S_END, 6, CAT_END - S_END)]]:
+		_floor(f[0], f[1], "floor_crypt")
+		_box("Ceiling_" + f[0], Vector3(f[1].position.x, H, f[1].position.y), Vector3(f[1].end.x, H + 0.2, f[1].end.y), "stone_wall", "map_visual")
+	_outdoor = true
+	_floor("PadCrypt", Rect2(-33, 23.5, 3, 3), "ground_yard", true)
+	_floor("PadChapel", Rect2(30, 23.5, 3, 3), "ground_yard", true)
+	_floor("PadCatacomb", Rect2(-1.5, CAT_END, 3, 3), "ground_yard", true)
+	_outdoor = false
+
+
+func _wing_walls() -> void:
+	_outdoor = true
+	# cloister: iron fence beside the safe room, stone walls with arched doors
+	_mirror_h("CloisterN", SOUTH, -16, -5, [], FENCE_H, "fence")
+	_mirror_v("CloisterSide", -16, SOUTH, S_END, [[25.3, 2.5]], H, "stone_wall")
+	_hwall("CloisterS", S_END, -16, 16, [[0.0, 2.5]], H, "stone_wall")
+	_outdoor = false
+	# crypt (west) and chapel (east), mirrored, each with a gate for the dead
+	_mirror_h("WingN", SOUTH, -30, -16, [], H, "stone_wall")
+	_mirror_h("WingS", S_END, -30, -16, [], H, "stone_wall")
+	_mirror_v("WingOuter", -30, SOUTH, S_END, [[25.0, 2.5]], H, "stone_wall")
+	# catacomb tunnel to the southern gate
+	_mirror_v("CatacombSide", -3, S_END, CAT_END, [], H, "stone_wall")
+	_hwall("CatacombS", CAT_END, -3, 3, [[0.0, 2.5]], H, "stone_wall")
+	# entry pads (fenced so nothing walks off the map)
+	_outdoor = true
+	_mirror_h("PadWingN", 23.5, -33, -30, [], FENCE_H, "fence")
+	_mirror_h("PadWingS", 26.5, -33, -30, [], FENCE_H, "fence")
+	_mirror_v("PadWingW", -33, 23.5, 26.5, [], FENCE_H, "fence")
+	_mirror_v("PadCatacomb", -1.5, CAT_END, CAT_END + 3, [], FENCE_H, "fence")
+	_hwall("PadCatacombS", CAT_END + 3, -1.5, 1.5, [], FENCE_H, "fence")
+	_outdoor = false
+
+
+func _wing_props() -> void:
+	var items := [
+		# cloister: the monument, lamps, dead trees, braziers, a gibbet, grave rows
+		["Obelisk", Vector3(0, 0, 25.3), 0.0, Vector2(1.3, 1.3), 3.8],
+		["GothicLamp", Vector3(-12.0, 0, 20.5), 0.0, Vector2(0.45, 0.45), 4.0],
+		["GothicLamp", Vector3(12.0, 0, 30.1), 0.0, Vector2(0.45, 0.45), 4.0],
+		["DeadTree", Vector3(-14.3, 0, 30.7), 1.1, Vector2(0.6, 0.6), 3.0],
+		["DeadTree", Vector3(14.2, 0, 20.2), 2.9, Vector2(0.6, 0.6), 3.0],
+		["Brazier", Vector3(-3.4, 0, 20.4), 0.5, Vector2(0.8, 0.8), 1.1],
+		["Brazier", Vector3(3.4, 0, 30.2), 1.7, Vector2(0.8, 0.8), 1.1],
+		["Gibbet", Vector3(10.6, 0, 23.6), -PI / 2, Vector2(0.5, 0.5), 3.5],
+		["SkeletonSit", Vector3(-15.4, 0, 21.2), PI / 2, Vector2(0.6, 0.9), 0.8],
+		["Bones", Vector3(-7.4, 0, 25.0), 0.9],
+		["Bones", Vector3(13.2, 0, 28.0), 2.3],
+		["Rubble", Vector3(6.0, 0, 19.6), 0.4],
+		["Candles", Vector3(-1.3, 0, 24.0), 0.0],
+		["Candles", Vector3(1.3, 0, 26.6), 1.0],
+		# crypt: sarcophagi against the long walls, candles on the lids, the forgotten
+		["Sarcophagus", Vector3(-27.0, 0, 20.6), 0.0, Vector2(2.3, 1.1), 1.0],
+		["Sarcophagus", Vector3(-23.0, 0, 20.6), 0.0, Vector2(2.3, 1.1), 1.0],
+		["Sarcophagus", Vector3(-19.0, 0, 20.6), 0.0, Vector2(2.3, 1.1), 1.0],
+		["Sarcophagus", Vector3(-27.0, 0, 30.0), PI, Vector2(2.3, 1.1), 1.0],
+		["Sarcophagus", Vector3(-23.0, 0, 30.0), PI, Vector2(2.3, 1.1), 1.0],
+		["Sarcophagus", Vector3(-19.0, 0, 30.0), PI, Vector2(2.3, 1.1), 1.0],
+		["Candles", Vector3(-23.0, 1.0, 20.6), 0.3],
+		["Candles", Vector3(-19.0, 1.0, 30.0), 1.4],
+		["Bones", Vector3(-25.0, 0, 25.3), 0.2],
+		["SkeletonSit", Vector3(-29.4, 0, 30.6), PI / 2, Vector2(0.6, 0.9), 0.8],
+		["Banner", Vector3(-23.0, 0.3, SOUTH + 0.2), 0.0],
+		# chapel: pews facing the altar, braziers, banners, the altar stone
+		["Pew", Vector3(19.5, 0, 21.6), -PI / 2, Vector2(0.5, 1.8), 0.9],
+		["Pew", Vector3(22.5, 0, 21.6), -PI / 2, Vector2(0.5, 1.8), 0.9],
+		["Pew", Vector3(25.5, 0, 21.6), -PI / 2, Vector2(0.5, 1.8), 0.9],
+		["Pew", Vector3(19.5, 0, 29.0), -PI / 2, Vector2(0.5, 1.8), 0.9],
+		["Pew", Vector3(22.5, 0, 29.0), -PI / 2, Vector2(0.5, 1.8), 0.9],
+		["Pew", Vector3(25.5, 0, 29.0), -PI / 2, Vector2(0.5, 1.8), 0.9],
+		["Sarcophagus", Vector3(28.6, 0, 29.6), PI / 2, Vector2(1.1, 2.3), 1.0],
+		["Brazier", Vector3(28.5, 0, 20.6), 0.3, Vector2(0.8, 0.8), 1.1],
+		["Candles", Vector3(28.6, 1.0, 29.6), 0.0],
+		["Banner", Vector3(29.6, 0.3, 21.5), -PI / 2],
+		["Banner", Vector3(29.6, 0.3, 28.5), -PI / 2],
+		["Candles", Vector3(17.0, 0, 31.6), 0.6],
+		# catacomb: the dead along the walls
+		["Bones", Vector3(-2.3, 0, 34.5), 0.7],
+		["Bones", Vector3(2.2, 0, 39.5), 2.6],
+		["SkeletonSit", Vector3(-2.4, 0, 41.5), -PI / 2, Vector2(0.6, 0.9), 0.8],
+		["Candles", Vector3(-2.4, 0, 37.0), 0.0],
+		["Candles", Vector3(2.4, 0, 42.0), 1.2],
+		["Rubble", Vector3(1.5, 0, 33.6), 1.9],
+	]
+	# two rows of graves either side of the monument
+	for i in 4:
+		var x := -11.0 + i * 1.7
+		items.append(["Tombstone", Vector3(x, 0, 22.0), 0.1 * i, Vector2(0.75, 0.35), 0.9])
+		items.append(["Tombstone", Vector3(x + 0.6, 0, 28.6), -0.1 * i, Vector2(0.75, 0.35), 0.9])
+		items.append(["Tombstone", Vector3(-x, 0, 22.0), PI + 0.1 * i, Vector2(0.75, 0.35), 0.9])
+		items.append(["Tombstone", Vector3(-x - 0.6, 0, 28.6), PI - 0.1 * i, Vector2(0.75, 0.35), 0.9])
+	items.append(["TombstoneTall", Vector3(-6.0, 0, 25.3), PI / 2, Vector2(0.75, 0.75), 1.9])
+	items.append(["TombstoneTall", Vector3(6.0, 0, 25.3), -PI / 2, Vector2(0.75, 0.75), 1.9])
+	for it in items:
+		_prop(it[0], it[1], it[2])
+		if it.size() >= 5:
+			var sz: Vector2 = it[3]
+			var c: Vector3 = it[1]
+			var blk := _box("Block_" + it[0], Vector3(c.x - sz.x / 2, 0, c.z - sz.y / 2), Vector3(c.x + sz.x / 2, it[4], c.z + sz.y / 2), "metal", "map_wall")
+			blk.visible = false
+	# spikes along the cloister fence beside the safe room
+	for x in range(-15, -5, 2):
+		_prop("SpikeRow", Vector3(x, FENCE_H, SOUTH), 0.0)
+		_prop("SpikeRow", Vector3(-x, FENCE_H, SOUTH), 0.0)
+
+
+func _wing_lights() -> void:
+	# cloister: pale lamp light and a cold fill, the moon does the rest
+	_omni("CloisterLampW", Vector3(-12.0, 3.3, 20.5), Color(0.62, 0.74, 1.0), 2.6, 13.0)
+	_omni("CloisterLampE", Vector3(12.0, 3.3, 30.1), Color(0.62, 0.74, 1.0), 2.6, 13.0)
+	_omni("CloisterFill", Vector3(0, 4.0, 25.3), Color(0.5, 0.55, 0.9), 1.4, 16.0)
+	_omni("Monument", Vector3(0, 3.0, 24.5), VIOLET, 1.0, 5.0, true)
+	# crypt: cold and violet
+	_omni("CryptLight", Vector3(-23.0, 2.6, 25.3), COOL, 1.1, 10.0)
+	_omni("CryptRift", Vector3(-23.0, 1.4, 25.3), VIOLET, 1.2, 6.0, true)
+	# chapel: warm firelight from the braziers (fx) plus an amber overhead
+	_prop("CeilingLamp", Vector3(23.0, H, 25.3), PI / 2)
+	_omni("ChapelLight", Vector3(23.0, 2.7, 25.3), AMBER, 1.4, 10.0)
+	# catacomb: dim, candle-lit
+	_omni("CatacombLight", Vector3(0, 2.4, 38.0), Color(0.75, 0.62, 0.5), 0.9, 8.0, true)
+
+
+func _wing_fx() -> void:
+	var floor_rot := Vector3(-PI / 2, 0, 0)
+	# cloister: ground mist, violet spores, brazier fire, candle light
+	_fxm("mist", Vector3(0, 0.18, 25.3), floor_rot, {"size": Vector2(32, 14), "color": Color(0.42, 0.3, 0.62, 0.3), "speed": 0.9})
+	_fxm("mist", Vector3(0, 0.55, 25.3), floor_rot, {"size": Vector2(32, 14), "color": Color(0.5, 0.36, 0.7, 0.14), "speed": 1.5})
+	_fxm("motes", Vector3(0, 2.2, 25.3), Vector3.ZERO, {"extents": Vector3(15.0, 2.0, 6.5), "amount": 50, "color": Color(0.8, 0.45, 1.0)})
+	for p in [Vector3(-3.4, 1.0, 20.4), Vector3(3.4, 1.0, 30.2), Vector3(28.5, 1.0, 20.6)]:
+		_fxm("fire", p, Vector3.ZERO, {"energy": 2.0, "range": 7.0})
+	for p in [Vector3(-1.3, 0.5, 24.0), Vector3(1.3, 0.5, 26.6), Vector3(-23.0, 1.5, 20.6), Vector3(-19.0, 1.5, 30.0),
+			Vector3(28.6, 1.5, 29.6), Vector3(17.0, 0.5, 31.6), Vector3(-2.4, 0.5, 37.0), Vector3(2.4, 0.5, 42.0)]:
+		_fxm("candle", p, Vector3.ZERO, {"energy": 0.8, "range": 3.2})
+	# crypt: a rift over the central aisle, veins on the walls, drifting dust
+	_fxm("rift", Vector3(-23.0, 2.5, 25.3), Vector3.ZERO, {"color": ARCANE})
+	_fxm("sigil", Vector3(-29.83, 1.3, 21.0), Vector3(0, PI / 2, 0), {"tex": "veins", "size": Vector2(2.2, 2.6), "color": ARCANE, "energy": 1.2, "pulse": 0.35})
+	_fxm("sigil", Vector3(-29.83, 1.3, 29.5), Vector3(0, PI / 2, 0), {"tex": "veins", "size": Vector2(2.2, 2.6), "color": ARCANE, "energy": 1.2, "pulse": 0.35})
+	_fxm("motes", Vector3(-23.0, 1.5, 25.3), Vector3.ZERO, {"extents": Vector3(6.5, 1.2, 6.5), "amount": 20, "color": Color(0.7, 0.5, 1.0)})
+	# chapel: warm dust and a light shaft under the lamp
+	_fxm("motes", Vector3(23.0, 1.5, 25.3), Vector3.ZERO, {"extents": Vector3(6.5, 1.2, 6.5), "amount": 16, "color": Color(1.0, 0.75, 0.45)})
+	_fxm("shaft", Vector3(23.0, H - 0.05, 25.3), Vector3.ZERO, {"color": AMBER, "energy": 0.14})
+	# catacomb: thin mist along the floor
+	_fxm("mist", Vector3(0, 0.2, 38.0), floor_rot, {"size": Vector2(6, 11), "color": Color(0.4, 0.32, 0.5, 0.25), "speed": 0.6})

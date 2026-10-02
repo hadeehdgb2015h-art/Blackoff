@@ -21,5 +21,12 @@
 
 Art props are `Marker3D` nodes in group `map_prop` (`prop` meta = mesh name in `env_props.glb`). Each one that blocks movement also gets a hidden wall AABB, so it is part of the exported collision. At runtime `MapDecor` instances the prop meshes, then `MapBatcher` merges all static meshes by (material, 12 m chunk), which gives about 120 draw calls and keeps each merged mesh under the 8-lights-per-object limit.
 
-## facility_01 (slice map)
-Safe room (spawn, ammo point) → two L-shaped corridors (west/east) → lab room (west, AR-7 wall-buy) and storage room (east) → outdoor yard. Four zombie entries: two yard gates, two room windows. Units are metres. North is −Z.
+## facility_01
+Safe room (5 spawns, ammo point, Ironhide machine) → two L-shaped corridors (west/east) → lab room (west, AR-7 wall-buy, Quickhand machine) and storage room (east, supply cache, Longstride machine) → outdoor yard (Switchblade machine). Units are metres. North is −Z.
+
+**The old grounds (phase 10)**, south of the safe room through a new door, double the playable area (bounds now 66 × 73 m):
+- **Cloister** (−16..16 × 18..32): a walled graveyard with grave rows, a black obelisk monument, dead trees, braziers, gothic lamps, a gibbet, ground mist and violet spores. Open air (moonlit layer, meta `outdoor`).
+- **Crypt** (west, −30..−16): sarcophagi along the walls, candles, a rift over the aisle, veins on the walls. Zombie gate on its west wall.
+- **Chapel** (east, 16..30): pews facing an altar stone, braziers, banners, the KS-12 shotgun wall-buy. Zombie gate on its east wall.
+- **Catacomb** (−3..3 × 32..43): a candle-lit tunnel to the southern gate, with the VX-9 SMG wall-buy.
+Seven zombie entries in all (two yard gates, two room windows, crypt gate, chapel gate, catacomb gate). Stone walls use the `stone_blocks` texture (`art/textures/build_textures.py`); doors in stone walls get a gothic arch. New props (`art/blender/build_dark_props.py`): Sarcophagus, Pew, Obelisk, Gibbet.

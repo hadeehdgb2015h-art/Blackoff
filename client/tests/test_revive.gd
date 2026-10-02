@@ -77,6 +77,7 @@ func test_dead_respawn_next_wave_and_game_over() -> void:
 	var rate := int(defs().constants.sim.tickRate)
 	for i in (int(defs().constants.player.downedBleedoutSec) + 1) * rate:
 		w.step()
+		w.zombies.clear()  # nobody attacks A meanwhile
 	eq(b.state, SimPlayer.State.DEAD, "bled out")
 	w.zombies.clear()
 	w.director.spawned = w.director.to_spawn

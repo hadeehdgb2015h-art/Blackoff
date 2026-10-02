@@ -8,6 +8,7 @@ extends RefCounted
 const GROUPS := ["map_wall", "map_floor", "map_visual"]
 const CHUNK := 12.0
 const OUTDOOR_Z := -6.2   ## meshes north of the building facade also get layer 2 (moonlight)
+                          ## (the generator tags other open-air meshes with meta "outdoor")
 
 
 static func batch(map_root: Node3D) -> int:
@@ -35,7 +36,7 @@ static func batch(map_root: Node3D) -> int:
 		for si in mi.mesh.get_surface_count():
 			var mat: Material = mi.material_override if mi.material_override else mi.mesh.surface_get_material(si)
 			var key := "%d|%d|%d" % [mat.get_instance_id() if mat else 0, cell.x, cell.y]
-			var outdoor := center.z < OUTDOOR_Z
+			var outdoor: bool = center.z < OUTDOOR_Z or bool(mi.get_meta("outdoor", false))
 			key += "|o" if outdoor else ""
 			if not tools.has(key):
 				var st := SurfaceTool.new()

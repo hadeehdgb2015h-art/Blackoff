@@ -54,7 +54,7 @@
       "spreadDeg": 5.5,
       "moveSpreadDeg": 7.0,
       "pellets": 8,
-      "price": 0,
+      "price": 1500,
       "ammoPrice": 500,
       "boxWeight": 3
     },
@@ -73,7 +73,7 @@
       "spreadDeg": 2.4,
       "moveSpreadDeg": 3.2,
       "pellets": 1,
-      "price": 0,
+      "price": 1500,
       "ammoPrice": 450,
       "boxWeight": 3
     },

@@ -14,7 +14,7 @@ describe("shared data", () => {
     expect(s.zombies.walker).toBeDefined();
     expect(s.zombies.runner).toBeDefined();
     expect(s.constants.sim.tickRate).toBe(20);
-    expect(s.maps.facility_01?.zombieEntries.length).toBe(4);
+    expect(s.maps.facility_01?.zombieEntries.length).toBe(7);
   });
 
   it("rejects an unknown zombie referenced by waves", () => {

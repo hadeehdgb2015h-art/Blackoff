@@ -90,7 +90,7 @@ func test_buy_rifle_and_ammo() -> void:
 	var p: SimPlayer = w.players[pid]
 	var buy: Dictionary = {}
 	for it in w.map.interactables:
-		if it.kind == "weapon":
+		if it.kind == "weapon" and it.item == "rifle":
 			buy = it
 	p.pos = buy.pos
 	var press := PlayerIntent.new()
