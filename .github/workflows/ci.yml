@@ -26,6 +26,10 @@ jobs:
       - run: npm run typecheck
       - run: npm test
       - run: npm run build
+      - name: Golden contract file is up to date (server ↔ client)
+        run: npm run gen:golden && git diff --exit-code -- ../shared/tests
+      - name: Load test (16 bots, in-process server, tick budget 2 ms)
+        run: npm run loadtest -- --local --bots 16 --seconds 30 --max-tick-ms 2
 
   client-web:
     runs-on: ubuntu-24.04

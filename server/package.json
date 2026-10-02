@@ -11,7 +11,9 @@
     "start": "node dist/index.js",
     "dev": "tsx watch src/index.ts",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "test": "vitest run"
+    "test": "vitest run",
+    "gen:golden": "tsx tools/genGolden.ts",
+    "loadtest": "tsx tools/loadtest.ts"
   },
   "dependencies": {
     "ws": "^8.22.0",

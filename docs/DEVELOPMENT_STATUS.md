@@ -4,13 +4,14 @@ Read this first in a new session. Then read `docs/TECHNICAL_ARCHITECTURE.md`, `d
 
 ## Current phase
 
-**Phase 1 (local client, feel test): done, waiting for owner feedback and approval.** Do not start phase 2 until the owner approves.
+**Phase 2 (authoritative server): done.** The owner approved the art and asked to continue with the next step. Phase 3 (client sync) is next. Online play can only be seen on the phone once the server is deployed (phase 4 needs the owner's server details).
 
 | Phase | State |
 |---|---|
 | 0 Foundation | done (owner tested: 60 FPS on their phone) |
-| 1 Local client | done, waiting for owner test |
-| 2 Authoritative server | not started |
+| 1 Local client | done (owner tested: 60–70 FPS) |
+| 2 Authoritative server | done (`docs/systems/server.md`) |
+| 3 Sync | next |
 
 ## Live preview
 
@@ -22,15 +23,15 @@ URL flags: `?autostart=1` (skip menu), `?bot=1` (test bot plays), `?debug=1` (ex
 | Area | State |
 |---|---|
 | Map | `facility_01` (art stage 3: textured, prop-dressed, bright with a violet dark-fantasy tint): safe room (spawn, ammo), 2 corridors, lab (AR-7 wall-buy), storage, yard, 4 zombie entries. Pipeline: generator → scene → `shared/maps/facility_01.json` (`docs/systems/maps.md`). |
-| Sim | `client/scripts/sim/`: authoritative rules at 20 Hz (movement, weapons, zombies, waves, economy, downed → game over). Server phase 2 must mirror it (`docs/systems/simulation.md`). |
+| Sim | `client/scripts/sim/`: authoritative rules at 20 Hz (movement, weapons, zombies, waves, economy, downed → game over). `server/src/sim/` mirrors it; `shared/tests/golden.json` pins the contract (`docs/systems/simulation.md`). |
 | Presentation | first-person rig, procedural zombie and weapon placeholders, tracers and impacts, generated SFX, map mesh batching, quality tiers (`docs/systems/presentation.md`). |
 | Input / UI | multi-touch stick, aim, fire-aim, reload, swap, use, pause; keyboard/mouse; HUD; pause; settings; game over; main menu (`docs/systems/input-and-hud.md`). |
-| Server | phase 0 skeleton plus map schema validation (loads `shared/maps`). |
-| Tests / CI | 26 headless client tests, bot playthrough, 2-minute headless game run, browser bot run, browser multi-touch run, server tests, map sync check, Pages deploy and verification (`docs/systems/testing.md`). |
+| Server | phase 2: authoritative TypeScript sim (port of the client rules), binary codec from `protocol.json`, Telegram initData HMAC, sessions with validation, rate limits and resume, zones with quick play, snapshots with interest radius, `/healthz` stats, load-test bots (`docs/systems/server.md`). |
+| Tests / CI | 30 headless client tests (incl. golden contract), bot playthrough, 2-minute headless game run, browser bot and multi-touch runs, 31 server tests (sim, codec, auth, WebSocket flow, perf), golden freshness check, 16-bot load test with a 2 ms tick budget, map sync check, Pages deploy and verification (`docs/systems/testing.md`). |
 
 ## Art stage (in progress, owner request)
 
-The owner asked for original "Black Ops-like" art built by us in stages: (1) zombies + supply cache ✅, (2) weapons + first-person hands ✅, (3) facility props, textures, lighting and dark-fantasy atmosphere ✅ (reworked after owner feedback), (4) soldier character. The pipeline is in `docs/systems/art-pipeline.md`. Phase 2 (server) waits until the art stages are done, unless the owner says otherwise.
+The owner asked for original "Black Ops-like" art built by us in stages: (1) zombies + supply cache ✅, (2) weapons + first-person hands ✅, (3) facility props, textures, lighting and dark-fantasy atmosphere ✅ (reworked after owner feedback), (4) soldier character. The pipeline is in `docs/systems/art-pipeline.md`. Stage 4 (soldier) is folded into phase 3, where other players first appear on screen.
 Also added on request: the supply cache (random weapon box) and two box-only weapons (KS-12 shotgun, VX-9 SMG).
 
 ## Owner feedback log
@@ -69,8 +70,8 @@ python3 tools/gen_sfx.py; python3 tools/gen_textures.py   # regenerate placehold
 
 - Phase 1 feedback from the phone: control feel, sensitivity, difficulty, FPS.
 - CC0 asset uploads to `assets/incoming/` (list given in the phase 1 report).
-- Before phase 2/4: server SSH secrets (`DEPLOY_HOST`, `DEPLOY_USER`, `DEPLOY_SSH_KEY`, optional `DEPLOY_PORT`), the domain or subdomain and path, and a free local port. Later: Telegram bot token and a Postgres database.
+- Before phase 4 (deploy): server SSH secrets (`DEPLOY_HOST`, `DEPLOY_USER`, `DEPLOY_SSH_KEY`, optional `DEPLOY_PORT`), the domain or subdomain and path, and a free local port. Telegram bot token (identity check is ready on the server). Postgres connection.
 
-## Next steps (phase 2, after approval)
+## Next steps (phase 3)
 
-See `docs/TODO.md` → Phase 2. Start with the TypeScript port of `client/scripts/sim`, using `shared/` data, plus cross-language golden tests on fire rate, wave formulas and hit shapes.
+See `docs/TODO.md` → Phase 3. Build the client `Net` autoload (WebSocket + `NetCodec`) and a `NetWorld` that exposes the SimWorld read API from snapshots and events, so the views stay unchanged. Then add interpolation, local prediction with reconciliation against `ackSeq`, and the soldier model. To try it end to end locally, run the server with `ALLOW_DEV_AUTH=1` and use `?server=ws://…` (to be added).

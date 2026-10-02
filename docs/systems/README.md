@@ -11,5 +11,6 @@ One short document per major system: purpose, data, main scripts, tests.
 | Testing (headless, bot, browser) | [testing.md](testing.md) |
 | Art pipeline (Blender scripts → GLB) | [art-pipeline.md](art-pipeline.md) |
 | Supply cache (random weapon box) | [simulation.md](simulation.md#supply-cache) |
+| Authoritative server (sessions, zones, protocol, auth, load tests) | [server.md](server.md) |
 
-Planned: `netcode.md` (phase 2–3), `auth.md`, `deploy.md` (phase 4), `revive.md` (phase 5), `anticheat.md` (phase 6).
+Planned: `netcode.md` (client sync, phase 3), `deploy.md` (phase 4), `revive.md` (phase 5), `anticheat.md` (phase 6).

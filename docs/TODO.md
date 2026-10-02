@@ -12,14 +12,19 @@
 - [ ] Baked lighting (LightmapGI needs a GPU; try in CI with Xvfb/llvmpipe or in the editor later)
 - [ ] Arabic UI localisation (needs an Arabic font, e.g. Noto Sans Arabic OFL, which can be fetched from GitHub)
 
-## Phase 2: authoritative server
-- [ ] Binary codec generated from `protocol.json` (TS + GDScript) with round-trip tests
-- [ ] Zones, quick play matchmaking, zone lifecycle
-- [ ] Server sim: 2D + floor movement, navmesh pathing, capsule/head hitscan, waves, economy
-- [ ] Validation of every client action; bot client simulator for load tests
+## Phase 2: authoritative server ✅ done
+- [x] Binary codec interpreted from `protocol.json` (TS + GDScript), golden vectors checked on both sides
+- [x] Zones, quick play matchmaking, zone lifecycle, drift-corrected 20 Hz loop, reconnect grace + resume token
+- [x] Server sim: TypeScript port (movement, grid A*, body/head hitscan, waves, economy, supply cache)
+- [x] Telegram initData HMAC validation (dev auth only outside production)
+- [x] Validation of every client action, rate limits; load-test bots; perf budget in CI
+- [ ] Multiple floors (portals between floors): the map has one floor; add when a map needs stairs
+- [ ] Lag compensation (rewind targets to the client's view time, capped 200 ms): phase 3, once clients interpolate
 
 ## Phase 3: sync
-- [ ] Interpolation buffer, local prediction + reconciliation, delta snapshots, interest management, reconnect with resume token
+- [ ] Client `Net` autoload (WebSocket + NetCodec), online mode in the game scene (NetWorld with the SimWorld read API)
+- [ ] Interpolation buffer, local prediction + reconciliation against `ackSeq`, delta snapshots
+- [ ] Soldier character model for other players (art stage 4)
 
 ## Phase 4: Telegram, DB, deploy
 - [ ] initData HMAC validation, Postgres profiles + migrations, pm2 + nginx deploy via Actions, manual deploy script
