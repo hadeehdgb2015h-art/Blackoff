@@ -96,6 +96,15 @@ if (matchMedia('(pointer: coarse)').matches) window.BlackoffTG._wantFs = true;
 <script src="$GODOT_URL"></script>
 <script>
 const GODOT_CONFIG = $GODOT_CONFIG;
+// Cache busting: every build loads its data pack under a new URL, so phones and
+// Telegram never keep an old game after an update (export_web.sh fills the id).
+window.BLACKOFF_BUILD = '__BLACKOFF_BUILD__';
+(function () {
+  const pck = GODOT_CONFIG.executable + '.pck';
+  const busted = pck + '?v=' + window.BLACKOFF_BUILD;
+  GODOT_CONFIG.mainPack = busted;
+  if (GODOT_CONFIG.fileSizes && GODOT_CONFIG.fileSizes[pck]) GODOT_CONFIG.fileSizes[busted] = GODOT_CONFIG.fileSizes[pck];
+})();
 const GODOT_THREADS_ENABLED = $GODOT_THREADS_ENABLED;
 const engine = new Engine(GODOT_CONFIG);
 

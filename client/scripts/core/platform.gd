@@ -37,6 +37,14 @@ func query_param(key: String) -> String:
 	return str(v) if v != null else ""
 
 
+## Build id injected by tools/export_web.sh (web only), shown in the menu.
+func build_id() -> String:
+	if not is_web:
+		return "dev"
+	var v: Variant = _js("window.BLACKOFF_BUILD || ''")
+	return str(v) if v != null else ""
+
+
 func request_fullscreen() -> void:
 	if is_web:
 		_js("window.BlackoffTG && window.BlackoffTG.enterFullscreen()")

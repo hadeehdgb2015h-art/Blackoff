@@ -38,8 +38,8 @@ func _ready() -> void:
 	col.add_child(UiTheme.button("SETTINGS", _settings))
 	col.add_child(UiTheme.button("DIAGNOSTICS", func(): get_tree().change_scene_to_file("res://scenes/boot/boot.tscn")))
 
-	var ver := UiTheme.label("v%s  ·  Godot %s" % [ProjectSettings.get_setting("application/config/version"),
-		Engine.get_version_info().string], 16, UiTheme.MUTED)
+	var ver := UiTheme.label("v%s  ·  build %s" % [ProjectSettings.get_setting("application/config/version"),
+		Platform.build_id()], 18, UiTheme.MUTED)
 	ver.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_RIGHT)
 	ver.offset_left = -420
 	ver.offset_top = -40
