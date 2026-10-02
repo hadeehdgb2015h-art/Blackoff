@@ -13,7 +13,11 @@
 | `zone/zoneManager.ts` | quick-play matchmaking, the fixed-rate tick loop, zone lifecycle, tick stats |
 | `app.ts` | HTTP `/healthz` (uptime, connections, store, zones, players, zombies, tick ms) and the `/ws` endpoint |
 | `db/profileStore.ts`, `db/pgStore.ts` | player profiles: memory store, or Postgres with in-code migrations. Each player's match result (kills, headshots, wave, seconds) is written when they leave a zone; the session then gets a `profile` message. `welcome` carries games, kills and best wave |
+| `anticheat.ts` | statistical flags at the end of a zone (hit rate, head-shot rate, kills per minute over `constants.anticheat` thresholds); logged with the account, counted as `suspicion` in the profile, never an automatic ban |
 | `tools/bundle.mjs` | one-file deploy bundle (`npm run bundle` → `dist-bundle/server.mjs`); see `docs/systems/deploy.md` |
+
+## Weekly hunt (TON points, phase 11)
+Every kill in an online zone earns `TON_MICRO_PER_KILL` points (millionths of a TON, default 1000 = 0.001). The zone reports each member's kills, shots and hits when they leave; the hub turns that into TON points and anti-cheat flags and writes the profile plus a `weekly_scores` row (ISO week, Monday 00:00 UTC). `welcome`/`profile` carry `tonMicro`, `weekKills`, `weekRank`, `tonPerKill`; the `leaderboard` request answers with the week's top 10 and the player's standing. The owner reads `/admin/leaderboard?token=ADMIN_TOKEN` (account ids such as `tg:12345`, to pay the prize by hand) and `/admin/suspects?token=…` before paying. Nothing is paid automatically and the client never decides a number.
 
 ## Connection flow
 1. `hello {protocolVersion, initData, resumeToken}`. A wrong version gets `error.badVersion` and the socket closes.

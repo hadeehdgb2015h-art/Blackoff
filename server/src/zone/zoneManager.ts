@@ -7,8 +7,8 @@ import type { Codec } from "../net/codec.js";
 import type { SharedData } from "../shared/loadShared.js";
 import { ZoneState } from "../sim/simWorld.js";
 import { log } from "../log.js";
-import type { MatchResult, MatchSummary } from "../db/profileStore.js";
-import { Zone, type Member, type ZoneClient } from "./zone.js";
+import type { MatchSummary } from "../db/profileStore.js";
+import { Zone, type Member, type ZoneClient, type ZoneResult } from "./zone.js";
 
 export const GAME_OVER_LINGER_MS = 10_000;
 
@@ -22,7 +22,7 @@ export interface ZoneStats {
 
 /** Receives finished player results and match records (the SessionHub). */
 export interface ZoneSink {
-  onResult(r: MatchResult): void;
+  onResult(r: ZoneResult): void;
   onMatch(s: MatchSummary): void;
 }
 

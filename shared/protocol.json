@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "protocolVersion": 4,
+  "protocolVersion": 5,
   "endianness": "little",
   "frame": "u8 messageId followed by fields in declared order; one message per WebSocket binary frame. Decoders reject unknown ids, short frames and trailing bytes.",
   "primitives": {
@@ -186,6 +186,24 @@
         "revives",
         "u8"
       ]
+    ],
+    "leaderboardEntry": [
+      [
+        "rank",
+        "u8"
+      ],
+      [
+        "name",
+        "str8"
+      ],
+      [
+        "kills",
+        "u32"
+      ],
+      [
+        "tonMicro",
+        "u32"
+      ]
     ]
   },
   "messages": {
@@ -261,6 +279,10 @@
       "leave": {
         "id": 6,
         "fields": []
+      },
+      "leaderboard": {
+        "id": 7,
+        "fields": []
       }
     },
     "S2C": {
@@ -294,6 +316,22 @@
           [
             "bestWave",
             "u16"
+          ],
+          [
+            "tonMicro",
+            "u32"
+          ],
+          [
+            "weekKills",
+            "u32"
+          ],
+          [
+            "weekRank",
+            "u16"
+          ],
+          [
+            "tonPerKill",
+            "u32"
           ]
         ]
       },
@@ -507,6 +545,22 @@
           [
             "bestWave",
             "u16"
+          ],
+          [
+            "tonMicro",
+            "u32"
+          ],
+          [
+            "weekKills",
+            "u32"
+          ],
+          [
+            "weekRank",
+            "u16"
+          ],
+          [
+            "tonPerKill",
+            "u32"
           ]
         ]
       },
@@ -520,6 +574,35 @@
           [
             "players",
             "array8:scoreEntry"
+          ]
+        ]
+      },
+      "leaderboard": {
+        "id": 75,
+        "fields": [
+          [
+            "week",
+            "str8"
+          ],
+          [
+            "prize",
+            "str8"
+          ],
+          [
+            "entries",
+            "array8:leaderboardEntry"
+          ],
+          [
+            "myRank",
+            "u16"
+          ],
+          [
+            "myKills",
+            "u32"
+          ],
+          [
+            "myTonMicro",
+            "u32"
           ]
         ]
       }
@@ -570,5 +653,6 @@
     "instaKill": "seconds left (0 = off)",
     "doublePoints": "seconds left",
     "fireSale": "seconds left"
-  }
+  },
+  "_tonNote": "tonMicro = TON points in millionths (1000 = 0.001 TON). Earned per kill in online zones only; the server owns every number. Prizes are paid by the owner by hand from the weekly leaderboard."
 }

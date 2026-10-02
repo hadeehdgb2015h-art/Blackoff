@@ -47,7 +47,7 @@
     "maxLevel": 100
   },
   "net": {
-    "protocolVersion": 4,
+    "protocolVersion": 5,
     "maxMessageBytes": 4096,
     "interestRadius": 45,
     "reconnectGraceSec": 30,
@@ -58,7 +58,12 @@
   "anticheat": {
     "speedToleranceFactor": 1.25,
     "fireRateToleranceMs": 15,
-    "logOnly": true
+    "logOnly": true,
+    "_comment": "Statistical flags computed per player at the end of each zone (server only): rates above these with at least minShotsForRates shots are logged and counted as suspicion.",
+    "minShotsForRates": 40,
+    "maxHeadshotRate": 0.85,
+    "maxHitRate": 0.98,
+    "maxKillsPerMin": 70
   },
   "maps": {
     "default": "facility_01",

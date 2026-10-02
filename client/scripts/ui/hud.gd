@@ -35,6 +35,10 @@ var _revive_bar: ColorRect
 var _revive_label: Label
 var _boosts: Label
 var _perks: Label
+var _ton: Label
+var _ton_pop: Label
+var _ton_pop_t: float = 0.0
+var _ton_game: int = 0   ## TON points (millionths) earned this game (display only; the server owns the real number)
 
 var _banner_t: float = 0.0
 var _toast_t: float = 0.0
@@ -164,6 +168,8 @@ func _ready() -> void:
 	# Credits (top-right, left of the pause button)
 	_credits = _right_label(28, UiTheme.GOLD, 24, 100)
 	_credit_pop = _right_label(22, UiTheme.GOLD, 62, 100)
+	_ton = _right_label(18, Color(0.55, 0.85, 1.0), 96, 100)
+	_ton_pop = _right_label(18, Color(0.55, 0.85, 1.0), 122, 100)
 
 	# Ammo (right, above the fire button)
 	_ammo = _right_label(40, UiTheme.TEXT, 0, 40)
@@ -333,6 +339,11 @@ func on_event(e: Dictionary, local_pid: int) -> void:
 			if e.pid == local_pid:
 				_cross.hit_t = 0.18
 				_cross.hit_kill = true
+				if Net.ton_per_kill > 0 and Net.online_requested:
+					_ton_game += Net.ton_per_kill
+					_ton_pop.text = "+%.3f TON" % (Net.ton_per_kill / 1000000.0)
+					_ton_pop_t = 1.2
+					_ton.text = "TON %.3f" % (_ton_game / 1000000.0)
 		"player_damaged":
 			if e.pid == local_pid:
 				_damage = minf(1.0, _damage + float(e.amount) / 35.0)
@@ -372,6 +383,8 @@ func set_markers(items: Array) -> void:
 
 func show_game_over(wave: int, p: SimPlayer, scores: Array = []) -> void:
 	_go_stats.text = "Reached wave %d" % wave
+	if _ton_game > 0:
+		_go_stats.text += "\nTON earned this game: %.3f  (credited to your weekly hunt)" % (_ton_game / 1000000.0)
 	for c in _go_table.get_children():
 		c.queue_free()
 	if scores.is_empty():
@@ -408,6 +421,11 @@ func _tick(delta: float) -> void:
 		_credit_pop.modulate.a = clampf(_pop_t / 0.4, 0.0, 1.0)
 	else:
 		_credit_pop.text = ""
+	if _ton_pop_t > 0.0:
+		_ton_pop_t -= delta
+		_ton_pop.modulate.a = clampf(_ton_pop_t / 0.5, 0.0, 1.0)
+	else:
+		_ton_pop.text = ""
 
 
 func _show_banner(text: String) -> void:

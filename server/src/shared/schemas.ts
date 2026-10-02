@@ -30,7 +30,10 @@ export const ConstantsSchema = z.object({
     protocolVersion: z.number().int().positive(), maxMessageBytes: z.number().int().positive(), interestRadius: pos,
     reconnectGraceSec: pos, clientInterpDelayMs: pos, inputRate: pos, maxInputsPerSecond: pos,
   }),
-  anticheat: z.object({ speedToleranceFactor: num.min(1), fireRateToleranceMs: pos, logOnly: z.boolean() }),
+  anticheat: z.object({
+    speedToleranceFactor: num.min(1), fireRateToleranceMs: pos, logOnly: z.boolean(),
+    minShotsForRates: z.number().int().nonnegative(), maxHeadshotRate: num.min(0).max(1), maxHitRate: num.min(0).max(1), maxKillsPerMin: pos,
+  }),
   powerups: z.object({
     dropChance: num.min(0).max(1), minSecondsBetween: pos, lifetimeSec: num.positive(), pickupRadius: num.positive(),
     maxOnGround: z.number().int().positive(),

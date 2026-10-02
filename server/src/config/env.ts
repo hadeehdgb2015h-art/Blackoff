@@ -22,6 +22,12 @@ const EnvSchema = z.object({
     .default("0")
     .transform((v) => v === "1" || v === "true"),
   LOG_LEVEL: z.enum(["debug", "info", "warn", "error"]).default("info"),
+  /** TON points per zombie kill, in millionths of a TON (1000 = 0.001 TON). 0 disables. */
+  TON_MICRO_PER_KILL: z.coerce.number().int().nonnegative().default(1000),
+  /** Shown on the weekly leaderboard, e.g. "1 TON for the week's top hunter". */
+  TON_PRIZE_TEXT: z.string().max(200).default(""),
+  /** Protects /admin/* (leaderboard with account ids, suspects). Unset = endpoints off. */
+  ADMIN_TOKEN: z.string().optional(),
 });
 
 export type Env = z.infer<typeof EnvSchema>;

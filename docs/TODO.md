@@ -53,7 +53,10 @@
 ## Phase 10: map ×2 + 5 players per zone ✅ done
 - [x] The old grounds: graveyard cloister, crypt, chapel, catacomb; 3 more zombie gates; SMG and shotgun wall-buys; stone texture; 4 new props
 - [x] `zone.maxPlayers` 5, a fifth spawn
-## Phase 11: TON points per kill (server-side, env-configurable), weekly leaderboard, anti-cheat logging
+## Phase 11: TON points, weekly hunt, anti-cheat ✅ done
+- [x] TON points per kill (`TON_MICRO_PER_KILL`, server-side), in profile and weekly scores (Postgres + memory)
+- [x] Weekly leaderboard in the menu, standing in the profile card, HUD pops; `/admin/leaderboard` and `/admin/suspects`
+- [x] Anti-cheat flags (hit rate, head-shot rate, kills per minute) logged and counted; no automatic bans
 ## Phase 12: voice chat (mic/speaker on-off, clean audio; Telegram WebView permitting)
 ## Phase 13: infection mode (real zombies vs real soldiers, up to 10, no bots)
 

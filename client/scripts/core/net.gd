@@ -8,6 +8,7 @@ extends Node
 signal message(name: String, msg: Dictionary)
 signal status_changed(status: String)   ## offline, connecting, ready, in_zone, failed
 signal failed(reason: String)
+signal leaderboard_received(board: Dictionary)
 
 const RETRY_SEC := 2.0
 
@@ -16,7 +17,9 @@ var online_requested: bool = false  ## set by the menu; the game scene plays onl
 var url: String = ""
 var player_id: int = 0
 var display_name: String = ""
-var profile: Dictionary = {}  ## lifetime stats from the server: games, kills, bestWave
+var profile: Dictionary = {}  ## lifetime stats from the server: games, kills, bestWave, tonMicro, weekKills, weekRank
+var ton_per_kill: int = 0     ## TON points (millionths) the server pays per kill; 0 = off
+var leaderboard: Dictionary = {}  ## last weekly leaderboard received
 var tick_rate: int = 20
 var rtt_ms: float = 0.0
 var last_error: String = ""
@@ -150,8 +153,9 @@ func _on_packet(data: PackedByteArray) -> void:
 			player_id = int(msg.playerId)
 			display_name = str(msg.displayName)
 			tick_rate = int(msg.tickRate)
-			profile = {"games": int(msg.games), "kills": int(msg.kills), "bestWave": int(msg.bestWave)}
-			print("[net] logged in as %s (games %d, best wave %d)" % [display_name, profile.games, profile.bestWave])
+			profile = _profile_of(msg)
+			ton_per_kill = int(msg.get("tonPerKill", 0))
+			print("[net] logged in as %s (games %d, best wave %d, TON %.3f)" % [display_name, profile.games, profile.bestWave, profile.tonMicro / 1000000.0])
 			var resumed := _resume_token != "" and _resume_token == str(msg.resumeToken)
 			_resume_token = str(msg.resumeToken)
 			_retry_until = 0.0
@@ -161,7 +165,11 @@ func _on_packet(data: PackedByteArray) -> void:
 		"zoneJoined":
 			_set_status("in_zone")
 		"profile":
-			profile = {"games": int(msg.games), "kills": int(msg.kills), "bestWave": int(msg.bestWave)}
+			profile = _profile_of(msg)
+			ton_per_kill = int(msg.get("tonPerKill", ton_per_kill))
+		"leaderboard":
+			leaderboard = msg
+			leaderboard_received.emit(msg)
 		"pong":
 			rtt_ms = lerpf(rtt_ms if rtt_ms > 0.0 else 100.0, float((int(_clock * 1000.0) - int(msg.clientTime)) & 0xffffffff), 0.3)
 		"error":
@@ -172,6 +180,17 @@ func _on_packet(data: PackedByteArray) -> void:
 			_buffer.append([msg_name, msg])
 	else:
 		message.emit(msg_name, msg)
+
+
+static func _profile_of(msg: Dictionary) -> Dictionary:
+	return {"games": int(msg.games), "kills": int(msg.kills), "bestWave": int(msg.bestWave),
+		"tonMicro": int(msg.get("tonMicro", 0)), "weekKills": int(msg.get("weekKills", 0)), "weekRank": int(msg.get("weekRank", 0))}
+
+
+## Asks for this week's top hunters (answered with `leaderboard_received`).
+func request_leaderboard() -> void:
+	if status in ["ready", "in_zone"]:
+		send("leaderboard", {})
 
 
 ## Messages received while no scene was listening (e.g. during the scene change).

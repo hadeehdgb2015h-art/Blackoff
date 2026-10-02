@@ -4,7 +4,7 @@ extends Control
 ## profile card (name and record when logged in through Telegram).
 ## ?autostart=1 jumps straight into solo practice (browser smoke test with
 ## ?bot=1); with ?server=… or ?online=1 it starts quick play online instead.
-## ?screen=layout opens the controls editor (screenshot tests).
+## ?screen=layout opens the controls editor, ?screen=hunt the weekly hunt (screenshot tests).
 
 const GAME := "res://scenes/game/game.tscn"
 const BACKDROP := "res://assets/ui/menu_bg.jpg"
@@ -14,6 +14,7 @@ var _profile_stats: Label
 var _profile_hint: Label
 var _play: Button
 var _overlay: Control
+var _board_button: Button
 
 
 func _ready() -> void:
@@ -39,6 +40,13 @@ func _ready() -> void:
 	_show_profile()
 	if Platform.query_param("screen") == "layout":
 		_open_layout.call_deferred()
+	elif Platform.query_param("screen") == "hunt":
+		# screenshot tests: open the weekly hunt once logged in (needs ?server= and ?name=)
+		if Net.status in ["offline", "failed"] and Net.is_online_available():
+			Net.connect_to_server(false)
+		Net.status_changed.connect(func(st: String):
+			if st == "ready" and _overlay == null:
+				_show_leaderboard())
 	if Platform.query_param("autostart") == "1":
 		var online := Platform.query_param("server") != "" or Platform.query_param("online") == "1"
 		(_play_online if online else _play_solo).call_deferred()
@@ -116,6 +124,9 @@ func _build_left_column() -> void:
 	row.add_child(UiTheme.button("CONTROLS", _open_layout))
 	row.add_child(UiTheme.button("HOW TO PLAY", _how_to_play))
 	col.add_child(row)
+	_board_button = UiTheme.button("WEEKLY HUNT  ·  TON leaderboard", _show_leaderboard)
+	_board_button.disabled = true
+	col.add_child(_board_button)
 	var soon := UiTheme.label("Coming next: INFECTION mode (players vs players), 5-player rooms, voice chat", 16, UiTheme.MUTED)
 	col.add_child(soon)
 	if Platform.query_param("debug") == "1":
@@ -180,7 +191,11 @@ func _show_profile() -> void:
 		return
 	_profile_name.text = Net.display_name
 	_profile_stats.text = "Best wave %d  ·  %d kills  ·  %d games" % [p.bestWave, p.kills, p.games]
-	_profile_hint.text = "Online and ready."
+	var ton := "TON %.3f" % (float(p.tonMicro) / 1000000.0)
+	if p.weekRank > 0:
+		ton += "   ·   this week #%d with %d kills" % [p.weekRank, p.weekKills]
+	_profile_hint.text = ton if Net.ton_per_kill > 0 else "Online and ready."
+	_board_button.disabled = false
 
 
 # ------------------------------------------------------------------ actions
@@ -211,6 +226,68 @@ func _open_layout() -> void:
 	var ed := LayoutEditor.new()
 	add_child(ed)
 	print("[menu] controls layout editor opened")
+
+
+func _show_leaderboard() -> void:
+	if _overlay:
+		return
+	_overlay = Control.new()
+	_overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	add_child(_overlay)
+	var dim := ColorRect.new()
+	dim.color = Color(0, 0, 0, 0.6)
+	dim.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	_overlay.add_child(dim)
+	var center := CenterContainer.new()
+	center.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	_overlay.add_child(center)
+	var panel := PanelContainer.new()
+	panel.custom_minimum_size = Vector2(680, 0)
+	center.add_child(panel)
+	var v := VBoxContainer.new()
+	v.add_theme_constant_override("separation", 8)
+	panel.add_child(v)
+	var title := UiTheme.label("WEEKLY HUNT", 32, UiTheme.ACCENT)
+	v.add_child(title)
+	var sub := UiTheme.label("Loading…", 18, UiTheme.MUTED)
+	v.add_child(sub)
+	var grid := GridContainer.new()
+	grid.columns = 4
+	grid.add_theme_constant_override("h_separation", 26)
+	grid.add_theme_constant_override("v_separation", 4)
+	v.add_child(grid)
+	var me := UiTheme.label("", 20, UiTheme.GOLD)
+	v.add_child(me)
+	var note := UiTheme.label("Every zombie you kill online earns TON points. The week's top hunter gets the prize, paid by the game owner.", 15, UiTheme.MUTED)
+	note.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	v.add_child(note)
+	v.add_child(UiTheme.button("Close", func():
+		_overlay.queue_free()
+		_overlay = null))
+	var fill := func(b: Dictionary) -> void:
+		if not is_instance_valid(grid):
+			return
+		title.text = "WEEKLY HUNT  ·  %s" % str(b.get("week", ""))
+		sub.text = str(b.get("prize", "")) if str(b.get("prize", "")) != "" else "Top hunters this week"
+		for c in grid.get_children():
+			c.queue_free()
+		for h in ["#", "PLAYER", "KILLS", "TON"]:
+			grid.add_child(UiTheme.label(h, 16, UiTheme.MUTED))
+		for e in b.get("entries", []):
+			grid.add_child(UiTheme.label(str(int(e.rank)), 20))
+			grid.add_child(UiTheme.label(str(e.name), 20))
+			grid.add_child(UiTheme.label(str(int(e.kills)), 20))
+			grid.add_child(UiTheme.label("%.3f" % (float(e.tonMicro) / 1000000.0), 20))
+		if b.get("entries", []).is_empty():
+			grid.add_child(UiTheme.label("No kills yet this week. Be the first.", 18))
+		if int(b.get("myRank", 0)) > 0:
+			me.text = "You: #%d  ·  %d kills  ·  TON %.3f this week" % [int(b.myRank), int(b.myKills), float(b.myTonMicro) / 1000000.0]
+		else:
+			me.text = "You: no kills yet this week"
+	if not Net.leaderboard.is_empty():
+		fill.call(Net.leaderboard)
+	Net.leaderboard_received.connect(fill, CONNECT_ONE_SHOT)
+	Net.request_leaderboard()
 
 
 func _how_to_play() -> void:

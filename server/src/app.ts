@@ -6,7 +6,8 @@ import { Codec } from "./net/codec.js";
 import { Session, SessionHub } from "./net/session.js";
 import { ZoneManager } from "./zone/zoneManager.js";
 import { log } from "./log.js";
-import { MemoryProfileStore, type ProfileStore } from "./db/profileStore.js";
+import crypto from "node:crypto";
+import { MemoryProfileStore, weekLabel, weekStart, type ProfileStore } from "./db/profileStore.js";
 
 export interface App {
   server: http.Server;
@@ -40,9 +41,43 @@ export function createApp(env: Env, shared: SharedData, store: ProfileStore = ne
       }));
       return;
     }
+    if (url.pathname.startsWith("/admin/")) return void admin(url, res);
     res.writeHead(404, { "content-type": "text/plain" });
     res.end("not found");
   });
+
+  // Owner-only JSON (ADMIN_TOKEN in .env; ?token=... or X-Admin-Token header).
+  // /admin/leaderboard[?week=YYYY-MM-DD] lists this week's hunters with their
+  // account ids (to pay prizes); /admin/suspects lists anti-cheat flags.
+  async function admin(url: URL, res: http.ServerResponse): Promise<void> {
+    const want = env.ADMIN_TOKEN ?? "";
+    const got = url.searchParams.get("token") ?? "";
+    const ok = want.length > 0 && got.length === want.length && crypto.timingSafeEqual(Buffer.from(got), Buffer.from(want));
+    if (!ok) {
+      res.writeHead(404, { "content-type": "text/plain" });
+      res.end("not found");
+      return;
+    }
+    try {
+      let body: unknown;
+      if (url.pathname === "/admin/leaderboard") {
+        const week = url.searchParams.get("week") ?? weekStart();
+        body = { week, label: weekLabel(week), tonMicroPerKill: env.TON_MICRO_PER_KILL, prize: env.TON_PRIZE_TEXT, entries: await store.leaderboard(100, week) };
+      } else if (url.pathname === "/admin/suspects") {
+        body = { suspects: await store.suspects(100) };
+      } else {
+        res.writeHead(404, { "content-type": "text/plain" });
+        res.end("not found");
+        return;
+      }
+      res.writeHead(200, { "content-type": "application/json", "cache-control": "no-store" });
+      res.end(JSON.stringify(body));
+    } catch (err) {
+      log.warn("admin request failed", { path: url.pathname, error: (err as Error).message });
+      res.writeHead(500, { "content-type": "text/plain" });
+      res.end("error");
+    }
+  }
 
   const wss = new WebSocketServer({
     server,

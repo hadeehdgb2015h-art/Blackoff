@@ -9,7 +9,18 @@ import type { SharedData } from "../shared/loadShared.js";
 import { BTN_MASK, Btn, PlayerState, ZombieState, emptyIntent, type PlayerIntent, type SimEvent, type SimPlayer } from "../sim/entities.js";
 import { SimWorld, ZoneState } from "../sim/simWorld.js";
 import { Phase } from "../sim/waveDirector.js";
-import type { MatchResult } from "../db/profileStore.js";
+/** What a zone knows about a member's play when they leave (the hub turns it
+ *  into a MatchResult with TON points and anti-cheat flags). */
+export interface ZoneResult {
+  accountId: string;
+  name: string;
+  kills: number;
+  headshots: number;
+  wave: number;
+  seconds: number;
+  shots: number;
+  hits: number;
+}
 
 /** What a zone needs from a connection (implemented by Session). */
 export interface ZoneClient {
@@ -28,6 +39,8 @@ export interface Member {
   queue: PlayerIntent[];
   latched: number;
   joinedAt: number;
+  shots: number;
+  hits: number;
   lastSeq: number;
   appliedSeq: number;
   known: Set<number>;
@@ -50,7 +63,7 @@ export class Zone {
   /** Most members held at once (for the match record). */
   peakPlayers = 0;
   /** Called once per member when it leaves the zone or the zone closes. */
-  onResult: ((r: MatchResult) => void) | null = null;
+  onResult: ((r: ZoneResult) => void) | null = null;
   private readonly weaponIdx = new Map<string, number>();
   private readonly zombieIdx = new Map<string, number>();
   private readonly boxIdx = new Map<string, number>();
@@ -82,7 +95,7 @@ export class Zone {
     const entityId = this.world.addPlayer(client.displayName);
     const m: Member = {
       entityId, name: client.displayName, accountId, client, disconnectedAt: 0,
-      latest: { ...emptyIntent(), yaw: this.world.players.get(entityId)!.yaw }, queue: [], latched: 0, joinedAt: now, lastSeq: 0, appliedSeq: 0, known: new Set(),
+      latest: { ...emptyIntent(), yaw: this.world.players.get(entityId)!.yaw }, queue: [], latched: 0, joinedAt: now, shots: 0, hits: 0, lastSeq: 0, appliedSeq: 0, known: new Set(),
     };
     this.members.set(entityId, m);
     this.peakPlayers = Math.max(this.peakPlayers, this.members.size);
@@ -179,6 +192,7 @@ export class Zone {
       accountId: m.accountId, name: m.name, kills: p?.kills ?? 0, headshots: p?.headshots ?? 0,
       // a dropped player's time ends when the connection did, not after the grace period
       wave: this.world.director.wave, seconds: Math.max(0, (m.client ? now : m.disconnectedAt) - m.joinedAt) / 1000,
+      shots: m.shots, hits: m.hits,
     });
   }
 
@@ -212,12 +226,18 @@ export class Zone {
     const wIdx = (k: string) => this.weaponIdx.get(String(e[k])) ?? 0;
     switch (e.type) {
       case "shot": {
+        const shooter = this.members.get(n("pid"));
+        if (shooter) shooter.shots += 1;
         const to = e.to as { x: number; y: number; z: number };
         const hit = e.hit === "zombie" ? 2 : e.hit === "wall" ? 1 : 0;
         this.broadcast("shot", { playerId: n("pid"), weapon: wIdx("weapon"), toX: to.x, toY: to.y, toZ: to.z, hit });
         return;
       }
-      case "zombie_hit": return this.event("hit", n("zid"), n("pid"), Math.round(n("damage")), e.head ? 1 : 0);
+      case "zombie_hit": {
+        const m = this.members.get(n("pid"));
+        if (m) m.hits += 1;
+        return this.event("hit", n("zid"), n("pid"), Math.round(n("damage")), e.head ? 1 : 0);
+      }
       case "zombie_killed": return this.event("kill", n("zid"), n("pid"), this.zombieIdx.get(String(e.ztype)) ?? 0, e.head ? 1 : 0);
       case "zombie_spawned": return this.event("zombieSpawned", n("zid"), this.zombieIdx.get(String(e.ztype)) ?? 0, this.entryIdx.get(String(e.entry)) ?? 0);
       case "zombie_attack": return this.event("zombieAttack", n("zid"), n("pid"));

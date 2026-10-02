@@ -15,10 +15,12 @@ import type { Zone, ZoneClient } from "../zone/zone.js";
 import { ZoneState } from "../sim/simWorld.js";
 import { CodecError, type Codec, type Msg } from "./codec.js";
 import { cleanName, validateInitData } from "./telegramAuth.js";
-import { emptyProfile, type MatchResult, type MatchSummary, type Profile, type ProfileStore } from "../db/profileStore.js";
+import { emptyProfile, weekLabel, weekStart, type MatchSummary, type Profile, type ProfileStore, type WeeklyStanding } from "../db/profileStore.js";
 import type { ZoneManager, ZoneSink } from "../zone/zoneManager.js";
+import type { ZoneResult } from "../zone/zone.js";
+import { flagsFor } from "../anticheat.js";
 
-export interface Account { id: string; name: string; playerId: number; profile: Profile }
+export interface Account { id: string; name: string; playerId: number; profile: Profile; weekly: WeeklyStanding }
 
 interface ResumeEntry { account: Account; zoneId: number; entityId: number; expiresAt: number }
 
@@ -36,9 +38,19 @@ export class SessionHub implements ZoneSink {
     zones.sink = this;
   }
 
-  onResult(r: MatchResult): void {
+  /** A member left a zone: TON points for the kills, anti-cheat flags from the
+   *  play statistics, then the profile and weekly standing are written. */
+  onResult(z: ZoneResult): void {
+    const flags = flagsFor({ shots: z.shots, hits: z.hits, headshots: z.headshots, kills: z.kills, seconds: z.seconds }, this.shared.constants.anticheat);
+    if (flags.length) {
+      log.warn("anticheat flags", { account: z.accountId, name: z.name, flags, shots: z.shots, hits: z.hits, headshots: z.headshots, kills: z.kills, seconds: Math.round(z.seconds) });
+    }
+    const r = { ...z, tonMicro: z.kills * this.env.TON_MICRO_PER_KILL, flags };
     this.track(this.store.record(r).then(
-      (profile) => this.byAccount.get(r.accountId)?.onProfile(profile),
+      async (profile) => {
+        const session = this.byAccount.get(r.accountId);
+        if (session) session.onProfile(profile, await this.store.weekly(r.accountId));
+      },
       (err: Error) => log.warn("profile write failed", { account: r.accountId, error: err.message }),
     ));
   }
@@ -151,6 +163,7 @@ export class Session implements ZoneClient {
       case "buy": return this.onBuy(msg);
       case "ping": return this.send("pong", { clientTime: msg.clientTime as number, serverTick: (this.zone?.world.tick ?? 0) >>> 0 });
       case "leave": return this.leaveZone();
+      case "leaderboard": return void this.onLeaderboard();
       default: return this.strike("unexpected message " + name);
     }
   }
@@ -188,20 +201,42 @@ export class Session implements ZoneClient {
     }
     this.helloPending = true;
     let profile = emptyProfile();
+    let weekly: WeeklyStanding = { rank: 0, kills: 0, tonMicro: 0 };
     try {
       profile = await this.hub.store.load(id, name);
+      weekly = await this.hub.store.weekly(id);
     } catch (err) {
       log.warn("profile load failed", { account: id, error: (err as Error).message });
     }
     this.helloPending = false;
     if (this.ws.readyState !== this.ws.OPEN) return; // left while we waited
-    this.adopt({ id, name, playerId: this.hub.playerIdFor(id), profile }, crypto.randomBytes(18).toString("base64url"));
+    this.adopt({ id, name, playerId: this.hub.playerIdFor(id), profile, weekly }, crypto.randomBytes(18).toString("base64url"));
   }
 
-  onProfile(profile: Profile): void {
+  onProfile(profile: Profile, weekly: WeeklyStanding): void {
     if (!this.account) return;
     this.account.profile = profile;
-    this.send("profile", profileMsg(profile));
+    this.account.weekly = weekly;
+    this.send("profile", profileMsg(profile, weekly, this.hub.env.TON_MICRO_PER_KILL));
+  }
+
+  /** This week's top hunters plus the player's own standing. */
+  private async onLeaderboard(): Promise<void> {
+    if (!this.account) return;
+    const { store, env } = this.hub;
+    try {
+      const week = weekStart();
+      const rows = await store.leaderboard(10, week);
+      const me = await store.weekly(this.account.id, week);
+      if (this.ws.readyState !== this.ws.OPEN) return;
+      this.send("leaderboard", {
+        week: weekLabel(week), prize: env.TON_PRIZE_TEXT.slice(0, 200),
+        entries: rows.map((r, i) => ({ rank: i + 1, name: r.name.slice(0, 32), kills: Math.min(r.kills, 0xffffffff), tonMicro: Math.min(r.tonMicro, 0xffffffff) })),
+        myRank: Math.min(me.rank, 0xffff), myKills: Math.min(me.kills, 0xffffffff), myTonMicro: Math.min(me.tonMicro, 0xffffffff),
+      });
+    } catch (err) {
+      log.warn("leaderboard failed", { account: this.account.id, error: (err as Error).message });
+    }
   }
 
   /** Becomes the single live session of this account. An older connection of the
@@ -215,7 +250,7 @@ export class Session implements ZoneClient {
     this.resumeToken = token;
     this.send("welcome", {
       playerId: account.playerId, displayName: account.name, resumeToken: token,
-      tickRate: this.hub.shared.constants.sim.tickRate, ...profileMsg(account.profile),
+      tickRate: this.hub.shared.constants.sim.tickRate, ...profileMsg(account.profile, account.weekly, this.hub.env.TON_MICRO_PER_KILL),
     });
     const zone = slot ? this.hub.zones.zones.get(slot.zoneId) : undefined;
     if (zone && slot && zone.attach(slot.entityId, this)) {
@@ -299,6 +334,8 @@ export class Session implements ZoneClient {
   }
 }
 
-const profileMsg = (p: Profile) => ({
+const profileMsg = (p: Profile, w: WeeklyStanding, tonPerKill: number) => ({
   games: Math.min(p.games, 0xffffffff), kills: Math.min(p.kills, 0xffffffff), bestWave: Math.min(p.bestWave, 0xffff),
+  tonMicro: Math.min(p.tonMicro, 0xffffffff), weekKills: Math.min(w.kills, 0xffffffff), weekRank: Math.min(w.rank, 0xffff),
+  tonPerKill: Math.min(tonPerKill, 0xffffffff),
 });
