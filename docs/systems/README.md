@@ -1,5 +1,13 @@
 # Systems
 
-One short document per major system (purpose, data files, main scripts, tests), added as each system is built.
+One short document per major system: purpose, data, main scripts, tests.
 
-Planned: `movement.md`, `weapons.md`, `zombies-ai.md`, `waves.md`, `economy.md`, `revive.md`, `netcode.md`, `auth.md`, `deploy.md`.
+| System | Doc |
+|---|---|
+| Map pipeline (scene → shared JSON) | [maps.md](maps.md) |
+| Simulation (rules shared with the server) | [simulation.md](simulation.md) |
+| Presentation (views, effects, audio) | [presentation.md](presentation.md) |
+| Input (touch + keyboard/mouse) and HUD | [input-and-hud.md](input-and-hud.md) |
+| Testing (headless, bot, browser) | [testing.md](testing.md) |
+
+Planned: `netcode.md` (phase 2–3), `auth.md`, `deploy.md` (phase 4), `revive.md` (phase 5), `anticheat.md` (phase 6).

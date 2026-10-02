@@ -54,18 +54,32 @@ window.BlackoffTG = (function () {
         if (atLeast('8.0')) { w.requestFullscreen(); }
       } catch (e) { console.warn('Telegram init', e); }
     },
+    // Browsers only allow fullscreen inside a user gesture, but Godot handles
+    // input a frame later. So requests are queued and applied on the next
+    // pointerup (see listener below). Telegram 8.0+ needs no gesture.
     enterFullscreen: function () {
       const w = wa();
       try {
-        if (w && w.initData && atLeast('8.0')) { w.requestFullscreen(); if (w.lockOrientation) w.lockOrientation(); return; }
-        const el = document.documentElement;
-        const req = el.requestFullscreen || el.webkitRequestFullscreen;
-        if (req) {
-          Promise.resolve(req.call(el)).then(function () {
-            if (screen.orientation && screen.orientation.lock) screen.orientation.lock('landscape').catch(function () {});
-          }).catch(function () {});
+        if (w && w.initData && atLeast('8.0')) {
+          if (!w.isFullscreen) w.requestFullscreen();
+          if (w.lockOrientation) w.lockOrientation();
+          return;
         }
+        if (!document.fullscreenElement && !document.webkitFullscreenElement) this._wantFs = true;
       } catch (e) { console.warn('fullscreen', e); }
+    },
+    _wantFs: false,
+    _applyFullscreen: function () {
+      if (!this._wantFs) return;
+      this._wantFs = false;
+      const el = document.documentElement;
+      const req = el.requestFullscreen || el.webkitRequestFullscreen;
+      if (!req) return;
+      try {
+        Promise.resolve(req.call(el)).then(function () {
+          if (screen.orientation && screen.orientation.lock) screen.orientation.lock('landscape').catch(function () {});
+        }).catch(function () {});
+      } catch (e) {}
     },
     haptic: function (kind) {
       const w = wa();
@@ -73,6 +87,11 @@ window.BlackoffTG = (function () {
     },
   };
 })();
+</script>
+<script>
+document.addEventListener('pointerup', function () { window.BlackoffTG._applyFullscreen(); }, true);
+// Phones outside Telegram: go fullscreen on the first tap.
+if (matchMedia('(pointer: coarse)').matches) window.BlackoffTG._wantFs = true;
 </script>
 <script src="$GODOT_URL"></script>
 <script>
@@ -107,6 +126,7 @@ const engine = new Engine(GODOT_CONFIG);
   }
   loadTelegram().then(function () {
     window.BlackoffTG.init();
+    if (window.BlackoffTG.isTelegram()) window.BlackoffTG._wantFs = false;
     return engine.startGame({
       onProgress: function (current, total) {
         if (current > 0 && total > 0) {

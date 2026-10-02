@@ -1,0 +1,21 @@
+{
+  "schemaVersion": 1,
+  "_comment": "Client-only presentation data. 'model' is the art integration point: a res:// path to a .glb/.tscn. Empty = procedural placeholder.",
+  "weapons": {
+    "pistol": {
+      "model": "", "shape": "pistol", "body": "#43474c", "accent": "#7a8086", "glove": "#1c1d1f",
+      "offset": [0.17, -0.15, -0.33], "muzzle": [0.0, 0.035, -0.2], "recoilKick": 0.05, "recoilPitch": 0.035,
+      "sound": "pistol_shot"
+    },
+    "rifle": {
+      "model": "", "shape": "rifle", "body": "#3c4245", "accent": "#5f7060", "glove": "#1c1d1f",
+      "offset": [0.16, -0.15, -0.3], "muzzle": [0.0, 0.03, -0.5], "recoilKick": 0.035, "recoilPitch": 0.02,
+      "sound": "rifle_shot"
+    }
+  },
+  "zombies": {
+    "walker": {"model": "", "skin": "#76806a", "cloth": "#3b3f46", "eyes": "#ffb347", "scale": 1.0, "lean": 0.05, "sway": 0.09},
+    "runner": {"model": "", "skin": "#8c7466", "cloth": "#5e2620", "eyes": "#ff4a3a", "scale": 0.95, "lean": 0.3, "sway": 0.16}
+  },
+  "players": {"colors": ["#3d6fb4", "#b4553d", "#4fa35a", "#b49a3d", "#8a4fb4", "#3db4a8", "#b43d7a", "#7a7a7a"]}
+}

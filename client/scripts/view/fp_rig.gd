@@ -1,0 +1,211 @@
+class_name FpRig
+extends Node3D
+## First-person camera and weapon viewmodel for the local player.
+## Art integration: weapons.<id>.model in data/visuals.json (a scene whose
+## origin is the grip; optional child Marker3D "Muzzle").
+
+const BOB_FREQ := 9.0
+const BOB_AMP := 0.012
+
+var camera := Camera3D.new()
+var muzzle_light_enabled: bool = false
+
+var _vm_root := Node3D.new()     ## animated (recoil/reload/switch)
+var _vm_holder := Node3D.new()   ## per-weapon offset
+var _weapon_node: Node3D
+var _muzzle := Node3D.new()
+var _flash := MeshInstance3D.new()
+var _light := OmniLight3D.new()
+var _weapon_id := ""
+var _vis: Dictionary = {}
+var _kick: float = 0.0
+var _bob_t: float = 0.0
+var _flash_t: float = 0.0
+var _reload_t: float = -1.0
+var _reload_len: float = 1.0
+var _switch_t: float = -1.0
+var _pending_weapon := ""
+var _shake: float = 0.0
+var _down: float = 0.0
+
+static var _weapon_mesh_cache := {}
+
+
+func _ready() -> void:
+	camera.fov = 75.0
+	camera.near = 0.03
+	camera.far = 90.0
+	add_child(camera)
+	camera.add_child(_vm_root)
+	_vm_root.add_child(_vm_holder)
+	_flash.mesh = _flash_mesh()
+	_flash.visible = false
+	_flash.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	_muzzle.add_child(_flash)
+	_light.light_color = Color(1.0, 0.75, 0.4)
+	_light.omni_range = 6.0
+	_light.light_energy = 0.0
+	_light.visible = false
+	_muzzle.add_child(_light)
+
+
+func set_weapon(id: String) -> void:
+	if id == _weapon_id:
+		return
+	_weapon_id = id
+	_vis = Visuals.weapon(id)
+	if _weapon_node:
+		_weapon_node.queue_free()
+	_weapon_node = Visuals.try_model(_vis.get("model", ""))
+	if _weapon_node == null:
+		var mi := MeshInstance3D.new()
+		mi.mesh = _weapon_mesh(id, _vis)
+		mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		_weapon_node = mi
+	_vm_holder.add_child(_weapon_node)
+	_vm_holder.position = Visuals.v3(_vis.offset)
+	if _muzzle.get_parent():
+		_muzzle.get_parent().remove_child(_muzzle)
+	var marker := _weapon_node.find_child("Muzzle", true, false) as Node3D
+	if marker:
+		marker.add_child(_muzzle)
+		_muzzle.position = Vector3.ZERO
+	else:
+		_vm_holder.add_child(_muzzle)
+		_muzzle.position = Visuals.v3(_vis.muzzle)
+
+
+## Places the camera. pos is the eye position in world space.
+func set_view(pos: Vector3, yaw: float, pitch: float, moving: bool, delta: float) -> void:
+	var shake := Vector3(randf_range(-1, 1), randf_range(-1, 1), 0) * _shake * 0.03
+	_shake = maxf(0.0, _shake - delta * 3.0)
+	global_position = pos + Vector3(0, -_down, 0)
+	rotation = Vector3(0, yaw, 0)
+	camera.rotation = Vector3(pitch + shake.y, shake.x, 0)
+	if moving:
+		_bob_t += delta * BOB_FREQ
+	else:
+		_bob_t = lerpf(_bob_t, roundf(_bob_t / PI) * PI, delta * 6.0)
+	_animate(delta)
+
+
+func muzzle_position() -> Vector3:
+	return _muzzle.global_position
+
+
+func on_fire() -> void:
+	_kick = 1.0
+	_flash_t = 0.05
+	_flash.visible = true
+	_flash.rotation.z = randf() * TAU
+	_flash.scale = Vector3.ONE * randf_range(0.8, 1.2)
+	if muzzle_light_enabled:
+		_light.visible = true
+		_light.light_energy = 2.5
+
+
+func on_reload(duration: float) -> void:
+	_reload_len = duration
+	_reload_t = 0.0
+
+
+func on_switch(new_weapon: String) -> void:
+	_pending_weapon = new_weapon
+	_switch_t = 0.0
+	_reload_t = -1.0
+
+
+func on_damage(amount: float) -> void:
+	_shake = clampf(_shake + amount / 40.0, 0.0, 1.0)
+
+
+func set_downed(downed: bool) -> void:
+	_down = 1.0 if downed else 0.0
+	_vm_root.visible = not downed
+
+
+func _animate(delta: float) -> void:
+	_kick = maxf(0.0, _kick - delta * 12.0)
+	var kick_amt: float = _vis.get("recoilKick", 0.04)
+	var pos := Vector3(sin(_bob_t * 0.5) * BOB_AMP, -absf(sin(_bob_t)) * BOB_AMP, _kick * kick_amt)
+	var rot := Vector3(_kick * 0.12, 0, 0)
+	if _reload_t >= 0.0:
+		_reload_t += delta
+		var k := clampf(_reload_t / _reload_len, 0.0, 1.0)
+		var dip := sin(k * PI)
+		pos += Vector3(0, -0.07 * dip, 0.02 * dip)
+		rot += Vector3(-0.5 * dip, 0, 0.6 * dip)
+		if k >= 1.0:
+			_reload_t = -1.0
+	if _switch_t >= 0.0:
+		_switch_t += delta
+		var half := 0.22
+		if _switch_t < half:
+			pos.y -= 0.25 * (_switch_t / half)
+		else:
+			if _pending_weapon != "":
+				set_weapon(_pending_weapon)
+				_pending_weapon = ""
+			pos.y -= 0.25 * (1.0 - clampf((_switch_t - half) / half, 0.0, 1.0))
+			if _switch_t > half * 2.0:
+				_switch_t = -1.0
+	_vm_root.position = pos
+	_vm_root.rotation = rot
+	if _flash_t > 0.0:
+		_flash_t -= delta
+		if _flash_t <= 0.0:
+			_flash.visible = false
+			_light.visible = false
+		else:
+			_light.light_energy = 2.5 * (_flash_t / 0.05)
+
+
+static func _weapon_mesh(id: String, v: Dictionary) -> ArrayMesh:
+	if _weapon_mesh_cache.has(id):
+		return _weapon_mesh_cache[id]
+	var body := MeshKit.mat(Color(v.body), 0.5)
+	body.metallic = 0.4
+	var accent := MeshKit.mat(Color(v.accent), 0.6)
+	var glove := MeshKit.mat(Color(v.glove), 0.9)
+	var parts := []
+	if v.shape == "pistol":
+		parts = [
+			{"mesh": MeshKit.box(Vector3(0.036, 0.04, 0.2)), "xform": MeshKit.xf(Vector3(0, 0.035, -0.08)), "mat": 0},
+			{"mesh": MeshKit.box(Vector3(0.032, 0.03, 0.17)), "xform": MeshKit.xf(Vector3(0, 0.005, -0.07)), "mat": 1},
+			{"mesh": MeshKit.box(Vector3(0.03, 0.11, 0.05)), "xform": MeshKit.xf(Vector3(0, -0.04, 0.0), Vector3(-0.25, 0, 0)), "mat": 1},
+			{"mesh": MeshKit.box(Vector3(0.06, 0.07, 0.09)), "xform": MeshKit.xf(Vector3(0.0, -0.05, 0.03), Vector3(-0.25, 0, 0)), "mat": 2},
+		]
+	else:
+		parts = [
+			{"mesh": MeshKit.box(Vector3(0.05, 0.07, 0.34)), "xform": MeshKit.xf(Vector3(0, 0.0, -0.12)), "mat": 0},
+			{"mesh": MeshKit.cylinder(0.012, 0.22), "xform": MeshKit.xf(Vector3(0, 0.015, -0.39), Vector3(PI / 2, 0, 0)), "mat": 0},
+			{"mesh": MeshKit.box(Vector3(0.045, 0.06, 0.16)), "xform": MeshKit.xf(Vector3(0, 0.0, -0.28)), "mat": 1},
+			{"mesh": MeshKit.box(Vector3(0.04, 0.08, 0.18)), "xform": MeshKit.xf(Vector3(0, -0.015, 0.12)), "mat": 1},
+			{"mesh": MeshKit.box(Vector3(0.035, 0.12, 0.055)), "xform": MeshKit.xf(Vector3(0, -0.08, -0.12), Vector3(0.2, 0, 0)), "mat": 0},
+			{"mesh": MeshKit.box(Vector3(0.02, 0.03, 0.08)), "xform": MeshKit.xf(Vector3(0, 0.05, -0.08)), "mat": 1},
+			{"mesh": MeshKit.box(Vector3(0.06, 0.07, 0.09)), "xform": MeshKit.xf(Vector3(0, -0.06, 0.0), Vector3(-0.2, 0, 0)), "mat": 2},
+			{"mesh": MeshKit.box(Vector3(0.06, 0.06, 0.09)), "xform": MeshKit.xf(Vector3(-0.01, -0.04, -0.27)), "mat": 2},
+		]
+	_weapon_mesh_cache[id] = MeshKit.merge(parts, [body, accent, glove])
+	return _weapon_mesh_cache[id]
+
+
+static func _flash_mesh() -> QuadMesh:
+	var g := Gradient.new()
+	g.set_color(0, Color(1, 0.95, 0.7, 1))
+	g.set_color(1, Color(1, 0.5, 0.1, 0))
+	var tex := GradientTexture2D.new()
+	tex.gradient = g
+	tex.fill = GradientTexture2D.FILL_RADIAL
+	tex.fill_from = Vector2(0.5, 0.5)
+	tex.fill_to = Vector2(1.0, 0.5)
+	var m := StandardMaterial3D.new()
+	m.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	m.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	m.blend_mode = BaseMaterial3D.BLEND_MODE_ADD
+	m.albedo_texture = tex
+	m.billboard_mode = BaseMaterial3D.BILLBOARD_ENABLED
+	var q := QuadMesh.new()
+	q.size = Vector2(0.14, 0.14)
+	q.material = m
+	return q

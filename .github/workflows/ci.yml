@@ -44,10 +44,20 @@ jobs:
         run: |
           sudo mkdir -p /opt/godot && sudo chown "$USER" /opt/godot
           tools/setup_godot.sh
+      - name: Map data in sync with map scene
+        env:
+          GODOT: /opt/godot/godot
+        run: tools/sync_shared.sh && tools/build_maps.sh --check
       - name: Test and export Web build
         env:
           GODOT: /opt/godot/godot
         run: tools/export_web.sh
+      - name: Headless game run (bot, 120 s of game time)
+        run: |
+          BLACKOFF_BOT=1 /opt/godot/godot --headless --path client res://scenes/game/game.tscn \
+            --fixed-fps 60 --quit-after 7200 2>&1 | tee /tmp/game.log
+          grep -q "\[game\] wave 1 cleared" /tmp/game.log
+          ! grep -E "SCRIPT ERROR|Parse Error" /tmp/game.log
       - uses: actions/setup-node@v4
         with:
           node-version: 22
@@ -57,7 +67,9 @@ jobs:
           npm i --no-save playwright@1.56.1 >/dev/null
           npx playwright install --with-deps chromium >/dev/null
           cd "$GITHUB_WORKSPACE"
-          NODE_PATH=/tmp/smoke/node_modules node tools/smoke_web.cjs build/web build/smoke.png
+          export NODE_PATH=/tmp/smoke/node_modules SMOKE_DPR=0.5
+          SMOKE_EXPECT="[game] wave 1 started" node tools/smoke_web.cjs build/web build/smoke.png "?autostart=1&bot=1" 45
+          SMOKE_TOUCH=1 node tools/smoke_web.cjs build/web build/touch.png "?autostart=1&debug=1" 5
       - uses: actions/upload-artifact@v4
         with:
           name: web-build
@@ -66,8 +78,8 @@ jobs:
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: smoke-screenshot
-          path: build/smoke.png
+          name: smoke-screenshots
+          path: build/*.png
           if-no-files-found: ignore
 
   # Phone-testable preview on GitHub Pages (needs a public repo with

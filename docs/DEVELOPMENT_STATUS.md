@@ -1,55 +1,65 @@
 # Development status
 
-Read this first in a new session. Then read `docs/TECHNICAL_ARCHITECTURE.md` and `docs/TODO.md`.
+Read this first in a new session. Then read `docs/TECHNICAL_ARCHITECTURE.md`, `docs/TODO.md` and `docs/systems/`.
 
 ## Current phase
 
-**Phase 0 (foundation): done, waiting for owner approval.** Do not start phase 1 until the owner approves.
+**Phase 1 (local client, feel test): done, waiting for owner feedback and approval.** Do not start phase 2 until the owner approves.
+
+| Phase | State |
+|---|---|
+| 0 Foundation | done (owner tested: 60 FPS on their phone) |
+| 1 Local client | done, waiting for owner test |
+| 2 Authoritative server | not started |
+
+## Live preview
+
+**https://hadeehdgb2015h-art.github.io/Blackoff/**: GitHub Pages, redeployed by CI on every push. The cloud session proxy blocks github.io, so the CI `pages` job verifies the live URL itself. Total first download is about 10.5 MB (wasm served gzip).
+URL flags: `?autostart=1` (skip menu), `?bot=1` (test bot plays), `?debug=1` (exposes `window.__blackoff`).
 
 ## What exists
 
 | Area | State |
 |---|---|
-| Godot client | `client/`, Godot 4.7.2, Compatibility renderer. The boot scene (`scenes/boot`) is a smoke test: a lit 3D room with fog, an FPS counter, a diagnostics label (renderer, GPU, web/touch/Telegram flags, shared data check) and a Fullscreen button. |
-| Web export | `tools/export_web.sh` runs the headless tests, then exports `build/web/`. wasm is 38 MB raw, 9.7 MB gzip; pck 28 KB. Checked in headless Chromium with `tools/smoke_web.cjs`. |
-| HTML shell | `client/web/shell.html`: loader bar, portrait rotate overlay, Telegram bridge `window.BlackoffTG` (ready, expand, disableVerticalSwipes, requestFullscreen, haptics). The Telegram SDK loads asynchronously with a 2.5 s timeout, so the game still starts if telegram.org is unreachable. |
-| Shared data | `shared/*.json`: constants, protocol v1 layout, weapons (pistol, rifle), zombies (walker, runner), waves curve. |
-| Server | `server/`: env config (zod), shared data loader with cross-checks, HTTP `/healthz`, a WebSocket endpoint `/ws` (binary only, max message size enforced). 7 vitest tests. |
-| CI | `.github/workflows/ci.yml`: server typecheck, test and build; client Godot install (cached), tests, export, Chromium smoke test, and the web build uploaded as an Actions artifact. |
-| Deploy | not yet (phase 4). `deploy/.env.example` lists every variable. |
+| Map | `facility_01` greybox: safe room (spawn, ammo), 2 corridors, lab (AR-7 wall-buy), storage, yard, 4 zombie entries. Pipeline: generator → scene → `shared/maps/facility_01.json` (`docs/systems/maps.md`). |
+| Sim | `client/scripts/sim/`: authoritative rules at 20 Hz (movement, weapons, zombies, waves, economy, downed → game over). Server phase 2 must mirror it (`docs/systems/simulation.md`). |
+| Presentation | first-person rig, procedural zombie and weapon placeholders, tracers and impacts, generated SFX, map mesh batching, quality tiers (`docs/systems/presentation.md`). |
+| Input / UI | multi-touch stick, aim, fire-aim, reload, swap, use, pause; keyboard/mouse; HUD; pause; settings; game over; main menu (`docs/systems/input-and-hud.md`). |
+| Server | phase 0 skeleton plus map schema validation (loads `shared/maps`). |
+| Tests / CI | 22 headless client tests, bot playthrough, 2-minute headless game run, browser bot run, browser multi-touch run, server tests, map sync check, Pages deploy and verification (`docs/systems/testing.md`). |
 
-## Owner device test (phase 0)
+## Known limitations
 
-- 2026-10-02, owner's phone browser (not Telegram): steady 60 FPS, Compatibility renderer, touch detected, shared data OK.
-- The browser reports GPU as `WebKit WebGL` (real name hidden), so the phase 6 auto quality tier must rely on a frame-time probe, not the GPU name.
+- All art is placeholder; we are waiting for owner-supplied CC0 assets (see `docs/ASSET_LICENSES.md`).
+- No baked lighting yet: lights are dynamic without shadows.
+- UI text is English only. Arabic needs a bundled font.
+- Revive is not implemented yet (phase 5); solo play goes down → bleed-out → game over.
+- In headless Chromium (software GL) the game runs at 2–9 FPS. That is not representative; real phones must be tested by the owner.
 
-## How to build and test (cloud session or CI)
+## How to build and test
 
 ```bash
-GODOT_DIR=/opt/godot tools/setup_godot.sh   # downloads the pinned editor + web templates from GitHub releases
-tools/export_web.sh                          # sync shared → client tests → build/web
-NODE_PATH=$(npm root -g) node tools/smoke_web.cjs build/web /tmp/shot.png   # needs playwright
-cd server && npm ci && npm run typecheck && npm test && npm run build
+GODOT_DIR=/opt/godot tools/setup_godot.sh       # pinned editor + web templates (GitHub releases)
+tools/build_maps.sh                              # regenerate greybox + export map JSON
+tools/export_web.sh                              # sync shared → headless tests → build/web
+SMOKE_DPR=0.5 NODE_PATH=$(npm root -g) node tools/smoke_web.cjs build/web /tmp/s.png "?autostart=1&bot=1" 45
+SMOKE_TOUCH=1 NODE_PATH=$(npm root -g) node tools/smoke_web.cjs build/web /tmp/t.png "?autostart=1&debug=1" 5
+cd server && npm ci && npm run typecheck && npm test
+python3 tools/gen_sfx.py; python3 tools/gen_textures.py   # regenerate placeholder audio/textures
 ```
 
 ## Environment notes (cloud sessions)
 
-- Downloads from GitHub release assets (`github.com/.../releases/download/...`) work. The GitHub web and API pages for repositories outside this one return 403 through the session proxy; use `git ls-remote --tags` to discover versions.
-- Chromium for Playwright lives at `/opt/pw-browsers`. The global `playwright` package is under `$(npm root -g)`.
-- The claude.ai artifact host rejects the 38 MB wasm (15 MB file limit), so it cannot host previews.
-
-## Preview link: live on GitHub Pages
-
-**https://hadeehdgb2015h-art.github.io/Blackoff/**, redeployed on every push. CI checks it after each deploy: wasm is served gzip, about 10.3 MB total first download. The cloud session proxy blocks github.io, so check it through the CI log.
-
-The repo is public, Pages Source is set to GitHub Actions, and the github-pages environment allows `claude/*`.
-Pages is for client previews only. From phase 2 on, the game server runs on the owner's server.
+- Reachable: GitHub (git, release downloads), npm and PyPI. Blocked: github.io, the asset sites (Kenney, Poly Haven, OpenGameArt…), the GitHub API for other repos.
+- Chromium lives at `/opt/pw-browsers`, and the global `playwright` package is under `$(npm root -g)`.
+- The map generator saves random sub-resource ids, so the `.tscn` diff is noisy on regeneration. Only commit it when the layout changed.
 
 ## Needs from owner (open)
 
-- Before phase 2 (game server), set these as GitHub secrets: `DEPLOY_HOST`, `DEPLOY_USER`, `DEPLOY_SSH_KEY` (private key of a dedicated deploy key), `DEPLOY_PORT` (SSH, optional), plus the domain or subdomain and URL path for the game, and a free local port for the Node process.
-- Later (phase 4): Telegram bot token as a server-side secret, and a Postgres database and user.
+- Phase 1 feedback from the phone: control feel, sensitivity, difficulty, FPS.
+- CC0 asset uploads to `assets/incoming/` (list given in the phase 1 report).
+- Before phase 2/4: server SSH secrets (`DEPLOY_HOST`, `DEPLOY_USER`, `DEPLOY_SSH_KEY`, optional `DEPLOY_PORT`), the domain or subdomain and path, and a free local port. Later: Telegram bot token and a Postgres database.
 
-## Next steps (phase 1, after approval)
+## Next steps (phase 2, after approval)
 
-See `docs/TODO.md` → Phase 1.
+See `docs/TODO.md` → Phase 2. Start with the TypeScript port of `client/scripts/sim`, using `shared/` data, plus cross-language golden tests on fire rate, wave formulas and hit shapes.

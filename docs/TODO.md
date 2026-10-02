@@ -1,15 +1,15 @@
 # TODO
 
-## Phase 1: local client (feel)
-- [ ] Greybox map per slice spec (safe area, 2 corridors, 2 rooms, yard, 4 zombie entries, weapon buy, ammo point)
-- [ ] Map data exporter (Godot tool script → `shared/maps/<id>.json`: walls, floors, nav polygons, spawns, interactables)
-- [ ] Player controller (third-person over-shoulder camera, collision)
-- [ ] Touch controls: move stick, drag-to-aim, fire, reload, switch, interact, revive; settings for sensitivity and quality
-- [ ] Weapons from `weapons.json` (pistol, rifle): fire rate, spread, mag/reserve, reload
-- [ ] Zombies from `zombies.json` (walker, runner): local nav, attack, capsule + head hit test
-- [ ] Waves from `waves.json`; local currency and buy points
-- [ ] HUD: health, ammo, wave, currency
-- [ ] Placeholder audio and hit feedback
+## Phase 1: local client (feel) ✅ done
+- [x] Greybox map facility_01 + map pipeline (scene → shared/maps JSON, CI sync check)
+- [x] First-person player, interpolated camera, viewmodel with recoil/reload/switch animation
+- [x] Multi-touch controls + keyboard/mouse; settings (sensitivity, invert, quality, FPS, volume)
+- [x] Pistol + rifle, walker + runner, infinite waves, credits, wall-buy, ammo point
+- [x] HUD, pause, game over; generated placeholder SFX
+- [x] Tests: 22 headless, bot playthrough, headless game run, browser bot + multi-touch
+- [ ] Art pass: needs CC0 assets from the owner (list in the phase 1 report)
+- [ ] Baked lighting (LightmapGI needs a GPU; try in CI with Xvfb/llvmpipe or in the editor later)
+- [ ] Arabic UI localisation (needs an Arabic font, e.g. Noto Sans Arabic OFL, which can be fetched from GitHub)
 
 ## Phase 2: authoritative server
 - [ ] Binary codec generated from `protocol.json` (TS + GDScript) with round-trip tests
