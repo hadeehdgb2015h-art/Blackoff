@@ -32,7 +32,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Read pinned Godot version
-        run: cat tools/godot_version.env >> "$GITHUB_ENV"
+        run: grep -E "^[A-Z_]+=" tools/godot_version.env >> "$GITHUB_ENV"
       - name: Cache Godot editor and web templates
         uses: actions/cache@v4
         with:
