@@ -93,3 +93,14 @@ jobs:
           path: site
       - id: deploy
         uses: actions/deploy-pages@v4
+      - name: Verify live preview
+        env:
+          URL: ${{ steps.deploy.outputs.page_url }}
+        run: |
+          sleep 15
+          for f in index.html index.js index.wasm index.pck version.txt; do
+            curl -fsS -o /dev/null --retry 5 --retry-delay 5 --compressed \
+              -w "$f %{http_code} %{content_type} downloaded=%{size_download}B\n" "${URL}$f"
+          done
+          echo "wasm content-encoding: $(curl -sSI -H 'Accept-Encoding: gzip, br' "${URL}index.wasm" | grep -i '^content-encoding' || echo none)"
+          curl -fsS "${URL}version.txt"
