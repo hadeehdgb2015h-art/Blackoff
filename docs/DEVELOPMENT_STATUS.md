@@ -26,7 +26,7 @@ URL flags: `?autostart=1` (skip menu), `?bot=1` (test bot plays), `?debug=1` (ex
 | Presentation | first-person rig, procedural zombie and weapon placeholders, tracers and impacts, generated SFX, map mesh batching, quality tiers (`docs/systems/presentation.md`). |
 | Input / UI | multi-touch stick, aim, fire-aim, reload, swap, use, pause; keyboard/mouse; HUD; pause; settings; game over; main menu (`docs/systems/input-and-hud.md`). |
 | Server | phase 0 skeleton plus map schema validation (loads `shared/maps`). |
-| Tests / CI | 22 headless client tests, bot playthrough, 2-minute headless game run, browser bot run, browser multi-touch run, server tests, map sync check, Pages deploy and verification (`docs/systems/testing.md`). |
+| Tests / CI | 21 headless client tests, bot playthrough, 2-minute headless game run, browser bot run, browser multi-touch run, server tests, map sync check, Pages deploy and verification (`docs/systems/testing.md`). |
 
 ## Known limitations
 

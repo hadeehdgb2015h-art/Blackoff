@@ -6,7 +6,7 @@
 - [x] Multi-touch controls + keyboard/mouse; settings (sensitivity, invert, quality, FPS, volume)
 - [x] Pistol + rifle, walker + runner, infinite waves, credits, wall-buy, ammo point
 - [x] HUD, pause, game over; generated placeholder SFX
-- [x] Tests: 22 headless, bot playthrough, headless game run, browser bot + multi-touch
+- [x] Tests: 21 headless, bot playthrough, headless game run, browser bot + multi-touch
 - [ ] Art pass: needs CC0 assets from the owner (list in the phase 1 report)
 - [ ] Baked lighting (LightmapGI needs a GPU; try in CI with Xvfb/llvmpipe or in the editor later)
 - [ ] Arabic UI localisation (needs an Arabic font, e.g. Noto Sans Arabic OFL, which can be fetched from GitHub)

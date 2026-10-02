@@ -21,3 +21,11 @@ The cloud build environment can reach only GitHub and package registries. Kenney
 
 ## Incoming
 Files dropped by the owner into `assets/incoming/` are reviewed, licence-checked, recorded here, then moved into `client/assets/`.
+
+## Wanted (owner uploads to `assets/incoming/`, CC0 only)
+Priority order. Keep each file small (models under 3 MB, glTF `.glb` preferred).
+1. **Zombie character, rigged, with walk / attack / death animations**: e.g. Quaternius (quaternius.com, search "zombie"; their packs are CC0).
+2. **Two firearms (pistol, assault rifle), low-poly, realistic style**: Quaternius or Kenney (kenney.nl, CC0); avoid toy/sci-fi styles.
+3. **Concrete / metal / painted-wall textures, 1K**: Poly Haven (polyhaven.com/textures) or ambientCG (ambientcg.com), both CC0.
+4. **Optional:** industrial props (crates, barrels, lockers) from Kenney or Quaternius.
+Include the page URL in the commit message or in a `SOURCE.txt` next to the file so the licence can be recorded here.
