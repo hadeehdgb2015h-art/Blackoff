@@ -71,6 +71,20 @@ def groan(rng, dur, f0, f1, rough):
     return lowpass(out, 0.12)
 
 
+def thunder(rng, dur=3.6):
+    """Distant thunder: a short crack, then a rolling low rumble with swells."""
+    n = int(SR * dur)
+    noise = [rng.uniform(-1, 1) for _ in range(n)]
+    rumble = lowpass(lowpass(noise, 0.02), 0.03)
+    crack = lowpass(noise, 0.35)
+    out = []
+    for i in range(n):
+        t = i / SR
+        swell = 0.6 + 0.4 * math.sin(t * 2.1 + 1.0) * math.sin(t * 5.3)
+        out.append(rumble[i] * 9.0 * env(t, 0.15, 1.3) * swell + crack[i] * env(t, 0.005, 0.12) * 0.6)
+    return out
+
+
 def tone(dur, freqs, decay):
     return [sum(math.sin(2 * math.pi * f * i / SR) for f in freqs) * math.exp(-(i / SR) / decay) for i in range(int(SR * dur))]
 
@@ -106,5 +120,6 @@ if __name__ == "__main__":
     write("smg_shot", gunshot(r, 0.22, 160, 0.04, 0.9, 0.55))
     write("box_open", concat(click(r, 0.12, 300, 0.06), lowpass([r.uniform(-1, 1) * math.exp(-(i / SR) / 0.25) for i in range(int(SR * 0.6))], 0.08)))
     write("box_roll", concat(*[tone(0.07, [600 + 90 * k, 900 + 60 * k], 0.04) for k in range(10)], gap=0.06))
+    write("thunder", thunder(r))
     write("box_offer", concat(tone(0.12, [523, 784], 0.08), tone(0.12, [659, 988], 0.08), tone(0.35, [784, 1175], 0.2)))
     print("sfx written to", os.path.abspath(OUT))

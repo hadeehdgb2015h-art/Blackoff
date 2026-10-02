@@ -14,7 +14,9 @@ python3 -m venv /opt/blender-venv && /opt/blender-venv/bin/pip install bpy==4.5.
 /opt/blender-venv/bin/python art/blender/build_weapons.py --preview /tmp/vm    # vm_pistol/rifle/shotgun/smg.glb (--only rifle)
 /opt/blender-venv/bin/python art/blender/build_environment.py --preview /tmp/env # env_props.glb (prop kit)
 /opt/blender-venv/bin/python art/textures/build_textures.py                     # tileable surface textures (numpy only)
-(cd art/textures && python3 build_fx_textures.py)                              # rune circle, glyphs, veins, mist
+(cd art/textures && python3 build_fx_textures.py)                              # rune circle, glyphs, veins, mist, moon face, bolt
+/opt/blender-venv/bin/python art/blender/build_dark_props.py --preview /tmp/dp   # dark_props.glb (skeleton, graves, gothic arch...)
+/opt/blender-venv/bin/python art/blender/build_backdrop.py --preview /tmp/bd     # backdrop.glb (mountains, castle, giant hand, pine)
 tools/build_maps.sh                                                             # place props/lights in facility_01
 ```
 Outputs go to `client/assets/models/`. They are committed, and CI does not rebuild art. `--preview` renders Cycles stills for review.
@@ -47,6 +49,14 @@ Outputs go to `client/assets/models/`. They are committed, and CI does not rebui
 - **Texture import:** `tools/fix_texture_imports.py` sets lossy WebP (quality 0.85, normals 0.9), lossless for additive `fx_*` sprites, and ORM maps limited to 512. `export_web.sh` runs it.
 - **Dark-fantasy layer (owner feedback: the first pass had no dark-fantasy feel):** night sky shader (violet zenith, rose horizon, moon, stars, a glowing rift across the north), a floating rift crystal with orbiting rune rings above a large rune circle at the yard breach, summoning circles at every zombie entry, a faint golden ward in the safe room, violet glyphs and corruption veins on walls, burn barrels with fire, violet spores and ground mist in the yard, light shafts under lamps, violet/magenta zombie eyes. Effect textures come from `art/textures/build_fx_textures.py` (rune circle, glyph atlas, veins, mist noise; white + alpha, tinted by the shader). Placement is in `build_facility_01.gd` → `_fx()`.
 - Review: `?autostart=1&at=x,z,yaw_deg[,pitch]` puts the camera anywhere (e.g. `-12.5,1.5,30,-10` lab, `13,1.8,-20,-8` storage, `-12,-12,140,-4` yard).
+
+## Dark fantasy, pass 2 (owner reference images)
+The owner sent references: a skeleton with glowing violet eyes in blue fog, a gothic castle under a stormy violet sky, a giant stone hand holding a castle, lightning over a castle, and a grinning moon face. The owner also asked that **no stars or polygrams** appear anywhere (the rune circle now uses rings, rune bands and spokes only).
+- `dark_props.glb` (`build_dark_props.py`, 1024² atlas): SkeletonSit (glowing eyes), Bones, Candles, DeadTree, Tombstone, TombstoneTall, GothicArch (skull keystone, raised portcullis), SpikeRow (fence tops), Brazier, GothicLamp (pale blue flame), Banner (violet, eye emblem). No religious symbols.
+- `backdrop.glb` (`build_backdrop.py`, flat colours, seen from far): Mountains ring (150–260 m, lower in the north), CastleHill (red-lit windows), GiantHand cradling a castle, Pine (the game scatters 320 with a MultiMesh).
+- Sky: the grinning moon (`fx_moon_face.png`, painted in numpy) is a billboard 450 m away, low in the north-west, so the castle stands out against it. The sky shader's own moon disc is off (`moon_disc = 0`). Lightning bolts flash over the horizon every 9–20 s, with a moon-light flash and a thunder sound (`thunder.wav`).
+- In the map: gothic arches over both yard gates, spikes on all fences, a graveyard strip on both yard sides, three dead trees, sitting skeletons with candles, bone piles, hellfire fissures from the breach, braziers instead of burn barrels, and violet banners on the facade.
+- Camera far is now 520–700 m (the backdrop); the playable map is unchanged (gameplay blockers were added only for new solid props).
 
 ## Budgets
 - Zombie: about 9–11k triangles, 1 texture, 2 materials. Godot generates LODs at import.

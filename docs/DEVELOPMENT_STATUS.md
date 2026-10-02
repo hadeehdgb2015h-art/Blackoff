@@ -14,7 +14,7 @@ Read this first in a new session. Then read `docs/TECHNICAL_ARCHITECTURE.md`, `d
 
 ## Live preview
 
-**https://hadeehdgb2015h-art.github.io/Blackoff/**: GitHub Pages, redeployed by CI on every push. The cloud session proxy blocks github.io, so the CI `pages` job verifies the live URL itself. Total first download is about 16 MB (wasm served gzip + 6 MB pck).
+**https://hadeehdgb2015h-art.github.io/Blackoff/**: GitHub Pages, redeployed by CI on every push. The cloud session proxy blocks github.io, so the CI `pages` job verifies the live URL itself. Total first download is about 18 MB (wasm served gzip + 8 MB pck).
 URL flags: `?autostart=1` (skip menu), `?bot=1` (test bot plays), `?debug=1` (exposes `window.__blackoff`), `?showcase=1|box`, `?weapon=<id>`, `?at=x,z,yaw[,pitch]` (camera placement), `&r=N` (bypass the phone cache).
 
 ## What exists
@@ -35,6 +35,7 @@ Also added on request: the supply cache (random weapon box) and two box-only wea
 
 ## Owner feedback log
 - Stage 3 first pass: quality looked worse, look sensitivity was bad, the aim moved with the move stick, and there was no dark-fantasy feel. Fixed: textures switched from ETC2 to WebP plus MSAA; the browser pointer-to-mouse double input was removed (it caused both the stick-turns-camera bug and the jumpy sensitivity); a new aim curve, smoothing and aim slowdown; a full dark-fantasy atmosphere layer (see `docs/systems/art-pipeline.md`).
+- Stage 3, second round: the owner liked it, asked to remove the star from the rune circle (no stars or polygrams anywhere), and sent five dark-fantasy reference images. Added: dark props (skeletons, graves, gothic gates, spikes, braziers, candles, banners, dead trees), a far backdrop (mountains, forest, castle, giant hand holding a castle), a grinning moon behind the castle, and a lightning storm with thunder (see `docs/systems/art-pipeline.md`).
 
 ## Known limitations
 

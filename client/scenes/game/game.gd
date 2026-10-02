@@ -45,6 +45,8 @@ func _ready() -> void:
 	add_child(_effects)
 	_sfx = Sfx.new()
 	add_child(_sfx)
+	_atmosphere.thunder.connect(func(delay: float):
+		get_tree().create_timer(delay).timeout.connect(func(): _sfx.play("thunder", -3.0, 0.15)))
 
 	var vignette_layer := CanvasLayer.new()
 	vignette_layer.layer = 0

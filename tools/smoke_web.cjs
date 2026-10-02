@@ -91,7 +91,7 @@ async function touchScenario(page) {
   if (process.env.SMOKE_EXPECT && !logs.join('\n').includes(process.env.SMOKE_EXPECT)) {
     errors.push('expected log line not found: ' + process.env.SMOKE_EXPECT);
   }
-  if (shot) await page.screenshot({ path: shot });
+  if (shot) await page.screenshot({ path: shot, timeout: 180000 });  // software GL can take a while per frame
   await browser.close();
   server.close();
   console.log(logs.slice(-25).join('\n'));

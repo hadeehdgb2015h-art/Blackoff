@@ -10,7 +10,8 @@ uniform vec3 ground_color : source_color = vec3(0.05, 0.035, 0.07);
 uniform vec3 cloud_color : source_color = vec3(0.16, 0.1, 0.22);
 uniform vec3 moon_color : source_color = vec3(0.93, 0.9, 1.0);
 uniform vec3 rift_color : source_color = vec3(1.0, 0.32, 0.86);
-uniform vec3 moon_dir = vec3(-0.35, 0.5, -0.8);
+uniform vec3 moon_dir = vec3(-0.33, 0.36, -0.87);
+uniform float moon_disc = 1.0;  // 0 when the map draws its own moon (billboard)
 
 float hash2(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
 float hash3(vec3 p) { return fract(sin(dot(p, vec3(127.1, 311.7, 74.7))) * 43758.5453); }
@@ -57,7 +58,7 @@ void sky() {
 	float disc = smoothstep(1.0, 0.96, length(muv)) * step(0.0, md);
 	float maria = 0.72 + 0.28 * smoothstep(0.35, 0.7, fbm(muv * 2.6 + 4.0));
 	float limb = 0.75 + 0.25 * sqrt(max(1.0 - dot(muv, muv), 0.0));
-	col += moon_color * disc * maria * limb * 0.95;
+	col += moon_color * disc * maria * limb * 0.95 * moon_disc;
 	col += moon_color * (pow(max(md, 0.0), 1500.0) * 0.35 + pow(max(md, 0.0), 60.0) * 0.12);
 
 	// rift: a jagged tear of light across the northern sky
@@ -74,7 +75,7 @@ void sky() {
 	// clouds, lit from below by the rift and the horizon
 	vec2 cp = d.xz / (h + 0.22) * 1.2;
 	float c = fbm(cp + vec2(3.1, 1.7));
-	float cl = smoothstep(0.48, 0.8, c) * smoothstep(0.0, 0.2, h) * (1.0 - disc);
+	float cl = smoothstep(0.44, 0.78, c) * smoothstep(0.0, 0.2, h) * (1.0 - disc * moon_disc);
 	vec3 ccol = cloud_color + rift_color * glow * 0.35 + band_color * exp(-h * 6.0) * 0.12;
 	col = mix(col, ccol, cl * 0.85);
 

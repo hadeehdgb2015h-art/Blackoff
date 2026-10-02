@@ -139,8 +139,8 @@ func _props() -> void:
 		["CrystalsSmall", Vector3(6.6, 0, -8.2), 1.0],
 		["CrystalsSmall", Vector3(15.5, 0, -22.6), 2.0],
 		["CrystalsSmall", Vector3(-18.5, 0, -8.6), 3.0],
-		["LampPost", Vector3(-15, 0, -7.2), 0.0, Vector2(0.4, 0.4), 4.0],
-		["LampPost", Vector3(15, 0, -7.2), 0.0, Vector2(0.4, 0.4), 4.0],
+		["GothicLamp", Vector3(-15, 0, -7.2), 0.0, Vector2(0.45, 0.45), 4.0],
+		["GothicLamp", Vector3(15, 0, -7.2), 0.0, Vector2(0.45, 0.45), 4.0],
 		["Generator", Vector3(17.5, 0, -12.5), PI / 2, Vector2(1.0, 1.7), 1.2],
 		["Sandbags", Vector3(-13.5, 0, -21.5), 0.0, Vector2(2.1, 0.55), 0.7],
 		["Sandbags", Vector3(13.5, 0, -21.5), 0.0, Vector2(2.1, 0.55), 0.7],
@@ -157,10 +157,34 @@ func _props() -> void:
 		["Crate", Vector3(5.5, 0, -16.7), 0.0],
 		["Crate", Vector3(6.6, 0, -16.7), 0.0],
 		["Crate", Vector3(6.0, 0.6, -17.0), 0.15],
-		["Barrel", Vector3(-4.6, 0, -7.6), 0.3, Vector2(0.7, 0.7), 0.9],   # burn barrels (fire fx)
-		["Barrel", Vector3(4.6, 0, -7.6), 1.9, Vector2(0.7, 0.7), 0.9],
+		["Brazier", Vector3(-4.6, 0, -7.6), 0.3, Vector2(0.8, 0.8), 1.1],   # fire fx on top
+		["Brazier", Vector3(4.6, 0, -7.6), 1.9, Vector2(0.8, 0.8), 1.1],
 		["Rubble", Vector3(-3.0, 0, -21.0), 1.3],
 		["Rubble", Vector3(10.0, 0, -9.0), 0.2],
+		# dark fantasy: gothic gates, a small graveyard, dead trees, the fallen
+		["GothicArch", Vector3(-10, 0, -24.0), PI],
+		["GothicArch", Vector3(10, 0, -24.0), PI],
+		["DeadTree", Vector3(-20.3, 0, -22.4), 0.7, Vector2(0.6, 0.6), 3.0],
+		["DeadTree", Vector3(20.2, 0, -22.6), 2.6, Vector2(0.6, 0.6), 3.0],
+		["DeadTree", Vector3(-20.6, 0, -12.6), 4.1, Vector2(0.6, 0.6), 3.0],
+		["Tombstone", Vector3(20.8, 0, -8.6), PI / 2, Vector2(0.35, 0.8), 0.9],
+		["Tombstone", Vector3(20.8, 0, -10.4), PI / 2 + 0.15, Vector2(0.35, 0.8), 0.9],
+		["TombstoneTall", Vector3(20.6, 0, -16.0), PI / 2, Vector2(0.75, 0.75), 1.9],
+		["Tombstone", Vector3(-20.8, 0, -10.0), -PI / 2, Vector2(0.35, 0.8), 0.9],
+		["TombstoneTall", Vector3(-20.6, 0, -19.4), -PI / 2, Vector2(0.75, 0.75), 1.9],
+		["SkeletonSit", Vector3(-1.6, 0, -6.4), 0.0, Vector2(0.6, 0.9), 0.8],
+		["SkeletonSit", Vector3(21.55, 0, -13.4), PI / 2, Vector2(0.9, 0.6), 0.8],
+		["SkeletonSit", Vector3(17.6, 0, -5.4), PI / 2 + 0.3, Vector2(0.9, 0.6), 0.8],
+		["Bones", Vector3(-4.6, 0, -17.2), 0.4],
+		["Bones", Vector3(-11.4, 0, -19.4), 2.0],
+		["Bones", Vector3(20.6, 0, -12.2), 1.0],
+		["Candles", Vector3(-1.1, 0, -6.55), 0.0],
+		["Candles", Vector3(20.8, 0, -9.5), 0.0],
+		["Candles", Vector3(-4.4, 0, 10.5), 0.0],
+		["Candles", Vector3(4.4, 0, 10.5), 1.0],
+		["Candles", Vector3(-11.4, 0.95, -3.4), 0.5],
+		["Banner", Vector3(-6.5, 0.3, -6.2), 0.0],
+		["Banner", Vector3(6.5, 0.3, -6.2), 0.0],
 	]
 	for it in items:
 		_prop(it[0], it[1], it[2])
@@ -169,6 +193,13 @@ func _props() -> void:
 			var c: Vector3 = it[1]
 			var blk := _box("Block_" + it[0], Vector3(c.x - sz.x / 2, 0, c.z - sz.y / 2), Vector3(c.x + sz.x / 2, it[4], c.z + sz.y / 2), "metal", "map_wall")
 			blk.visible = false
+	# wrought-iron spikes along the yard fence tops (gates left open)
+	for x in range(-21, 22, 2):
+		if absi(x - 10) > 2 and absi(x + 10) > 2:
+			_prop("SpikeRow", Vector3(x, FENCE_H, -24.0), 0.0)
+	for z in range(-23, -6, 2):
+		_prop("SpikeRow", Vector3(-22.0, FENCE_H, z), PI / 2)
+		_prop("SpikeRow", Vector3(22.0, FENCE_H, z), PI / 2)
 	# pipes along the corridor walls, just under the ceiling
 	for z in [3.0, 5.0, 7.0, 9.0, 11.0]:
 		_prop("Pipe", Vector3(-13.68, 2.72, z), -PI / 2)
@@ -235,7 +266,7 @@ const VIOLET := Color(0.68, 0.36, 1.0)
 const COOL := Color(0.82, 0.9, 1.0)
 
 
-const MOON_DIR := Vector3(-0.35, 0.5, -0.8)  # towards the moon: north-west, ~30° up
+const MOON_DIR := Vector3(-0.33, 0.36, -0.87)  # towards the moon: low in the north-west, behind the castle
 
 
 func _lights() -> void:
@@ -267,8 +298,8 @@ func _lights() -> void:
 	# yard: violet outbreak glow, sodium lamp posts, cold moon
 	_omni("Breach", Vector3(-7.5, 1.6, -20.0), Color(0.85, 0.35, 1.0), 3.2, 13.0)
 	lights.get_node("Breach").set_meta("flicker", "pulse")
-	_omni("PostW", Vector3(-15, 3.8, -7.92), AMBER, 3.0, 15.0)
-	_omni("PostE", Vector3(15, 3.8, -7.92), AMBER, 3.0, 15.0)
+	_omni("PostW", Vector3(-15, 3.3, -7.82), Color(0.62, 0.74, 1.0), 3.0, 15.0)
+	_omni("PostE", Vector3(15, 3.3, -7.82), Color(0.62, 0.74, 1.0), 3.0, 15.0)
 	_omni("YardFill", Vector3(0, 4.0, -15.0), Color(0.55, 0.62, 0.95), 1.6, 16.0)
 	_omni("GenLight", Vector3(16.9, 0.9, -12.5), Color(1.0, 0.25, 0.2), 0.7, 3.0, true)
 	var moon := DirectionalLight3D.new()
@@ -286,6 +317,7 @@ func _environment() -> void:
 	var sky_mat := ShaderMaterial.new()
 	sky_mat.shader = load("res://shaders/sky_night.gdshader")
 	sky_mat.set_shader_parameter("moon_dir", MOON_DIR.normalized())
+	sky_mat.set_shader_parameter("moon_disc", 0.0)  # the moon face billboard (fx "moon") replaces it
 	var sky := Sky.new()
 	sky.sky_material = sky_mat
 	sky.radiance_size = Sky.RADIANCE_SIZE_64
@@ -357,7 +389,20 @@ func _fx() -> void:
 	_fxm("mist", Vector3(0, 0.18, -15.0), floor_rot, {"size": Vector2(44, 18), "color": Color(0.42, 0.3, 0.62, 0.3), "speed": 1.0})
 	_fxm("mist", Vector3(0, 0.55, -15.0), floor_rot, {"size": Vector2(44, 18), "color": Color(0.5, 0.36, 0.7, 0.14), "speed": 1.6})
 	for x in [-4.6, 4.6]:
-		_fxm("fire", Vector3(x, 0.92, -7.6), Vector3.ZERO, {"energy": 2.0, "range": 7.0})
+		_fxm("fire", Vector3(x, 1.0, -7.6), Vector3.ZERO, {"energy": 2.0, "range": 7.0})
+	# candle lights (the candle meshes are props)
+	for p in [Vector3(-1.1, 0.5, -6.6), Vector3(20.6, 0.5, -9.5), Vector3(-4.4, 0.5, 10.7), Vector3(4.4, 0.5, 10.7)]:
+		_fxm("candle", p, Vector3.ZERO, {"energy": 0.8, "range": 3.2})
+	# hellfire fissures creeping from the breach
+	for f in [[Vector3(-7.5, 0.04, -15.6), 0.4, Vector2(2.6, 4.2)], [Vector3(-3.6, 0.04, -20.6), -1.3, Vector2(2.4, 3.6)], [Vector3(-11.2, 0.04, -17.0), 2.2, Vector2(2.2, 3.2)]]:
+		_fxm("sigil", f[0], Vector3(-PI / 2, f[1], 0), {"tex": "veins", "size": f[2], "color": Color(1.0, 0.32, 0.08), "energy": 1.7, "pulse": 0.35})
+	# the world beyond the fence: mountains, castles, a forest, the moon and a storm
+	_fxm("backdrop", Vector3(0, -2.0, 0), Vector3.ZERO, {"node": "Mountains"})
+	_fxm("backdrop", Vector3(-62, -3.0, -178), Vector3(0, PI + 0.25, 0), {"node": "CastleHill"})
+	_fxm("backdrop", Vector3(80, -4.0, -195), Vector3(0, PI - 0.35, 0), {"node": "GiantHand"})
+	_fxm("forest", Vector3.ZERO, Vector3.ZERO, {"count": 320, "r_min": 40.0, "r_max": 145.0, "seed": 5})
+	_fxm("moon", MOON_DIR.normalized() * 450.0, Vector3.ZERO, {"size": 110.0, "energy": 1.35})
+	_fxm("storm", Vector3.ZERO, Vector3.ZERO, {"radius": 230.0})
 	# light shafts under the ceiling lamps
 	for p in [Vector3(0, H - 0.05, 12.6), Vector3(0, H - 0.05, 15.6)]:
 		_fxm("shaft", p, Vector3.ZERO, {"color": WARM, "energy": 0.16})

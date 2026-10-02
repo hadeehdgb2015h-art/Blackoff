@@ -58,3 +58,32 @@ func test_art_models_have_required_parts() -> void:
 		var b := box.instantiate()
 		check(b.find_child("Lid", true, false) != null, "supply box has a Lid node")
 		b.free()
+
+
+func test_map_props_and_fx_resolve() -> void:
+	var meshes := {}
+	for path in MapDecor.LIBRARIES:
+		var lib: Node = (load(path) as PackedScene).instantiate()
+		for mi in lib.find_children("*", "MeshInstance3D", true, false):
+			meshes[str(mi.name)] = true
+		lib.free()
+	var backdrop: Node = (load(Atmosphere.BACKDROP) as PackedScene).instantiate()
+	var map: Node = (load("res://scenes/maps/facility_01.tscn") as PackedScene).instantiate()
+	var stack: Array[Node] = [map]
+	var props := 0
+	var fx := 0
+	while not stack.is_empty():
+		var n: Node = stack.pop_back()
+		stack.append_array(n.get_children())
+		if n.is_in_group("map_prop"):
+			props += 1
+			check(meshes.has(str(n.get_meta("prop"))), "prop mesh exists: " + str(n.get_meta("prop")))
+		if n.is_in_group("map_fx"):
+			fx += 1
+			check(str(n.get_meta("fx")) in Atmosphere.KINDS, "known fx kind: " + str(n.get_meta("fx")))
+			if str(n.get_meta("fx")) == "backdrop":
+				check(backdrop.find_child(str(n.get_meta("node")), true, false) != null, "backdrop node exists: " + str(n.get_meta("node")))
+	check(props > 50, "map has art props")
+	check(fx > 20, "map has fx markers")
+	map.free()
+	backdrop.free()

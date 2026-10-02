@@ -1,19 +1,24 @@
 class_name MapDecor
 extends RefCounted
-## Instantiates art props for `map_prop` markers (meta "prop" = node name in
-## res://assets/models/env_props.glb). Purely visual: gameplay blockers are
-## separate hidden boxes exported to shared/maps. Run before MapBatcher.
+## Instantiates art props for `map_prop` markers (meta "prop" = node name in one
+## of the prop libraries below; names are unique across them). Purely visual:
+## gameplay blockers are separate hidden boxes exported to shared/maps.
+## Run before MapBatcher.
 
-const LIBRARY := "res://assets/models/env_props.glb"
+const LIBRARIES := ["res://assets/models/env_props.glb", "res://assets/models/dark_props.glb"]
 
 
 static func decorate(map_root: Node3D) -> int:
-	if not ResourceLoader.exists(LIBRARY):
-		return 0
-	var lib: Node = (load(LIBRARY) as PackedScene).instantiate()
 	var meshes := {}
-	for mi in lib.find_children("*", "MeshInstance3D", true, false):
-		meshes[str(mi.name)] = (mi as MeshInstance3D).mesh
+	for path in LIBRARIES:
+		if not ResourceLoader.exists(path):
+			continue
+		var lib: Node = (load(path) as PackedScene).instantiate()
+		for mi in lib.find_children("*", "MeshInstance3D", true, false):
+			meshes[str(mi.name)] = (mi as MeshInstance3D).mesh
+		lib.free()
+	if meshes.is_empty():
+		return 0
 	var count := 0
 	var stack: Array[Node] = [map_root]
 	var markers: Array[Node3D] = []
@@ -34,5 +39,4 @@ static func decorate(map_root: Node3D) -> int:
 		mi.add_to_group("map_visual")
 		map_root.add_child(mi)
 		count += 1
-	lib.free()
 	return count
