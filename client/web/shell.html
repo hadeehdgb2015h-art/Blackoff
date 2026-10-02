@@ -104,15 +104,10 @@ if (matchMedia('(pointer: coarse)').matches) window.BlackoffTG._wantFs = true;
 <script src="$GODOT_URL"></script>
 <script>
 const GODOT_CONFIG = $GODOT_CONFIG;
-// Cache busting: every build loads its data pack under a new URL, so phones and
-// Telegram never keep an old game after an update (export_web.sh fills the id).
+// Engine and data files carry a content hash in their names (tools/hash_web_build.py
+// rewrites GODOT_CONFIG and this id), so phones keep them cached between visits
+// and an update downloads only what changed. sw.js keeps a copy as well.
 window.BLACKOFF_BUILD = '__BLACKOFF_BUILD__';
-(function () {
-  const pck = GODOT_CONFIG.executable + '.pck';
-  const busted = pck + '?v=' + window.BLACKOFF_BUILD;
-  GODOT_CONFIG.mainPack = busted;
-  if (GODOT_CONFIG.fileSizes && GODOT_CONFIG.fileSizes[pck]) GODOT_CONFIG.fileSizes[busted] = GODOT_CONFIG.fileSizes[pck];
-})();
 const GODOT_THREADS_ENABLED = $GODOT_THREADS_ENABLED;
 const engine = new Engine(GODOT_CONFIG);
 
@@ -141,6 +136,7 @@ const engine = new Engine(GODOT_CONFIG);
     fail(new Error('Missing browser features:\n' + missing.join('\n')));
     return;
   }
+  const t0 = performance.now();
   loadTelegram().then(function () {
     window.BlackoffTG.init();
     if (window.BlackoffTG.isTelegram()) window.BlackoffTG._wantFs = false;
@@ -152,7 +148,17 @@ const engine = new Engine(GODOT_CONFIG);
         }
       },
     });
-  }).then(function () { status.remove(); }, fail);
+  }).then(function () {
+    status.remove();
+    // Where the big files came from (console + window.BLACKOFF_LOAD for the smoke test).
+    const big = performance.getEntriesByType('resource').filter(function (e) { return /\.(wasm|pck)(\?|$)/.test(e.name); });
+    const fromNetwork = big.filter(function (e) { return e.transferSize > 0; }).length;
+    window.BLACKOFF_LOAD = { files: big.length, downloaded: fromNetwork, ms: Math.round(performance.now() - t0) };
+    console.log('[load] ' + (fromNetwork ? fromNetwork + ' of ' + big.length + ' big files downloaded' : 'all big files from cache') + ' in ' + window.BLACKOFF_LOAD.ms + ' ms');
+    if ('serviceWorker' in navigator && location.protocol !== 'file:') {
+      navigator.serviceWorker.register('sw.js').catch(function (e) { console.warn('[load] no service worker:', e.message); });
+    }
+  }, fail);
 })();
 </script>
 </body>

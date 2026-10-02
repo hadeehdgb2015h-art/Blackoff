@@ -4,7 +4,7 @@ Read this first in a new session. Then read `docs/TECHNICAL_ARCHITECTURE.md`, `d
 
 ## Current phase
 
-**Phase 5 (revive, buy, final HUD): done.** Phase 6 (performance tiers, anti-cheat logging) is next. **Phase 4 (Telegram, DB, deploy): built and rehearsed in CI; waiting for the owner to run the installer.** The owner's server (from `deploy/check.sh`): Ubuntu 22.04, 2 CPUs, 3.9 GB RAM (1.5 GB free), 3.4 GB disk free, Node 20.20, pm2 7.0.1 with ~25 apps, nginx 1.18 with 8 sites, certbot 1.21, Postgres on 5432, public IP 93.115.22.64, free port 8787. They run one command (`deploy/install.sh`, see `docs/systems/deploy.md`); the default address `blackoff.93-115-22-64.sslip.io` needs no DNS work. Then they create a bot with @BotFather and paste the token when asked.
+**Phase 5 (revive, buy, final HUD): done. Phase 7 (client caching): done.** The owner's expansion list (13 items) is scheduled as phases 7–13 in `docs/TODO.md`; phase 8 (zombies classic: power-ups, perk machines, new weapons) is next. Phase 6 (performance tiers, anti-cheat logging) is folded into phase 11. **Phase 4 (Telegram, DB, deploy): built and rehearsed in CI; waiting for the owner to run the installer.** The owner's server (from `deploy/check.sh`): Ubuntu 22.04, 2 CPUs, 3.9 GB RAM (1.5 GB free), 3.4 GB disk free, Node 20.20, pm2 7.0.1 with ~25 apps, nginx 1.18 with 8 sites, certbot 1.21, Postgres on 5432, public IP 93.115.22.64, free port 8787. They run one command (`deploy/install.sh`, see `docs/systems/deploy.md`); the default address `blackoff.93-115-22-64.sslip.io` needs no DNS work. Then they create a bot with @BotFather and paste the token when asked.
 
 | Phase | State |
 |---|---|
@@ -14,11 +14,13 @@ Read this first in a new session. Then read `docs/TECHNICAL_ARCHITECTURE.md`, `d
 | 3 Sync | done (`docs/systems/netcode.md`) |
 | 4 Telegram, DB, deploy | built (`docs/systems/deploy.md`); owner runs the installer |
 | 5 Revive, buy, final HUD | done (`docs/systems/simulation.md`, `input-and-hud.md`) |
+| 7 Client caching | done (`docs/systems/deploy.md`) |
+| 8–13 Expansion (owner list) | planned in `docs/TODO.md` |
 
 ## Live preview
 
 **https://hadeehdgb2015h-art.github.io/Blackoff/**: GitHub Pages, redeployed by CI on every push. The cloud session proxy blocks github.io, so the CI `pages` job verifies the live URL itself. Total first download is about 18 MB (wasm served gzip + 8 MB pck).
-URL flags: `?autostart=1` (skip menu), `?bot=1` (test bot plays), `?debug=1` (exposes `window.__blackoff`), `?showcase=1|box`, `?weapon=<id>`, `?at=x,z,yaw[,pitch]` (camera placement), `&r=N` (bypass the phone cache).
+URL flags: `?autostart=1` (skip menu), `?bot=1` (test bot plays), `?debug=1` (exposes `window.__blackoff`), `?showcase=1|box|soldier`, `?weapon=<id>`, `?at=x,z,yaw[,pitch]` (camera placement), `?online=1` / `?server=` (quick play online), `&r=N` (bypass a stale `index.html` on Pages, max 10 min; the game files themselves are content-hashed since phase 7 and never stale).
 
 ## What exists
 

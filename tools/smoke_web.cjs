@@ -1,6 +1,9 @@
 // Headless browser smoke test for a web build.
 //   node tools/smoke_web.cjs <dir> [screenshot.png] [query] [seconds]
 // e.g. query "?autostart=1&bot=1" plays solo practice with the test bot.
+// SMOKE_CACHE=1 loads twice and checks the second visit downloads no big file;
+// SMOKE_CACHE_NEXT=<dir2> serves dir2 (a newer build) on the second visit and
+// checks only the files whose names changed are downloaded;
 // SMOKE_URL=http://host/ tests a deployed site instead of serving <dir>;
 // SMOKE_TG_INITDATA=<signed initData> makes the page look like a Telegram Mini App.
 // Serves <dir> on a random port, opens it in Chromium (landscape phone viewport,
@@ -10,18 +13,23 @@ const fs = require('fs');
 const path = require('path');
 const { chromium } = require('playwright');
 
-const dir = path.resolve(process.argv[2] || 'build/web');
+let dir = path.resolve(process.argv[2] || 'build/web');
 const shot = process.argv[3];
 const query = process.argv[4] || '';
 const seconds = Number(process.argv[5] || 3);
 const types = { '.html': 'text/html', '.js': 'text/javascript', '.wasm': 'application/wasm',
-  '.pck': 'application/octet-stream', '.png': 'image/png', '.txt': 'text/plain' };
+  '.pck': 'application/octet-stream', '.png': 'image/png', '.txt': 'text/plain', '.json': 'application/json' };
 
+const served = {};  // path -> times sent (the cache test reads it)
 const server = http.createServer((req, res) => {
   const p = path.join(dir, decodeURIComponent(new URL(req.url, 'http://x').pathname));
   const file = p.endsWith('/') ? path.join(p, 'index.html') : p;
   if (!file.startsWith(dir) || !fs.existsSync(file)) { res.writeHead(404); res.end(); return; }
-  res.writeHead(200, { 'content-type': types[path.extname(file)] || 'application/octet-stream' });
+  served[path.basename(file)] = (served[path.basename(file)] || 0) + 1;
+  // like the deployed nginx: hashed files immutable, the rest revalidated
+  const immutable = /\.[0-9a-f]{12}\.(js|wasm|pck)$/.test(file);
+  res.writeHead(200, { 'content-type': types[path.extname(file)] || 'application/octet-stream',
+    'cache-control': immutable ? 'public, max-age=31536000, immutable' : 'no-cache' });
   fs.createReadStream(file).pipe(res);
 });
 
@@ -106,6 +114,27 @@ async function touchScenario(page) {
   }
   if (process.env.SMOKE_EXPECT && !logs.join('\n').includes(process.env.SMOKE_EXPECT)) {
     errors.push('expected log line not found: ' + process.env.SMOKE_EXPECT);
+  }
+  if (process.env.SMOKE_CACHE === '1') {
+    try {
+      // first visit: the service worker installs and keeps the hashed files
+      await page.waitForFunction(() => navigator.serviceWorker.controller || navigator.serviceWorker.getRegistration().then((r) => r && r.active), null, { timeout: 60000 });
+      await page.waitForTimeout(1500);
+      const before = JSON.parse(JSON.stringify(served));
+      let expected = [];
+      if (process.env.SMOKE_CACHE_NEXT) {   // a newer build: only files with new names may be fetched
+        const old = fs.readdirSync(dir);
+        dir = path.resolve(process.env.SMOKE_CACHE_NEXT);
+        expected = fs.readdirSync(dir).filter((f) => /\.(wasm|pck)$/.test(f) && !old.includes(f));
+      }
+      await page.goto(url + query);
+      await page.waitForFunction(() => window.BLACKOFF_LOAD, null, { timeout: 120000 });
+      const load = await page.evaluate(() => window.BLACKOFF_LOAD);
+      const again = Object.keys(served).filter((f) => /\.(wasm|pck)$/.test(f) && served[f] > (before[f] || 0));
+      logs.push('[cache] second visit: ' + JSON.stringify(load) + ' big files fetched from the server: ' + JSON.stringify(again) + ' expected: ' + JSON.stringify(expected));
+      if (again.sort().join() !== expected.sort().join()) errors.push('second visit downloaded ' + JSON.stringify(again) + ', expected ' + JSON.stringify(expected));
+      if (!(await page.evaluate(() => !!navigator.serviceWorker.controller))) errors.push('page not controlled by the service worker');
+    } catch (e) { errors.push('cache scenario: ' + e.message); }
   }
   if (shot) await page.screenshot({ path: shot, timeout: 180000 });  // software GL can take a while per frame
   await browser.close();

@@ -36,7 +36,24 @@
 - [x] Buying: wall weapons + ammo refills, ammo point, supply cache (since phase 1)
 - [x] HUD: team list, downed-teammate markers (edge-pinned), revive bar, downed screen, game-over table (server `scoreboard`)
 - [x] Bots revive teammates (headless/online tests)
-## Phase 6: performance tiers + anti-cheat logging
+## Phase 6: performance tiers + anti-cheat logging (folded into phases 9 and 11)
+
+## Owner expansion list (received after phase 5), scheduled as phases 7–13
+## Phase 7: client caching ✅ done
+- [x] Content-hashed engine and pack files, immutable headers, service worker; revisit downloads nothing, update downloads only the changed file (CI-tested)
+## Phase 8: zombies classic
+- [ ] Power-up drops from zombies (insta-kill, double points, max ammo, nuke, carpenter-like), timed
+- [ ] Perk machines (health, reload speed, sprint, fast swap…): permanent until downed; map spots
+- [ ] New weapons incl. a rare box-only energy weapon and a wind weapon (original designs/names)
+- [ ] Green light beam over the supply cache
+## Phase 9: UI and audio
+- [ ] Professional main menu (modes, profile, settings, how to play)
+- [ ] Movable HUD buttons (layout editor in settings, like the owner's screenshot)
+- [ ] Audio system: buses, 3D attenuation, reverb per room, music/ambient layers, better SFX
+## Phase 10: map x2 + 5 players per zone
+## Phase 11: TON points per kill (server-side, env-configurable), weekly leaderboard, anti-cheat logging
+## Phase 12: voice chat (mic/speaker on-off, clean audio; Telegram WebView permitting)
+## Phase 13: infection mode (real zombies vs real soldiers, up to 10, no bots)
 
 ## Open questions for the owner
 - Own subdomain or the free sslip.io address (installer default)

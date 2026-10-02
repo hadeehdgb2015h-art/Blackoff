@@ -259,6 +259,15 @@ game_locations() {
         proxy_pass http://127.0.0.1:$PORT;
         proxy_set_header X-Forwarded-For \$remote_addr;
     }
+    # Content-hashed engine and data files: phones may keep them for a year.
+    location ~ "\.[0-9a-f]{12}\.wasm\$" {
+        types { }
+        default_type application/wasm;
+        add_header Cache-Control "public, max-age=31536000, immutable";
+    }
+    location ~ "\.[0-9a-f]{12}\.(pck|js)\$" {
+        add_header Cache-Control "public, max-age=31536000, immutable";
+    }
     location ~ \.wasm\$ {
         types { }
         default_type application/wasm;

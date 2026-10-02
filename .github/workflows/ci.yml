@@ -92,6 +92,7 @@ jobs:
           export NODE_PATH=/tmp/smoke/node_modules SMOKE_DPR=0.5
           SMOKE_EXPECT="[game] wave 1 started" node tools/smoke_web.cjs build/web build/smoke.png "?autostart=1&bot=1" 45
           SMOKE_TOUCH=1 node tools/smoke_web.cjs build/web build/touch.png "?autostart=1&debug=1" 5
+          SMOKE_CACHE=1 node tools/smoke_web.cjs build/web "" "" 2
       - name: Online end-to-end (real server + Godot bots + web build)
         run: |
           (cd server && npm ci && npm run build)
@@ -161,11 +162,16 @@ jobs:
           # *.localhost counts as a secure context in Chromium, like the real HTTPS site
           echo "127.0.0.1 blackoff.localhost" | sudo tee -a /etc/hosts
           SUDO="sudo env PATH=$PATH"
-          $SUDO TELEGRAM_BOT_TOKEN=123456:CI-token bash deploy/install.sh --no-tls --domain blackoff.localhost --release build/release/blackoff.tar.gz --yes
+          # the updater must not swap in the published "edge" build mid-rehearsal: point it at this release
+          $SUDO TELEGRAM_BOT_TOKEN=123456:CI-token BLACKOFF_RELEASE_URL="file://$PWD/build/release" bash deploy/install.sh --no-tls --domain blackoff.localhost --release build/release/blackoff.tar.gz --yes
+          test "$(cat /opt/blackoff/current/VERSION)" = "$(cat build/release/version.txt)"
           curl -fsS http://blackoff.localhost/healthz | tee /tmp/h.json && echo
           grep -q '"store":"postgres"' /tmp/h.json
-          curl -fsSI -H 'Accept-Encoding: gzip' http://blackoff.localhost/index.wasm | tee /tmp/wasm.h
+          WASM=$(python3 -c "import json;print([f for f in json.load(open('build/web/manifest.json'))['files'] if f.endswith('.wasm')][0])")
+          curl -fsSI -H 'Accept-Encoding: gzip' "http://blackoff.localhost/$WASM" | tee /tmp/wasm.h
           grep -qi '^content-encoding: gzip' /tmp/wasm.h && grep -qi '^content-type: application/wasm' /tmp/wasm.h
+          grep -qi 'immutable' /tmp/wasm.h
+          curl -fsSI http://blackoff.localhost/index.html | grep -qi 'cache-control: no-cache'
           curl -fsS http://blackoff.localhost/config.js | grep -q 'ws://blackoff.localhost/ws'
           cd server
           SMOKE_BOT_TOKEN=123456:CI-token npx tsx tools/smokeDeploy.ts ws://blackoff.localhost/ws 1
@@ -241,9 +247,10 @@ jobs:
           URL: ${{ steps.deploy.outputs.page_url }}
         run: |
           sleep 15
-          for f in index.html index.js index.wasm index.pck version.txt; do
+          for f in index.html sw.js manifest.json version.txt $(curl -fsS "${URL}manifest.json" | python3 -c "import json,sys;print(' '.join(json.load(sys.stdin)['files']))"); do
             curl -fsS -o /dev/null --retry 5 --retry-delay 5 --compressed \
               -w "$f %{http_code} %{content_type} downloaded=%{size_download}B\n" "${URL}$f"
           done
-          echo "wasm content-encoding: $(curl -sSI -H 'Accept-Encoding: gzip, br' "${URL}index.wasm" | grep -i '^content-encoding' || echo none)"
+          WASM=$(curl -fsS "${URL}manifest.json" | python3 -c "import json,sys;print([f for f in json.load(sys.stdin)['files'] if f.endswith('.wasm')][0])")
+          echo "wasm content-encoding: $(curl -sSI -H 'Accept-Encoding: gzip, br' "${URL}$WASM" | grep -i '^content-encoding' || echo none)"
           curl -fsS "${URL}version.txt"

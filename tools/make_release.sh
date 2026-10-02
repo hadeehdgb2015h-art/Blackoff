@@ -8,7 +8,7 @@ root="$(cd "$(dirname "$0")/.." && pwd)"
 web="$(cd "$1" && pwd)"; mkdir -p "$2"; out="$(cd "$2" && pwd)"
 ver="${3:-$(date -u +%Y%m%d%H%M)-$(git -C "$root" rev-parse --short=7 HEAD)}"
 [ -f "$root/server/dist-bundle/server.mjs" ] || { echo "run: (cd server && npm run bundle)" >&2; exit 1; }
-[ -f "$web/index.html" ] && [ -f "$web/index.wasm" ] || { echo "no web build in $web" >&2; exit 1; }
+[ -f "$web/index.html" ] && ls "$web"/index.*.wasm >/dev/null 2>&1 || { echo "no web build in $web" >&2; exit 1; }
 stage="$(mktemp -d)"; trap 'rm -rf "$stage"' EXIT
 b="$stage/blackoff"
 mkdir -p "$b/server" "$b/shared" "$b/web" "$b/deploy"
