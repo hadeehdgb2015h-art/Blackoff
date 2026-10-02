@@ -75,7 +75,6 @@ jobs:
       - name: Build stripped engine template (cache miss only, about 20 min)
         if: steps.engine.outputs.cache-hit != 'true'
         run: |
-          sudo apt-get install -y icu-devtools >/dev/null
           pipx install scons >/dev/null
           git clone -q --depth 1 --branch "${GODOT_VERSION}-${GODOT_STATUS}" https://github.com/godotengine/godot.git /tmp/godot-src
           git clone -q --depth 1 https://github.com/emscripten-core/emsdk.git /tmp/emsdk

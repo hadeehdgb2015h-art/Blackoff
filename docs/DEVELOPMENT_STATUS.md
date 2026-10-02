@@ -22,10 +22,12 @@ Read this first in a new session. Then read `docs/TECHNICAL_ARCHITECTURE.md`, `d
 | 12 Voice chat | done (`docs/systems/netcode.md`, `input-and-hud.md`) |
 | 13 Infection mode | done (`docs/systems/server.md`, `netcode.md`) |
 | 14 Phone feedback: sound, performance, look | done (`docs/systems/presentation.md`, `input-and-hud.md`) |
+| 15–16 Phone performance, first-shot freeze, Arabic phones | done (`docs/systems/presentation.md`) |
+| 17 Real sounds, crackle fix, smaller download | done (`docs/systems/presentation.md`, `docs/ASSET_LICENSES.md`, `tools/engine/`) |
 
 ## Live preview
 
-**https://hadeehdgb2015h-art.github.io/Blackoff/**: GitHub Pages, redeployed by CI on every push. The cloud session proxy blocks github.io, so the CI `pages` job verifies the live URL itself. Total first download is about 18 MB (wasm served gzip + 8 MB pck).
+**https://hadeehdgb2015h-art.github.io/Blackoff/**: GitHub Pages, redeployed by CI on every push. The cloud session proxy blocks github.io, so the CI `pages` job verifies the live URL itself. Total first download is about 13 MB since phase 17 (stripped engine 24 MB wasm served as 6.2 MB gzip + 7.3 MB pck; it was 22 MB: 9.6 MB engine + 12.4 MB pck).
 URL flags: `?autostart=1` (skip menu), `?bot=1` (test bot plays), `?debug=1` (exposes `window.__blackoff`), `?showcase=1|box|soldier`, `?weapon=<id>`, `?at=x,z,yaw[,pitch]` (camera placement), `?online=1` / `?server=` (quick play online), `&r=N` (bypass a stale `index.html` on Pages, max 10 min; the game files themselves are content-hashed since phase 7 and never stale).
 
 ## What exists

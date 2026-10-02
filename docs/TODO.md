@@ -93,7 +93,7 @@
 - [x] Crackle: one player per sound with a voice limit, free-first 3D pool, master limiter in the page
 - [x] Thunder every 45-90 s (was 9-20 s); footsteps softer and quieter
 - [x] Models decimated (soldier 7k, zombies 3.5k, weapons 3-4.5k triangles), 512 px textures, 256 px material maps, no unused LODs or shadow meshes
-- [x] Stripped engine template (no physics, navigation, XR, advanced GUI, unused modules; ICU without CJK/Thai dictionaries), built and cached by CI
+- [x] Stripped engine template (no physics, navigation, XR, advanced GUI, unused modules), built and cached by CI
 - [ ] Owner listens on the phone and reports which sounds still feel wrong
 - [ ] Next size step if needed: brotli on the server (nginx module), or fewer weapon models shipped at start
 

@@ -19,3 +19,7 @@
 | Deploy rehearsal | CI job `release` (see `docs/systems/deploy.md`) | the real installer on a clean machine: nginx + pm2 + Postgres, Telegram-signed play through nginx, profile survives a restart, the web build opened as a Telegram Mini App joins online, update, uninstall |
 
 URL flags (web): `?autostart=1` skips the menu, `?bot=1` lets the test bot play, `?debug=1` publishes `window.__blackoff` state. Outside the browser, use the env vars `BLACKOFF_AUTOSTART`, `BLACKOFF_BOT`.
+
+## Stripped engine template (phase 17)
+
+`tools/engine/build_web_template.sh <godot source> <emsdk> <out zip>` builds Godot's web template with `tools/engine/blackoff_web.py`: no 2D/3D physics, navigation, XR or advanced GUI nodes, and only the modules the game uses (GDScript, WebSocket, the advanced text server for Arabic names, FreeType, WebP, mbedTLS; Brotli for the engine's WOFF2 default font). The wasm drops from 37.7 MB (9.6 MB gzip) to 24.1 MB (6.2 MB gzip). `tools/export_web.sh` uses it when `WEB_TEMPLATE` points at the zip (release exports only; the preset in git keeps an empty path). CI builds it once per change of `tools/engine/**`, the Godot version or `EMSDK_VERSION` (`tools/godot_version.env`) and caches it; a cache miss adds about 20 minutes. The template builds with `deprecated=no`, so scripts must not use deprecated API (for example `Image.create_empty`, not `Image.create`); the browser smoke test fails on any script error.
