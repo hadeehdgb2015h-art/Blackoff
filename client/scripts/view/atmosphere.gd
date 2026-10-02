@@ -2,12 +2,12 @@ class_name Atmosphere
 extends Node3D
 ## Dark-fantasy atmosphere, purely visual. Builds effects at the map's
 ## `map_fx` markers (meta "fx" = kind) and animates them:
-##   sigil  glowing quad (rune circle, glyph, corruption veins), marker +Z = facing
+##   sigil  glowing quad (corruption veins, hellfire fissures), marker +Z = facing
 ##   motes  drifting glowing dust (box volume)
 ##   mist   scrolling ground mist sheet
 ##   fire   brazier flames, embers and a flickering light
 ##   shaft  fake volumetric light cone under a lamp
-##   rift   floating crystal with orbiting rune rings (the outbreak centrepiece)
+##   rift   floating crystal with orbiting shards (the outbreak centrepiece)
 ##   candle small flickering candle light (the candle mesh is a map prop)
 ##   backdrop  a far scenery node from backdrop.glb (meta "node"): mountains, castles
 ##   forest pine trees scattered in a ring around the map (MultiMesh)
@@ -22,8 +22,6 @@ const KINDS := ["sigil", "motes", "mist", "fire", "shaft", "rift", "candle", "ba
 const BACKDROP := "res://assets/models/backdrop.glb"
 const SH_BILLBOARD := "res://shaders/fx_billboard.gdshader"
 const TEX := {
-	"rune_circle": "res://assets/textures/fx_rune_circle.png",
-	"glyphs": "res://assets/textures/fx_glyphs.png",
 	"veins": "res://assets/textures/fx_veins.png",
 	"mist": "res://assets/textures/fx_mist.png",
 	"moon": "res://assets/textures/fx_moon_face.png",
@@ -149,7 +147,7 @@ func _quad(size: Vector2, mat: Material) -> MeshInstance3D:
 
 
 func _sigil(m: Node3D) -> Node3D:
-	var mat := _glow_material(str(m.get_meta("tex", "rune_circle")), m.get_meta("color", Color(0.7, 0.35, 1.0)),
+	var mat := _glow_material(str(m.get_meta("tex", "veins")), m.get_meta("color", Color(0.7, 0.35, 1.0)),
 		float(m.get_meta("energy", 1.5)), float(m.get_meta("spin", 0.0)), float(m.get_meta("pulse", 0.25)), int(m.get_meta("cell", -1)))
 	return _quad(m.get_meta("size", Vector2.ONE), mat)
 
@@ -276,15 +274,6 @@ func _rift(m: Node3D) -> Node3D:
 		pivot.add_child(shard)
 		float_node.add_child(pivot)
 		_spinners.append([pivot, Vector3.UP, -0.9])
-	var ring_a := _quad(Vector2(3.0, 3.0), _glow_material("rune_circle", color, 1.3, 0.35, 0.2))
-	ring_a.rotation.x = -PI / 2
-	float_node.add_child(ring_a)
-	var gimbal := Node3D.new()
-	var ring_b := _quad(Vector2(2.3, 2.3), _glow_material("rune_circle", Color(0.6, 0.4, 1.0), 1.1, -0.5, 0.2))
-	gimbal.add_child(ring_b)
-	gimbal.rotation.x = 0.35
-	float_node.add_child(gimbal)
-	_spinners.append([gimbal, Vector3.UP, 0.45])
 	var light := OmniLight3D.new()
 	light.light_color = color
 	light.light_energy = 1.6

@@ -1,10 +1,9 @@
 #!/usr/bin/env python3
 """Effect textures for the dark-fantasy atmosphere, pure numpy.
+No circles, stars or sigils (owner request): veins, mist, moon face, lightning only.
 
 Run:  python3 art/textures/build_fx_textures.py
 Output (client/assets/textures/):
-  fx_rune_circle.png  512² white + alpha: arcane circle (rings, rune bands, spokes; no stars)
-  fx_glyphs.png       512² white + alpha: 4x4 atlas of runes for walls
   fx_veins.png        512² white + alpha: branching corruption veins (root at bottom centre)
   fx_mist.png         256² grey, seamless: fog noise for ground mist
   fx_moon_face.png    512² RGBA: pale blue moon with a grinning face and glowing eyes
@@ -88,99 +87,7 @@ class Canvas:
             self.segment(pts[i], pts[(i + 1) % len(pts)], w, v)
 
 
-def rune(rng, cx, cy, size, w, cv):
-    """A random angular rune made of 2-4 strokes on a 3x3 lattice."""
-    pts = [(cx + (i - 1) * size * 0.5, cy + (j - 1) * size * 0.5) for j in range(3) for i in range(3)]
-    spine = rng.integers(0, 3)
-    cv.segment(pts[spine], pts[6 + rng.integers(0, 3)], w)  # always a vertical-ish spine
-    for _ in range(rng.integers(1, 4)):
-        a, b = rng.choice(9, 2, replace=False)
-        cv.segment(pts[a], pts[b], w)
-    if rng.random() < 0.4:
-        cv.ring(pts[rng.integers(0, 9)][0], pts[rng.integers(0, 9)][1], size * 0.12, w * 0.8)
-
-
-def rotate(p, c, a):
-    s, k = math.sin(a), math.cos(a)
-    x, y = p[0] - c[0], p[1] - c[1]
-    return (c[0] + x * k - y * s, c[1] + x * s + y * k)
-
-
 # ---------------------------------------------------------------- textures
-
-def rune_circle():
-    cv = Canvas(S)
-    c = (0.5, 0.5)
-    cv.ring(0.5, 0.5, 0.47, 0.006)
-    cv.ring(0.5, 0.5, 0.445, 0.002)
-    cv.ring(0.5, 0.5, 0.36, 0.004)
-    cv.ring(0.5, 0.5, 0.34, 0.0018)
-    cv.ring(0.5, 0.5, 0.12, 0.004)
-    # glyph band between the outer rings
-    rng = np.random.default_rng(7)
-    n = 24
-    for i in range(n):
-        a = i / n * math.tau
-        r = 0.405
-        gx, gy = 0.5 + math.cos(a) * r, 0.5 + math.sin(a) * r
-        local = []
-        size = 0.045
-        # draw the rune upright relative to the circle tangent
-        pts = [(gx + (i2 - 1) * size * 0.5, gy + (j2 - 1) * size * 0.5) for j2 in range(3) for i2 in range(3)]
-        pts = [rotate(p, (gx, gy), a + math.pi / 2) for p in pts]
-        spine = rng.integers(0, 3)
-        local.append((pts[spine], pts[6 + rng.integers(0, 3)]))
-        for _ in range(rng.integers(1, 4)):
-            p0, p1 = rng.choice(9, 2, replace=False)
-            local.append((pts[p0], pts[p1]))
-        for p0, p1 in local:
-            cv.segment(p0, p1, 0.0028)
-    # No stars or polygrams (owner request): radial spokes, orbs and an inner rune ring.
-    for k in range(12):
-        a = k / 12 * math.tau
-        r0 = 0.15 if k % 3 == 0 else 0.22
-        cv.segment((0.5 + math.cos(a) * r0, 0.5 + math.sin(a) * r0),
-                   (0.5 + math.cos(a) * 0.335, 0.5 + math.sin(a) * 0.335), 0.0026 if k % 3 == 0 else 0.0018)
-    for k in range(4):  # orbs on the cardinal spokes
-        a = k / 4 * math.tau
-        cv.ring(0.5 + math.cos(a) * 0.27, 0.5 + math.sin(a) * 0.27, 0.022, 0.003)
-    cv.ring(0.5, 0.5, 0.22, 0.0018)
-    for i in range(12):  # small runes between the spokes of the inner ring
-        a = (i + 0.5) / 12 * math.tau
-        gx, gy = 0.5 + math.cos(a) * 0.185, 0.5 + math.sin(a) * 0.185
-        size = 0.028
-        pts = [(gx + (i2 - 1) * size * 0.5, gy + (j2 - 1) * size * 0.5) for j2 in range(3) for i2 in range(3)]
-        pts = [rotate(p, (gx, gy), a + math.pi / 2) for p in pts]
-        cv.segment(pts[rng.integers(0, 3)], pts[6 + rng.integers(0, 3)], 0.0022)
-        p0, p1 = rng.choice(9, 2, replace=False)
-        cv.segment(pts[p0], pts[p1], 0.0022)
-    cv.ring(0.5, 0.5, 0.05, 0.006)  # glowing core
-    # radial ticks on the outer edge
-    for k in range(72):
-        a = k / 72 * math.tau
-        r0 = 0.47 + (0.012 if k % 6 else 0.0)
-        cv.segment((0.5 + math.cos(a) * r0, 0.5 + math.sin(a) * r0),
-                   (0.5 + math.cos(a) * 0.49, 0.5 + math.sin(a) * 0.49), 0.0016)
-    # soft inner glow so the circle reads as light, not just lines
-    d = np.hypot(cv.x - c[0], cv.y - c[1])
-    glow = smooth(0.5, 0.1, d) * 0.12
-    alpha = np.clip(cv.m + glow, 0, 1) * smooth(0.5, 0.48, d)
-    save_rgba(os.path.join(OUT, "fx_rune_circle.png"), white_alpha(alpha))
-
-
-def glyphs():
-    cv = Canvas(S)
-    rng = np.random.default_rng(23)
-    for j in range(4):
-        for i in range(4):
-            cx, cy = (i + 0.5) / 4, (j + 0.5) / 4
-            rune(rng, cx, cy, 0.13, 0.0055, cv)
-            cv.ring(cx, cy, 0.105, 0.003, 0.7)
-    blur = cv.m.copy()
-    for _ in range(3):  # cheap halo
-        blur = (blur + np.roll(blur, 2, 0) + np.roll(blur, -2, 0) + np.roll(blur, 2, 1) + np.roll(blur, -2, 1)) / 5
-    save_rgba(os.path.join(OUT, "fx_glyphs.png"), white_alpha(np.maximum(cv.m, blur * 0.7)))
-
 
 def veins():
     cv = Canvas(S)
@@ -333,8 +240,6 @@ def bolt():
 
 if __name__ == "__main__":
     os.makedirs(OUT, exist_ok=True)
-    rune_circle()
-    glyphs()
     veins()
     mist()
     moon_face()

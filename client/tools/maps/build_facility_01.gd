@@ -351,37 +351,22 @@ func _environment() -> void:
 
 const ARCANE := Color(0.72, 0.35, 1.0)
 const ICHOR := Color(1.0, 0.3, 0.8)
-const WARD := Color(1.0, 0.72, 0.32)
 
 
 ## Dark-fantasy effect markers (group `map_fx`), built at runtime by Atmosphere.
 ## Visual only: not exported to shared/maps.
 func _fx() -> void:
 	var floor_rot := Vector3(-PI / 2, 0, 0)
-	# the safe room is protected by a faint golden ward
-	_fxm("sigil", Vector3(0, 0.02, 14.0), floor_rot, {"tex": "rune_circle", "size": Vector2(5.2, 5.2), "color": WARD, "energy": 0.55, "spin": 0.04, "pulse": 0.2})
 	_fxm("motes", Vector3(0, 1.4, 14.0), Vector3.ZERO, {"extents": Vector3(4.2, 1.2, 3.4), "amount": 18, "color": Color(1.0, 0.78, 0.4)})
-	# the outbreak: a floating rift crystal over a large rune circle in the yard
+	# the outbreak: a floating rift crystal over the yard breach
 	_fxm("rift", Vector3(-7.5, 3.0, -20.0), Vector3.ZERO, {"color": ICHOR})
-	_fxm("sigil", Vector3(-7.5, 0.03, -20.0), floor_rot, {"tex": "rune_circle", "size": Vector2(6.0, 6.0), "color": ARCANE, "energy": 1.6, "spin": -0.07, "pulse": 0.3})
-	# zombie entries are marked by smaller summoning circles
-	for e in [[Vector3(-10, 0.025, -22.4), 2.6], [Vector3(10, 0.025, -22.4), 2.6], [Vector3(-16.4, 0.025, -2.0), 2.2], [Vector3(16.4, 0.025, -2.0), 2.2]]:
-		_fxm("sigil", e[0], floor_rot, {"tex": "rune_circle", "size": Vector2(e[1], e[1]), "color": ICHOR, "energy": 1.1, "spin": 0.12, "pulse": 0.35})
 	# corruption veins creeping from the windows and over the facade
 	for side in [-1.0, 1.0]:
 		var face := Vector3(0, -side * PI / 2, 0)  # west wall faces +X, east wall faces -X
 		for z in [-3.7, -0.3]:
 			_fxm("sigil", Vector3(side * 17.83, 1.25, z), face, {"tex": "veins", "size": Vector2(1.9, 2.5), "color": ARCANE, "energy": 1.2, "pulse": 0.35})
 		_fxm("sigil", Vector3(side * 4.2, 1.45, -6.17), Vector3(0, PI, 0), {"tex": "veins", "size": Vector2(3.2, 2.9), "color": ICHOR, "energy": 1.0, "pulse": 0.3})
-		# warding glyphs beside the room doors (yard side) and along the corridors
-		for dx in [-1.75, 1.75]:
-			_fxm("sigil", Vector3(side * 13.0 + dx, 2.25, -6.17), Vector3(0, PI, 0), {"tex": "glyphs", "size": Vector2(0.75, 0.75), "color": ARCANE, "energy": 0.9, "cell": _glyph(), "pulse": 0.4})
-		for z in [3.5, 8.0, 12.0]:
-			_fxm("sigil", Vector3(side * 13.84, 1.6, z), Vector3(0, -side * PI / 2, 0), {"tex": "glyphs", "size": Vector2(0.55, 0.55), "color": ARCANE, "energy": 0.7, "cell": _glyph(), "pulse": 0.45})
-	# glyph over the safe room door and the box
-	_fxm("sigil", Vector3(0, 2.45, 10.17), Vector3.ZERO, {"tex": "glyphs", "size": Vector2(0.7, 0.7), "color": WARD, "energy": 1.2, "cell": 5, "pulse": 0.2})
-	# lab: arcane residue around the crystal growth
-	_fxm("sigil", Vector3(-9.0, 0.02, 1.2), floor_rot, {"tex": "rune_circle", "size": Vector2(2.0, 2.0), "color": ARCANE, "energy": 1.0, "spin": 0.2, "pulse": 0.3})
+	# lab and storage: drifting dust
 	_fxm("motes", Vector3(-13, 1.5, -2.0), Vector3.ZERO, {"extents": Vector3(4.5, 1.2, 3.5), "amount": 22, "color": Color(0.45, 0.9, 1.0)})
 	_fxm("motes", Vector3(13, 1.5, -2.0), Vector3.ZERO, {"extents": Vector3(4.5, 1.2, 3.5), "amount": 14, "color": Color(1.0, 0.7, 0.45)})
 	# yard: violet spores, ground mist, burn barrels
@@ -409,15 +394,6 @@ func _fx() -> void:
 	_fxm("shaft", Vector3(-13, H - 0.05, -1.5), Vector3.ZERO, {"color": COOL, "energy": 0.14})
 	for x in [11.0, 15.0]:
 		_fxm("shaft", Vector3(x, H - 0.05, -2.0), Vector3.ZERO, {"color": Color(1.0, 0.78, 0.5), "energy": 0.14})
-
-
-var _glyph_i := 0
-
-
-## Deterministic glyph sequence (the scene stays stable when regenerated).
-func _glyph() -> int:
-	_glyph_i += 1
-	return (_glyph_i * 7 + 3) % 16
 
 
 func _fxm(kind: String, pos: Vector3, rot: Vector3, params: Dictionary) -> void:

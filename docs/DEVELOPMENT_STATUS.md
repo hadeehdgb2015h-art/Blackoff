@@ -36,6 +36,7 @@ Also added on request: the supply cache (random weapon box) and two box-only wea
 ## Owner feedback log
 - Stage 3 first pass: quality looked worse, look sensitivity was bad, the aim moved with the move stick, and there was no dark-fantasy feel. Fixed: textures switched from ETC2 to WebP plus MSAA; the browser pointer-to-mouse double input was removed (it caused both the stick-turns-camera bug and the jumpy sensitivity); a new aim curve, smoothing and aim slowdown; a full dark-fantasy atmosphere layer (see `docs/systems/art-pipeline.md`).
 - Stage 3, second round: the owner liked it, asked to remove the star from the rune circle (no stars or polygrams anywhere), and sent five dark-fantasy reference images. Added: dark props (skeletons, graves, gothic gates, spikes, braziers, candles, banners, dead trees), a far backdrop (mountains, forest, castle, giant hand holding a castle), a grinning moon behind the castle, and a lightning storm with thunder (see `docs/systems/art-pipeline.md`).
+- Third round: the owner measured **60–70 FPS** on their phone, and asked to remove every circle as well. All rune circles and wall glyphs are gone; the rule is no circles, stars, sigils or religious symbols.
 
 ## Known limitations
 
