@@ -88,6 +88,10 @@ async function touchScenario(page) {
   if (process.env.SMOKE_TOUCH === '1' && errors.filter((e) => !ignorable(e)).length === 0) {
     try { await touchScenario(page); } catch (e) { errors.push('touch scenario: ' + e.message); }
   }
+  // Software GL in CI can run far below real time: give the expected line extra time.
+  for (let i = 0; i < 120 && process.env.SMOKE_EXPECT && !logs.join('\n').includes(process.env.SMOKE_EXPECT); i++) {
+    await page.waitForTimeout(500);
+  }
   if (process.env.SMOKE_EXPECT && !logs.join('\n').includes(process.env.SMOKE_EXPECT)) {
     errors.push('expected log line not found: ' + process.env.SMOKE_EXPECT);
   }
