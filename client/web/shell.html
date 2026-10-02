@@ -121,7 +121,12 @@ window.BlackoffRotate = (function () {
     canvas.style.width = cw + 'px';
     canvas.style.height = ch + 'px';
     canvas.style.transform = rot ? 'translate(' + W + 'px, 0) rotate(90deg)' : '';
-    const pw = Math.round(cw * dpr), ph = Math.round(ch * dpr);
+    // Phones have 2-3 device pixels per CSS pixel: rendering a 3D game at the
+    // panel's native 2.5-3 megapixels is what makes them hot and slow. The game
+    // is designed for 720 lines: never render more than that on a touch screen.
+    const touch = matchMedia('(pointer: coarse)').matches;
+    const scale = touch ? Math.min(dpr, Math.max(1, 720 / ch)) : dpr;
+    const pw = Math.round(cw * scale), ph = Math.round(ch * scale);
     if (canvas.width !== pw || canvas.height !== ph) { canvas.width = pw; canvas.height = ph; }
     document.documentElement.classList.toggle('rotated', rot);
   }

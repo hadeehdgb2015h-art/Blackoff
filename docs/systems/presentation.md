@@ -1,5 +1,15 @@
 # Presentation
 
+## Phone performance (phase 15)
+Measured in Chromium at phone pixel density (`scratchpad/measure.cjs`, `?debug=1` publishes `draw`, `prims`, `objects`, `canvas`): standing at the spawn with no zombie the game issued 285 draw calls and 215 k triangles per frame, and the canvas was the panel's native size (a 2.5–3 megapixel 3D frame). Script time was under 1 ms. WebGL draw calls and fill rate are what a phone pays for, so:
+- the shell caps the canvas at 720 lines on touch screens (`BlackoffRotate.layout`), whatever the device pixel ratio;
+- `MapBatcher` merges in 24 m chunks (was 12) and puts decoration props in their own meshes with `visibility_range_end` 42 m;
+- `game.gd: _cull_lights` keeps only lights near the player on (26 m on low, 40 medium, 80 high; the "extra" group only on medium and up);
+- on low, zombies beyond 30 m keep their pose (animation paused) and are only moved;
+- auto quality is sticky: phones stay on low by themselves (the player can choose more), a tier that dropped never climbs back in the session; the frame cap is auto (60, then 30 for the session once the phone cannot hold ~50), with 60 and 30 as manual choices;
+- the menu pre-loads the zombie, start-weapon and soldier models under the loading curtain;
+- `?perf=1` prints a per-section script-time breakdown every 10 s; the FPS label shows the tier.
+
 ## Audio on the web (phase 14)
 The web export runs without threads, so the engine plays every sound as a browser sample (an `AudioBufferSourceNode` per playback, gain nodes per bus). Buses added at runtime came out wired in a loop in that graph (bus → previous bus, master → bus), and Web Audio renders a loop without a delay as silence: the owner heard nothing. `Audio.flat` (true on the web) keeps every player on Master and applies the music and effects volumes per player (`Audio.bus_for`, `Audio.sfx_offset_db`); bus effects (reverb, low-pass) do not exist in sample mode anyway. The analyser probe (`scratchpad` during phase 14) confirmed sound reaches the destination. Phones: iPhone mutes Web Audio with the ringer switch; the first tap on the page also unlocks the browser's audio.
 

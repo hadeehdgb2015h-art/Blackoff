@@ -371,7 +371,8 @@ func update_state(p: SimPlayer, w: SimWorld, interact: Dictionary, delta: float)
 	_fps_t -= delta
 	if _fps_t <= 0.0:
 		_fps_t = 0.5
-		_fps.text = "%d FPS  ·  %s" % [Engine.get_frames_per_second(), Settings.effective_quality()]
+		_fps.text = "%d FPS  ·  %s  ·  %d draws" % [Engine.get_frames_per_second(), Settings.effective_quality(),
+			int(Performance.get_monitor(Performance.RENDER_TOTAL_DRAW_CALLS_IN_FRAME))]
 	_tick(delta)
 
 

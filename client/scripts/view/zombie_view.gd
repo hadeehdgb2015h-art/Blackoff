@@ -102,12 +102,19 @@ func set_sim_state(pos: Vector2, yaw: float, moving: bool) -> void:
 	_speed = (cur_pos - prev_pos).length() * 20.0 if moving else 0.0
 
 
-func update_view(alpha: float, delta: float) -> void:
+func update_view(alpha: float, delta: float, far := false) -> void:
 	if dead:
 		_update_death(delta)
 		return
 	_apply_transform(alpha)
 	if _model:
+		if far:
+			# far on a low phone: hold the pose, skip the animation player
+			if _anim and _anim.is_playing() and _anim.current_animation in LOOPING:
+				_anim.pause()
+			return
+		if _anim and not _anim.is_playing() and _busy_t <= 0.0:
+			_anim.play()
 		_update_model_anim(delta)
 		return
 	_phase += delta * (2.5 + _speed * 2.2)

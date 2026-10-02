@@ -40,6 +40,7 @@ static var _weapon_mesh_cache := {}
 
 
 func _ready() -> void:
+	_light.add_to_group("rig_light")
 	camera.fov = 75.0
 	camera.near = 0.03
 	camera.far = 90.0

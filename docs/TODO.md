@@ -77,5 +77,9 @@
 - [x] Dark fantasy UI: Cinzel, stone/brass panels, ember buttons, vignette and embers, loading curtain; settings, leaderboard, layout editor, HUD headlines restyled
 - [ ] Still to hear from the owner: phone model, Telegram or browser, frame rate shown by the FPS counter
 
+## Phase 15: radical phone performance
+- [x] Canvas capped at 720 lines on touch screens; 24 m batch chunks; props hidden beyond 42 m; lights culled by distance; far zombies hold their pose on low; sticky auto tier; auto 30 FPS cap; model pre-warm; on-screen counters and `?perf=1`
+- [ ] Next if still needed: fewer materials per chunk (texture atlas), simpler zombie meshes for far distance, Telegram WebView-specific findings from the owner's FPS screenshot
+
 ## Open questions for the owner
 - Own subdomain or the free sslip.io address (installer default)

@@ -285,7 +285,27 @@ func _enter(label: String) -> void:
 	_loading(label)
 	await get_tree().process_frame
 	await get_tree().process_frame
+	_prewarm()
 	get_tree().change_scene_to_file(GAME)
+
+
+## Loads the models the match will need while the curtain is up, so the first
+## zombie or weapon does not stall the first seconds of play.
+func _prewarm() -> void:
+	var vis := Visuals.data()
+	var paths: Array[String] = []
+	for z in vis.get("zombies", {}).values():
+		paths.append(str(z.get("model", "")))
+	for wid in ["pistol", "rifle"]:
+		paths.append(str(vis.get("weapons", {}).get(wid, {}).get("model", "")))
+	paths.append(str(vis.get("players", {}).get("soldier", {}).get("model", "")))
+	var t0 := Time.get_ticks_msec()
+	var n := 0
+	for path in paths:
+		if path != "" and ResourceLoader.exists(path):
+			load(path)
+			n += 1
+	print("[menu] prewarmed %d models in %d ms" % [n, Time.get_ticks_msec() - t0])
 
 
 func _play_online() -> void:

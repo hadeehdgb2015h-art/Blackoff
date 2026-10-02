@@ -4,9 +4,13 @@ extends RefCounted
 ## are CHUNK-metre squares, so each merged mesh only spans nearby lights (the
 ## Compatibility renderer lights an object with at most 8 lights). Gameplay
 ## data is unaffected: it comes from shared/maps/<id>.json.
+## Phones (phase 15): every merged mesh is one WebGL draw call, and draw calls
+## are what a phone pays for, so chunks are large, and decoration props
+## (map_visual) go into their own meshes that vanish beyond PROP_RANGE metres.
 
 const GROUPS := ["map_wall", "map_floor", "map_visual"]
-const CHUNK := 12.0
+const CHUNK := 36.0
+const PROP_RANGE := 38.0   ## decoration meshes are not drawn beyond this distance
 const OUTDOOR_Z := -6.2   ## meshes north of the building facade also get layer 2 (moonlight)
                           ## (the generator tags other open-air meshes with meta "outdoor")
 
@@ -33,15 +37,17 @@ static func batch(map_root: Node3D) -> int:
 		var xf := inv * mi.global_transform
 		var center := xf * mi.mesh.get_aabb().get_center()
 		var cell := Vector2i(floori(center.x / CHUNK), floori(center.z / CHUNK))
+		var prop := mi.is_in_group("map_visual") and not (mi.is_in_group("map_wall") or mi.is_in_group("map_floor"))
 		for si in mi.mesh.get_surface_count():
 			var mat: Material = mi.material_override if mi.material_override else mi.mesh.surface_get_material(si)
 			var key := "%d|%d|%d" % [mat.get_instance_id() if mat else 0, cell.x, cell.y]
 			var outdoor: bool = center.z < OUTDOOR_Z or bool(mi.get_meta("outdoor", false))
 			key += "|o" if outdoor else ""
+			key += "|p" if prop else ""
 			if not tools.has(key):
 				var st := SurfaceTool.new()
 				st.begin(Mesh.PRIMITIVE_TRIANGLES)
-				tools[key] = [st, mat, outdoor]
+				tools[key] = [st, mat, outdoor, prop]
 			(tools[key][0] as SurfaceTool).append_from(mi.mesh, si, xf)
 	for key in tools:
 		var st: SurfaceTool = tools[key][0]
@@ -52,6 +58,9 @@ static func batch(map_root: Node3D) -> int:
 		out.mesh = st.commit()
 		if tools[key][2]:
 			out.layers = 1 | 2
+		if tools[key][3]:
+			out.visibility_range_end = PROP_RANGE
+			out.visibility_range_end_margin = 4.0
 		map_root.add_child(out)
 	for v in victims:
 		v.get_parent().remove_child(v)

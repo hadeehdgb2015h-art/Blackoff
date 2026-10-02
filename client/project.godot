@@ -44,5 +44,6 @@ common/physics_ticks_per_second=60
 renderer/rendering_method="gl_compatibility"
 renderer/rendering_method.mobile="gl_compatibility"
 textures/vram_compression/import_etc2_astc=true
+textures/default_filters/anisotropic_filtering_level=1
 anti_aliasing/quality/msaa_3d=0
 environment/defaults/default_clear_color=Color(0.03, 0.035, 0.04, 1)

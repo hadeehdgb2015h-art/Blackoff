@@ -24,6 +24,15 @@ var _izviews := {}  ## infection: infected players' entity id -> ZombieView (wit
 var _perf_t: float = 0.0
 var _perf_frames: int = 0
 var _perf_good: int = 0
+var _perf_dropped: bool = false
+var _light_t: float = 0.0
+var _light_scan: int = 0
+var _map_lights: Array[Light3D] = []
+var _prof: bool = false            ## ?perf=1 / BLACKOFF_PERF=1: print where frame time goes
+var _prof_acc := {}                ## section -> usec this window
+var _prof_frames: int = 0
+var _prof_wall: int = 0            ## usec at window start
+var _prof_t0: int = 0
 var _online: bool = false
 var _net_log_t: float = 10.0
 var _showcase_soldiers: Array = []
@@ -94,6 +103,7 @@ func _ready() -> void:
 	_defs = defs
 	Settings.changed.connect(_apply_quality)
 	_debug_js = Platform.is_web and Platform.query_param("debug") == "1"
+	_prof = Platform.query_param("perf") == "1"
 	if _debug_js or Platform.query_param("audiocheck") == "1":
 		# how this platform plays sound (web without threads = sample playback; a
 		# stream that is not registered as a sample stays silent there)
@@ -177,6 +187,7 @@ func _process(delta: float) -> void:
 			world.step()
 			_sync_views()
 			_acc -= world.dt
+	_prof_t0 = Time.get_ticks_usec()
 	if not _paused:
 		_acc += delta
 		var ticks := 0
@@ -184,9 +195,12 @@ func _process(delta: float) -> void:
 			var intent := bot.think(world) if bot else _controls.sample()
 			world.set_input(pid, intent)
 			world.step()
+			_pm("step")
 			_sync_views()
+			_pm("sync_views")
 			for e in world.events:
 				_on_event(e)
+			_pm("events")
 			_acc -= world.dt
 			ticks += 1
 		if ticks == MAX_CATCHUP_TICKS:
@@ -197,11 +211,15 @@ func _process(delta: float) -> void:
 		_controls.set_look(p.yaw, p.pitch)
 	var eye := p.prev_pos.lerp(p.pos, alpha)
 	_controls.aim_friction = _aim_friction(Vector3(eye.x, float(world.constants.player.eyeHeight), eye.y))
+	_pm("aim_friction")
 	_rig.set_view(Vector3(eye.x, float(world.constants.player.eyeHeight), eye.y), _controls.yaw, _controls.pitch, p.moving, delta)
+	_pm("rig")
+	var low := Settings.effective_quality() == "low"
 	for v in _zviews.values():
-		v.update_view(alpha, delta)
+		v.update_view(alpha, delta, low and _far_from(eye, v))
 	for v in _izviews.values():
-		v.update_view(alpha, delta)
+		v.update_view(alpha, delta, low and _far_from(eye, v))
+	_pm("zombie_views")
 	for v in _pviews.values():
 		v.update_view(alpha, delta)
 	if _online:
@@ -210,15 +228,22 @@ func _process(delta: float) -> void:
 	_sync_powerup_views()
 	for v in _puviews.values():
 		v.update_view(world.time, delta)
+	_pm("other_views")
 	_body_sounds(p, delta)
+	_pm("sounds")
 	var opt := world.interact_option(pid)
 	var revive: bool = not opt.is_empty() and opt.action == "revive"
 	_controls.revive_available = revive
 	_controls.interact_label = "" if opt.is_empty() or revive else str(opt.label)
 	_controls.interact_ok = not opt.is_empty() and opt.affordable and not opt.full
+	_pm("interact")
 	_hud.update_state(p, world, opt, delta)
+	_pm("hud")
 	_hud.set_markers(_downed_markers(p))
+	_pm("markers")
+	_cull_lights(p, delta)
 	_govern_quality(delta)
+	_prof_frame()
 	_ambient_groans(delta)
 	if not _showcase_soldiers.is_empty():
 		_update_soldier_showcase(delta)
@@ -236,6 +261,11 @@ func _process(delta: float) -> void:
 				print("[game] infection: me %s hp=%d at (%.1f, %.1f) others %s" % ["inf" if p.team == 1 else "sol", p.hp, p.pos.x, p.pos.y, " ".join(others)])
 	if _debug_js:
 		_publish_debug(p, delta)
+
+
+## Low tier: zombies beyond this are moved but not animated each frame.
+func _far_from(eye: Vector2, v: ZombieView) -> bool:
+	return eye.distance_squared_to(v.cur_pos) > 30.0 * 30.0
 
 
 ## Touch aim assist (presentation only, the server still checks every shot):
@@ -262,7 +292,13 @@ func _publish_debug(p: SimPlayer, delta: float) -> void:
 	_debug_t = 0.2
 	var d := {"x": p.pos.x, "z": p.pos.y, "yaw": p.yaw, "pitch": p.pitch, "shots": p.shots_fired,
 		"mag": p.weapon().mag, "hp": p.hp, "wave": world.director.wave, "zombies": world.zombies.size(),
-		"tick": world.tick, "online": _online, "players": world.players.size(), "rtt": Net.rtt_ms}
+		"tick": world.tick, "online": _online, "players": world.players.size(), "rtt": Net.rtt_ms,
+		"fps": Engine.get_frames_per_second(), "tier": Settings.effective_quality(),
+		"draw": int(Performance.get_monitor(Performance.RENDER_TOTAL_DRAW_CALLS_IN_FRAME)),
+		"prims": int(Performance.get_monitor(Performance.RENDER_TOTAL_PRIMITIVES_IN_FRAME)),
+		"objects": int(Performance.get_monitor(Performance.RENDER_TOTAL_OBJECTS_IN_FRAME)),
+		"process_ms": Performance.get_monitor(Performance.TIME_PROCESS) * 1000.0,
+		"canvas": [get_viewport().size.x, get_viewport().size.y]}
 	JavaScriptBridge.eval("window.__blackoff = %s;" % JSON.stringify(d), true)
 
 
@@ -694,6 +730,109 @@ func _toggle_pause() -> void:
 		_pause_menu = null
 
 
+## Only the nearest few lights are on: every lit pixel pays per light in the
+## shader (up to 8 per object), and the scene holds over forty. Low keeps the
+## 4 nearest within reach, medium 8, high 16. Lights that views create later
+## (power-ups, machines) are picked up on the next pass.
+func _cull_lights(p: SimPlayer, delta: float) -> void:
+	_light_t -= delta
+	if _light_t > 0.0:
+		return
+	_light_t = 0.5
+	_light_scan -= 1
+	if _map_lights.is_empty() or _light_scan <= 0:
+		_light_scan = 10  # rescan every 5 s for lights created since
+		_map_lights.clear()
+		for n in get_tree().root.find_children("*", "OmniLight3D", true, false):
+			if n is Light3D and not n.is_in_group("rig_light"):
+				_map_lights.append(n)
+	var q := Settings.effective_quality()
+	var keep := 4 if q == "low" else (8 if q == "medium" else 16)
+	var extra_on: bool = Settings.quality_params().lights
+	var ranked: Array = []
+	for l in _map_lights:
+		if not is_instance_valid(l):
+			continue
+		var allowed := extra_on or not l.is_in_group("map_light_extra")
+		var reach: float = float(l.get("omni_range")) if l is OmniLight3D else 10.0
+		var d := Vector2(l.global_position.x, l.global_position.z).distance_to(p.pos) - reach
+		if allowed and d < 18.0:
+			ranked.append([d, l])
+		else:
+			l.visible = false
+	ranked.sort_custom(func(a, b): return a[0] < b[0])
+	for i in ranked.size():
+		(ranked[i][1] as Light3D).visible = i < keep
+
+
+## Profiling (?perf=1): accumulates the section that ended now.
+func _pm(section: String) -> void:
+	if not _prof:
+		return
+	var now := Time.get_ticks_usec()
+	_prof_acc[section] = int(_prof_acc.get(section, 0)) + (now - _prof_t0)
+	_prof_t0 = now
+
+
+func _prof_frame() -> void:
+	if not _prof:
+		return
+	_prof_frames += 1
+	var now := Time.get_ticks_usec()
+	if _prof_wall == 0:
+		_prof_wall = now
+	if now - _prof_wall < 10_000_000:
+		return
+	var n := maxf(1.0, float(_prof_frames))
+	var parts := PackedStringArray()
+	var total := 0
+	for k in _prof_acc:
+		total += int(_prof_acc[k])
+		parts.append("%s %.2f" % [k, int(_prof_acc[k]) / n / 1000.0])
+	print("[perf] %d frames in 10 s (%.1f fps): script ms/frame %.2f = %s | zombies %d views %d draw %d prims %d process %.2f ms" % [
+		_prof_frames, n / 10.0, total / n / 1000.0, ", ".join(parts), world.zombies.size(), _zviews.size(),
+		int(Performance.get_monitor(Performance.RENDER_TOTAL_DRAW_CALLS_IN_FRAME)), int(Performance.get_monitor(Performance.RENDER_TOTAL_PRIMITIVES_IN_FRAME)),
+		Performance.get_monitor(Performance.TIME_PROCESS) * 1000.0])
+	_prof_acc.clear()
+	_prof_frames = 0
+	_prof_wall = now
+	_prof_breakdown()
+
+
+## What the camera can see, by kind: the draw-call budget on a phone.
+func _prof_breakdown() -> void:
+	var cam := _rig.camera
+	var counts := {}
+	var surfs := {}
+	for n in get_tree().root.find_children("*", "VisualInstance3D", true, false):
+		var vi := n as VisualInstance3D
+		if not vi.is_visible_in_tree():
+			continue
+		var aabb := vi.get_aabb()
+		var center := vi.global_transform * aabb.get_center()
+		var inside := cam.is_position_in_frustum(center)
+		if not inside and aabb.size.length() > 6.0:
+			inside = true  # big meshes count even when their centre is behind the camera
+		if not inside:
+			continue
+		var key := vi.get_class()
+		if vi is MeshInstance3D:
+			var nm := str(vi.name)
+			key = "Mesh:" + nm.split("_")[0] if "_" in nm else "Mesh:" + nm.left(10)
+			var p := vi.get_parent()
+			if p and p.get_script():
+				key = "Mesh<" + str(p.get_script().get_global_name())
+			var m: Mesh = (vi as MeshInstance3D).mesh
+			surfs[key] = int(surfs.get(key, 0)) + (m.get_surface_count() if m else 0)
+		counts[key] = int(counts.get(key, 0)) + 1
+	var keys := counts.keys()
+	keys.sort_custom(func(a, b): return counts[a] > counts[b])
+	var parts := PackedStringArray()
+	for k in keys.slice(0, 16):
+		parts.append("%s %d%s" % [k, counts[k], ("/%ds" % surfs[k]) if surfs.has(k) else ""])
+	print("[perf] in view: " + ", ".join(parts))
+
+
 ## Auto quality: phones start low and climb while the frame rate holds; any
 ## tier that cannot hold ~42 FPS drops. Measured over 4-second windows.
 func _govern_quality(delta: float) -> void:
@@ -706,14 +845,23 @@ func _govern_quality(delta: float) -> void:
 	var fps := _perf_frames / _perf_t
 	_perf_t = 0.0
 	_perf_frames = 0
+	var cap := Settings.effective_fps_cap()
+	# Frame cap first: a screen that cannot hold ~50 of 60 runs at a steady 30
+	# for the rest of the session (steady beats stuttering, and it runs cooler).
+	if Settings.fps_cap == 0 and cap == 60 and fps < 50.0:
+		Settings.auto_fps = 30
+		Engine.max_fps = 30
+		print("[perf] frame cap -> 30 (%.0f fps)" % fps)
+		return
 	var tiers := ["low", "medium", "high"]
 	var i := tiers.find(Settings.auto_tier)
-	var top := 1 if Platform.is_touch else 2   # phones never go above medium on their own
+	var top := 0 if Platform.is_touch else 2   # phones stay low on their own; the player can pick more in settings
 	var want := i
-	if fps < 42.0 and i > 0:
+	if fps < cap * 0.7 and i > 0:
 		want = i - 1
 		_perf_good = 0
-	elif fps > 56.0 and i < top:
+		_perf_dropped = true   # once dropped, never climb back this session (no flip-flop)
+	elif fps > cap * 0.93 and i < top and not _perf_dropped:
 		_perf_good += 1
 		if _perf_good >= 3:   # 12 steady seconds before stepping up
 			want = i + 1
@@ -736,8 +884,7 @@ func _apply_quality() -> void:
 	if we:
 		we.environment.fog_enabled = q.fog
 		we.environment.ambient_light_energy = 0.85 if q.lights else 1.05
-	for n in get_tree().get_nodes_in_group("map_light_extra"):
-		(n as Light3D).visible = q.lights
+	_light_t = 0.0  # the light culling pass re-evaluates every light for this tier
 	if we:
 		we.environment.glow_enabled = q.glow
 	_atmosphere.set_quality(Settings.quality)
