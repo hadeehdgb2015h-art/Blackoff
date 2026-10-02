@@ -2,20 +2,20 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://b22w1d1y4i1d4"
-path="res://.godot/imported/metal_plate_albedo.png-92e3ea3a632d29d3dcdeebfa9ca61945.ctex"
+uid="uid://cu77fxgvgn8gy"
+path="res://.godot/imported/fx_glyphs.png-fc7b5f4829abf2ee279616ba5e031fd2.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/textures/metal_plate_albedo.png"
-dest_files=["res://.godot/imported/metal_plate_albedo.png-92e3ea3a632d29d3dcdeebfa9ca61945.ctex"]
+source_file="res://assets/textures/fx_glyphs.png"
+dest_files=["res://.godot/imported/fx_glyphs.png-fc7b5f4829abf2ee279616ba5e031fd2.ctex"]
 
 [params]
 
-compress/mode=1
+compress/mode=0
 compress/high_quality=false
 compress/lossy_quality=0.85
 compress/uastc_level=0

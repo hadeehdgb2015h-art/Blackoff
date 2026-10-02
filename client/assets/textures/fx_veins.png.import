@@ -2,20 +2,20 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://b22w1d1y4i1d4"
-path="res://.godot/imported/metal_plate_albedo.png-92e3ea3a632d29d3dcdeebfa9ca61945.ctex"
+uid="uid://cktxwrhux4o71"
+path="res://.godot/imported/fx_veins.png-777cd89cee134b73425280d8877f4917.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/textures/metal_plate_albedo.png"
-dest_files=["res://.godot/imported/metal_plate_albedo.png-92e3ea3a632d29d3dcdeebfa9ca61945.ctex"]
+source_file="res://assets/textures/fx_veins.png"
+dest_files=["res://.godot/imported/fx_veins.png-777cd89cee134b73425280d8877f4917.ctex"]
 
 [params]
 
-compress/mode=1
+compress/mode=0
 compress/high_quality=false
 compress/lossy_quality=0.85
 compress/uastc_level=0

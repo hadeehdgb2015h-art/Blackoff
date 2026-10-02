@@ -3,11 +3,9 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://c238bkj26lrb6"
-path.s3tc="res://.godot/imported/vm_shotgun_vm_shotgun_orm.jpg-83e7e4126a806f92a4f42733a3b0e830.s3tc.ctex"
-path.etc2="res://.godot/imported/vm_shotgun_vm_shotgun_orm.jpg-83e7e4126a806f92a4f42733a3b0e830.etc2.ctex"
+path="res://.godot/imported/vm_shotgun_vm_shotgun_orm.jpg-83e7e4126a806f92a4f42733a3b0e830.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc", "etc2_astc"],
-"vram_texture": true
+"vram_texture": false
 }
 generator_parameters={
 "md5": "2db3929e1e7229b2620a90ba595439f0"
@@ -16,13 +14,13 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/models/vm_shotgun_vm_shotgun_orm.jpg"
-dest_files=["res://.godot/imported/vm_shotgun_vm_shotgun_orm.jpg-83e7e4126a806f92a4f42733a3b0e830.s3tc.ctex", "res://.godot/imported/vm_shotgun_vm_shotgun_orm.jpg-83e7e4126a806f92a4f42733a3b0e830.etc2.ctex"]
+dest_files=["res://.godot/imported/vm_shotgun_vm_shotgun_orm.jpg-83e7e4126a806f92a4f42733a3b0e830.ctex"]
 
 [params]
 
-compress/mode=2
+compress/mode=1
 compress/high_quality=false
-compress/lossy_quality=0.7
+compress/lossy_quality=0.85
 compress/uastc_level=0
 compress/rdo_quality_loss=0.0
 compress/hdr_compression=1

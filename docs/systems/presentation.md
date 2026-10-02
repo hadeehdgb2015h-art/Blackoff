@@ -7,6 +7,7 @@
 - `zombie_view.gd`: interpolated zombie with a procedural placeholder rig (merged meshes, 3 draw calls), walk sway, attack swing, hit flash (material overlay) and death fall.
 - `effects.gd`: pooled tracers and impact puffs. `sfx.gd`: pooled 2D and 3D audio.
 - `map_batcher.gd`: merges static map meshes by material.
+- `atmosphere.gd`: dark-fantasy effects at the map's `map_fx` markers: rune circles, glyphs and corruption veins (additive shader sprites), drifting motes, ground mist, burn-barrel fires with flickering lights, light shafts, and the floating rift crystal over the yard breach. The sky is a shader (`shaders/sky_night.gdshader`): moon, stars, clouds and a glowing rift. A violet screen vignette sits under the HUD. Zombie eye glow colour comes from `visuals.json` (`eyes`).
 
 ## Art integration points
 `client/data/visuals.json` is client-only presentation data.
@@ -16,8 +17,10 @@
 - Sounds: replace the files in `client/assets/sfx/`; names are listed in `sfx.gd`.
 
 ## Quality tiers (Settings → Graphics)
-| Tier | 3D scale | Lights | Muzzle light | Fog | Far |
-|---|---|---|---|---|---|
-| low | 0.6 | key lights only | off | off | 55 m |
-| medium (default) | 0.8 | all | off | on | 75 m |
-| high | 1.0 | all | on | on | 90 m |
+| Tier | 3D scale | MSAA | Lights | Muzzle light | Fog / glow | Mist, light shafts | Far |
+|---|---|---|---|---|---|---|---|
+| low | 0.65 | off | key lights only | off | off | off, motes 40 % | 55 m |
+| medium (default) | 0.85 | 2× | all | off | on | on | 75 m |
+| high | 1.0 | 4× | all | on | on | on | 90 m |
+
+Textures ship as lossy WebP (lossless for `fx_*` sprites). ETC2 GPU compression was tried and made the art blocky on phones; the WebP pack is also smaller (≈ 6 MB).

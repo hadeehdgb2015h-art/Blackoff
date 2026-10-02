@@ -3,11 +3,9 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://cikb1un43yxa8"
-path.s3tc="res://.godot/imported/supply_box_Lid_albedo.jpg-d1f59752da8da7e736c4665f6c65ed20.s3tc.ctex"
-path.etc2="res://.godot/imported/supply_box_Lid_albedo.jpg-d1f59752da8da7e736c4665f6c65ed20.etc2.ctex"
+path="res://.godot/imported/supply_box_Lid_albedo.jpg-d1f59752da8da7e736c4665f6c65ed20.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc", "etc2_astc"],
-"vram_texture": true
+"vram_texture": false
 }
 generator_parameters={
 "md5": "44738479f714e5f3ae5c05efe3967dbf"
@@ -16,13 +14,13 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/models/supply_box_Lid_albedo.jpg"
-dest_files=["res://.godot/imported/supply_box_Lid_albedo.jpg-d1f59752da8da7e736c4665f6c65ed20.s3tc.ctex", "res://.godot/imported/supply_box_Lid_albedo.jpg-d1f59752da8da7e736c4665f6c65ed20.etc2.ctex"]
+dest_files=["res://.godot/imported/supply_box_Lid_albedo.jpg-d1f59752da8da7e736c4665f6c65ed20.ctex"]
 
 [params]
 
-compress/mode=2
+compress/mode=1
 compress/high_quality=false
-compress/lossy_quality=0.7
+compress/lossy_quality=0.85
 compress/uastc_level=0
 compress/rdo_quality_loss=0.0
 compress/hdr_compression=1

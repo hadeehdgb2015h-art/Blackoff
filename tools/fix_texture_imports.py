@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
-"""Forces GPU (VRAM) compression on every texture under client/assets.
+"""Sets the import mode of every texture under client/assets.
 
-Godot imports textures extracted from GLBs as lossless when importing
-headless (the "detect 3D" switch only fires in the editor), which bloats the
-web download and phone memory. Normal maps get normal-map compression.
+Lossy WebP: small download and no block artifacts (the phone decodes it to
+plain RGBA). ETC2 VRAM compression was tried and made the art visibly blocky
+and washed out on phones. Godot imports GLB textures as lossless when
+importing headless, which would bloat the web download.
 Prints the number of .import files changed (export_web.sh reimports if > 0).
 """
 import glob
@@ -17,10 +18,12 @@ for imp in glob.glob(os.path.join(ROOT, "assets", "**", "*.import"), recursive=T
         text = f.read()
     if 'importer="texture"' not in text:
         continue
-    want = {"compress/mode": "2", "mipmaps/generate": "true"}
+    # fx_ sprites are additive: lossy alpha noise would light up the whole quad
+    want = {"compress/mode": "0" if os.path.basename(imp).startswith("fx_") else "1", "mipmaps/generate": "true"}
+    want["compress/lossy_quality"] = "0.9" if "_normal." in imp else "0.85"
     want["compress/normal_map"] = "1" if "_normal." in imp else "0"
-    # download budget: roughness/metal maps are low-frequency; the prop atlas is seen at mid range
-    limit = 512 if "_orm." in imp else (1024 if "env_props_albedo" in imp else 0)
+    # memory budget: roughness/metal maps are low-frequency
+    limit = 512 if "_orm." in imp else 0
     want["process/size_limit"] = str(limit)
     new = text
     for k, v in want.items():

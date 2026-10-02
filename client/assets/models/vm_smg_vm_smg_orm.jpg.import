@@ -3,11 +3,9 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://bgt84ikqdbbca"
-path.s3tc="res://.godot/imported/vm_smg_vm_smg_orm.jpg-c4b28e4b502b93bf9b2257291ded34ff.s3tc.ctex"
-path.etc2="res://.godot/imported/vm_smg_vm_smg_orm.jpg-c4b28e4b502b93bf9b2257291ded34ff.etc2.ctex"
+path="res://.godot/imported/vm_smg_vm_smg_orm.jpg-c4b28e4b502b93bf9b2257291ded34ff.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc", "etc2_astc"],
-"vram_texture": true
+"vram_texture": false
 }
 generator_parameters={
 "md5": "8d4707067c5ab450c244dfd3c29c40e7"
@@ -16,13 +14,13 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/models/vm_smg_vm_smg_orm.jpg"
-dest_files=["res://.godot/imported/vm_smg_vm_smg_orm.jpg-c4b28e4b502b93bf9b2257291ded34ff.s3tc.ctex", "res://.godot/imported/vm_smg_vm_smg_orm.jpg-c4b28e4b502b93bf9b2257291ded34ff.etc2.ctex"]
+dest_files=["res://.godot/imported/vm_smg_vm_smg_orm.jpg-c4b28e4b502b93bf9b2257291ded34ff.ctex"]
 
 [params]
 
-compress/mode=2
+compress/mode=1
 compress/high_quality=false
-compress/lossy_quality=0.7
+compress/lossy_quality=0.85
 compress/uastc_level=0
 compress/rdo_quality_loss=0.0
 compress/hdr_compression=1

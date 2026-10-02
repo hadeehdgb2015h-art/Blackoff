@@ -3,11 +3,9 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://3vp3ml8wio82"
-path.s3tc="res://.godot/imported/vm_smg_vm_smg_albedo.jpg-f408a41872ca71010fd790e5c3c164b7.s3tc.ctex"
-path.etc2="res://.godot/imported/vm_smg_vm_smg_albedo.jpg-f408a41872ca71010fd790e5c3c164b7.etc2.ctex"
+path="res://.godot/imported/vm_smg_vm_smg_albedo.jpg-f408a41872ca71010fd790e5c3c164b7.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc", "etc2_astc"],
-"vram_texture": true
+"vram_texture": false
 }
 generator_parameters={
 "md5": "9855944dfb44a94c6538f26bc89c0633"
@@ -16,13 +14,13 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/models/vm_smg_vm_smg_albedo.jpg"
-dest_files=["res://.godot/imported/vm_smg_vm_smg_albedo.jpg-f408a41872ca71010fd790e5c3c164b7.s3tc.ctex", "res://.godot/imported/vm_smg_vm_smg_albedo.jpg-f408a41872ca71010fd790e5c3c164b7.etc2.ctex"]
+dest_files=["res://.godot/imported/vm_smg_vm_smg_albedo.jpg-f408a41872ca71010fd790e5c3c164b7.ctex"]
 
 [params]
 
-compress/mode=2
+compress/mode=1
 compress/high_quality=false
-compress/lossy_quality=0.7
+compress/lossy_quality=0.85
 compress/uastc_level=0
 compress/rdo_quality_loss=0.0
 compress/hdr_compression=1

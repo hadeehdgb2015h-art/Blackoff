@@ -38,6 +38,7 @@ var _meshes: Array[MeshInstance3D] = []
 
 const STRIKE_SEC := 13.0 / 30.0   ## frame the attack lands in the authored animation
 const LOOPING := ["idle", "walk", "run"]
+static var _eye_mats := {}  ## zombie type -> shared eye material
 
 
 func setup(zombie_id: int, type: String, zombie_def: Dictionary, pos: Vector2, yaw: float) -> void:
@@ -63,6 +64,7 @@ func setup(zombie_id: int, type: String, zombie_def: Dictionary, pos: Vector2, y
 			_anim.seek(randf() * 1.5)  # desync crowds
 		for mi in _model.find_children("*", "MeshInstance3D", true, false):
 			_meshes.append(mi)
+			_tint_eyes(mi as MeshInstance3D)
 	else:
 		_build_placeholder()
 	var shadow := MeshInstance3D.new()
@@ -72,6 +74,24 @@ func setup(zombie_id: int, type: String, zombie_def: Dictionary, pos: Vector2, y
 	shadow.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	add_child(shadow)
 	_apply_transform(1.0)
+
+
+## Eye glow comes from visuals.json ("eyes"), so the look can change without re-exporting the model.
+func _tint_eyes(mi: MeshInstance3D) -> void:
+	if mi.mesh == null or not vis.has("eyes"):
+		return
+	for i in mi.mesh.get_surface_count():
+		var src := mi.mesh.surface_get_material(i) as BaseMaterial3D
+		if src and src.resource_name.to_lower().begins_with("eyes"):
+			var m := _eye_mats.get(ztype) as BaseMaterial3D
+			if m == null:
+				m = src.duplicate() as BaseMaterial3D
+				m.albedo_color = Color(vis.eyes)
+				m.emission_enabled = true
+				m.emission = Color(vis.eyes)
+				m.emission_energy_multiplier = 3.0
+				_eye_mats[ztype] = m
+			mi.set_surface_override_material(i, m)
 
 
 func set_sim_state(pos: Vector2, yaw: float, moving: bool) -> void:

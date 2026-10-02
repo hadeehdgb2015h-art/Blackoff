@@ -12,6 +12,7 @@ var pid: int = -1
 var bot: BotBrain
 
 var _map_root: Node3D
+var _atmosphere: Atmosphere
 var _rig: FpRig
 var _effects: Effects
 var _sfx: Sfx
@@ -36,6 +37,7 @@ func _ready() -> void:
 	MapDecor.decorate(_map_root)
 	var batches := MapBatcher.batch(_map_root)
 	print("[game] map batched into %d meshes" % batches)
+	_atmosphere = Atmosphere.build(_map_root)
 
 	_rig = FpRig.new()
 	add_child(_rig)
@@ -44,6 +46,16 @@ func _ready() -> void:
 	_sfx = Sfx.new()
 	add_child(_sfx)
 
+	var vignette_layer := CanvasLayer.new()
+	vignette_layer.layer = 0
+	add_child(vignette_layer)
+	var vignette := ColorRect.new()
+	vignette.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	vignette.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var vmat := ShaderMaterial.new()
+	vmat.shader = load("res://shaders/vignette.gdshader")
+	vignette.material = vmat
+	vignette_layer.add_child(vignette)
 	var ui := CanvasLayer.new()
 	add_child(ui)
 	_hud = Hud.new()
@@ -104,6 +116,7 @@ func _process(delta: float) -> void:
 	if bot:
 		_controls.set_look(p.yaw, p.pitch)
 	var eye := p.prev_pos.lerp(p.pos, alpha)
+	_controls.aim_friction = _aim_friction(Vector3(eye.x, float(world.constants.player.eyeHeight), eye.y))
 	_rig.set_view(Vector3(eye.x, float(world.constants.player.eyeHeight), eye.y), _controls.yaw, _controls.pitch, p.moving, delta)
 	for v in _zviews.values():
 		v.update_view(alpha, delta)
@@ -114,6 +127,22 @@ func _process(delta: float) -> void:
 	_ambient_groans(delta)
 	if _debug_js:
 		_publish_debug(p, delta)
+
+
+## Touch aim assist (presentation only, the server still checks every shot):
+## the look slows down while the crosshair crosses a visible zombie.
+func _aim_friction(eye: Vector3) -> float:
+	if not Platform.is_touch:
+		return 1.0
+	var dir := SimMath.dir3(_controls.yaw, _controls.pitch)
+	for z in world.zombies.values():
+		var to: Vector2 = z.pos - Vector2(eye.x, eye.z)
+		if to.length_squared() > 900.0:
+			continue
+		var h := HitTest.ray_character(eye, dir, z.pos, z.radius() * 1.8, float(z.def.headCenterHeight), float(z.def.headRadius) * 1.8)
+		if not h.is_empty() and world.map.raycast(eye, dir, h.t) >= h.t:
+			return 0.55
+	return 1.0
 
 
 ## ?debug=1 exposes a small state snapshot to the page for automated browser tests.
@@ -298,6 +327,7 @@ func _toggle_pause() -> void:
 func _apply_quality() -> void:
 	var q := Settings.quality_params()
 	get_viewport().scaling_3d_scale = q.scale
+	get_viewport().msaa_3d = {0: Viewport.MSAA_DISABLED, 2: Viewport.MSAA_2X, 4: Viewport.MSAA_4X}[int(q.msaa)]
 	_rig.camera.far = q.far
 	_rig.muzzle_light_enabled = q.muzzle_light
 	var we := _map_root.find_child("WorldEnvironment", true, false) as WorldEnvironment
@@ -308,6 +338,7 @@ func _apply_quality() -> void:
 		(n as Light3D).visible = q.lights
 	if we:
 		we.environment.glow_enabled = q.glow
+	_atmosphere.set_quality(Settings.quality)
 
 
 func _to_menu() -> void:

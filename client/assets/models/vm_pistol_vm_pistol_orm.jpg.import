@@ -3,11 +3,9 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://cisewv0n41km1"
-path.s3tc="res://.godot/imported/vm_pistol_vm_pistol_orm.jpg-a21d6b6d47f3cc0cc288fc328d5ee4bc.s3tc.ctex"
-path.etc2="res://.godot/imported/vm_pistol_vm_pistol_orm.jpg-a21d6b6d47f3cc0cc288fc328d5ee4bc.etc2.ctex"
+path="res://.godot/imported/vm_pistol_vm_pistol_orm.jpg-a21d6b6d47f3cc0cc288fc328d5ee4bc.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc", "etc2_astc"],
-"vram_texture": true
+"vram_texture": false
 }
 generator_parameters={
 "md5": "5968ad85d34595b53dbc06f5a6460535"
@@ -16,13 +14,13 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/models/vm_pistol_vm_pistol_orm.jpg"
-dest_files=["res://.godot/imported/vm_pistol_vm_pistol_orm.jpg-a21d6b6d47f3cc0cc288fc328d5ee4bc.s3tc.ctex", "res://.godot/imported/vm_pistol_vm_pistol_orm.jpg-a21d6b6d47f3cc0cc288fc328d5ee4bc.etc2.ctex"]
+dest_files=["res://.godot/imported/vm_pistol_vm_pistol_orm.jpg-a21d6b6d47f3cc0cc288fc328d5ee4bc.ctex"]
 
 [params]
 
-compress/mode=2
+compress/mode=1
 compress/high_quality=false
-compress/lossy_quality=0.7
+compress/lossy_quality=0.85
 compress/uastc_level=0
 compress/rdo_quality_loss=0.0
 compress/hdr_compression=1

@@ -90,6 +90,12 @@ window.BlackoffTG = (function () {
 </script>
 <script>
 document.addEventListener('pointerup', function () { window.BlackoffTG._applyFullscreen(); }, true);
+// Godot's web runtime turns every 'pointermove' into a mouse motion, touch
+// fingers included, so the move-stick finger would also turn the camera.
+// Touch already reaches the game through touch events: drop non-mouse moves.
+window.addEventListener('pointermove', function (e) {
+  if (e.pointerType && e.pointerType !== 'mouse') e.stopImmediatePropagation();
+}, true);
 // Phones outside Telegram: go fullscreen on the first tap.
 if (matchMedia('(pointer: coarse)').matches) window.BlackoffTG._wantFs = true;
 </script>

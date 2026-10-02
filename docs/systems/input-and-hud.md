@@ -5,7 +5,9 @@
 - Right side: drag anywhere to aim. **FIRE also aims while held**, so you can shoot and turn with one thumb.
 - Buttons: FIRE, R (reload), SWAP (weapon), USE (shown only near a buy or ammo point), REVIVE (phase 5), II (pause).
 - Fully multi-touch: each finger is tracked by touch index. Button presses are latched until the next sim tick, so short taps are never lost.
-- Sensitivity: 0.2° per pixel × the setting. An invert option is available.
+- Look: 0.16° per pixel of the 720 px view × the setting (vertical × 0.8), with a speed curve (slow drags are precise at 0.6×, fast swipes reach 1.2×) and about 25 ms of smoothing against finger jitter. An invert option is available.
+- Aim assist (touch only, visual): the look slows to 0.55× while the crosshair is over a visible zombie. The server still validates every shot.
+- Browser quirk: Godot's web runtime turns every `pointermove`, touch fingers included, into mouse motion. That made the move-stick finger turn the camera and doubled the look speed. `shell.html` drops non-mouse `pointermove`s, and the controls ignore mouse events for 1.5 s after a real touch (the compatibility clicks phones send after a tap).
 - Desktop: WASD, mouse look (click to capture), LMB fire, R, Q swap, E use, F revive, Esc pause.
 
 ## HUD (`scripts/ui/hud.gd`)

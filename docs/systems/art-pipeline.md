@@ -14,6 +14,7 @@ python3 -m venv /opt/blender-venv && /opt/blender-venv/bin/pip install bpy==4.5.
 /opt/blender-venv/bin/python art/blender/build_weapons.py --preview /tmp/vm    # vm_pistol/rifle/shotgun/smg.glb (--only rifle)
 /opt/blender-venv/bin/python art/blender/build_environment.py --preview /tmp/env # env_props.glb (prop kit)
 /opt/blender-venv/bin/python art/textures/build_textures.py                     # tileable surface textures (numpy only)
+(cd art/textures && python3 build_fx_textures.py)                              # rune circle, glyphs, veins, mist
 tools/build_maps.sh                                                             # place props/lights in facility_01
 ```
 Outputs go to `client/assets/models/`. They are committed, and CI does not rebuild art. `--preview` renders Cycles stills for review.
@@ -43,7 +44,8 @@ Outputs go to `client/assets/models/`. They are committed, and CI does not rebui
 - **Props:** `build_environment.py` builds one `env_props.glb`, with one mesh per prop sharing a 2048² atlas + ORM (`kit.py` holds the hard-surface kit, shared with the weapons). Props: lockers, console, tank, lab table, shelf, crate, barrels, generator, sandbags, lamp post, wall and ceiling lamps, pipes, crystals, rubble, door frames. Emissive parts are separate materials.
 - **Placement:** `build_facility_01.gd` drops `map_prop` markers (name, position, yaw) plus a hidden blocker AABB, which goes into the map JSON so the sim and server collide with it. At runtime `MapDecor` instances the matching mesh at each marker, then `MapBatcher` merges everything by (material, 12 m chunk) to stay under the 8-lights-per-object limit of the Compatibility renderer.
 - **Lighting:** dynamic omni/spot lights with a palette (warm, amber, teal, violet, cool) at each fixture. Lights tagged `map_light_extra` switch off on the low quality tier. The moon lights only layer 2, which is given to yard meshes, so it never leaks indoors.
-- **Texture import:** `tools/fix_texture_imports.py` forces VRAM compression and size limits (ORM 512, env atlas 1024) before export; `export_web.sh` runs it.
+- **Texture import:** `tools/fix_texture_imports.py` sets lossy WebP (quality 0.85, normals 0.9), lossless for additive `fx_*` sprites, and ORM maps limited to 512. `export_web.sh` runs it.
+- **Dark-fantasy layer (owner feedback: the first pass had no dark-fantasy feel):** night sky shader (violet zenith, rose horizon, moon, stars, a glowing rift across the north), a floating rift crystal with orbiting rune rings above a large rune circle at the yard breach, summoning circles at every zombie entry, a faint golden ward in the safe room, violet glyphs and corruption veins on walls, burn barrels with fire, violet spores and ground mist in the yard, light shafts under lamps, violet/magenta zombie eyes. Effect textures come from `art/textures/build_fx_textures.py` (rune circle, glyph atlas, veins, mist noise; white + alpha, tinted by the shader). Placement is in `build_facility_01.gd` → `_fx()`.
 - Review: `?autostart=1&at=x,z,yaw_deg[,pitch]` puts the camera anywhere (e.g. `-12.5,1.5,30,-10` lab, `13,1.8,-20,-8` storage, `-12,-12,140,-4` yard).
 
 ## Budgets
@@ -51,7 +53,7 @@ Outputs go to `client/assets/models/`. They are committed, and CI does not rebui
 - Supply box: about 3k triangles, 2 small textures.
 - Viewmodels: 7–13k triangles, one 1024² albedo + metallicRoughness each (only one is on screen at a time).
 - Environment: `env_props.glb` (≈ 21 prop meshes, 1 atlas), 5 surface texture pairs at 512².
-- Web download today: wasm about 10 MB gzip + pck about 12 MB, about 22 MB total (target < 25 MB). Desktop VRAM formats are already off; mobile ETC2 only.
+- Web download today: wasm about 10 MB gzip + pck about 6 MB (WebP textures), about 16 MB total (target < 25 MB).
 
 ## Game integration
 - `client/data/visuals.json` → `zombies.<id>.model`, `locomotion`, `locoSpeed` (playback speed follows real movement speed).

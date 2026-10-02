@@ -3,11 +3,9 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://b0ndpfvftdddp"
-path.s3tc="res://.godot/imported/vm_rifle_vm_rifle_albedo.jpg-ff29c5d77c0058f0d547006dcccf96a3.s3tc.ctex"
-path.etc2="res://.godot/imported/vm_rifle_vm_rifle_albedo.jpg-ff29c5d77c0058f0d547006dcccf96a3.etc2.ctex"
+path="res://.godot/imported/vm_rifle_vm_rifle_albedo.jpg-ff29c5d77c0058f0d547006dcccf96a3.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc", "etc2_astc"],
-"vram_texture": true
+"vram_texture": false
 }
 generator_parameters={
 "md5": "e363f1ba63b80a49f4777a4a39d0bda1"
@@ -16,13 +14,13 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/models/vm_rifle_vm_rifle_albedo.jpg"
-dest_files=["res://.godot/imported/vm_rifle_vm_rifle_albedo.jpg-ff29c5d77c0058f0d547006dcccf96a3.s3tc.ctex", "res://.godot/imported/vm_rifle_vm_rifle_albedo.jpg-ff29c5d77c0058f0d547006dcccf96a3.etc2.ctex"]
+dest_files=["res://.godot/imported/vm_rifle_vm_rifle_albedo.jpg-ff29c5d77c0058f0d547006dcccf96a3.ctex"]
 
 [params]
 
-compress/mode=2
+compress/mode=1
 compress/high_quality=false
-compress/lossy_quality=0.7
+compress/lossy_quality=0.85
 compress/uastc_level=0
 compress/rdo_quality_loss=0.0
 compress/hdr_compression=1

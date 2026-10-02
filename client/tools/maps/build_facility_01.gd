@@ -34,6 +34,7 @@ func _initialize() -> void:
 	_props()
 	_markers()
 	_lights()
+	_fx()
 	var packed := PackedScene.new()
 	var err := packed.pack(map_root)
 	if err == OK:
@@ -156,6 +157,8 @@ func _props() -> void:
 		["Crate", Vector3(5.5, 0, -16.7), 0.0],
 		["Crate", Vector3(6.6, 0, -16.7), 0.0],
 		["Crate", Vector3(6.0, 0.6, -17.0), 0.15],
+		["Barrel", Vector3(-4.6, 0, -7.6), 0.3, Vector2(0.7, 0.7), 0.9],   # burn barrels (fire fx)
+		["Barrel", Vector3(4.6, 0, -7.6), 1.9, Vector2(0.7, 0.7), 0.9],
 		["Rubble", Vector3(-3.0, 0, -21.0), 1.3],
 		["Rubble", Vector3(10.0, 0, -9.0), 0.2],
 	]
@@ -232,6 +235,9 @@ const VIOLET := Color(0.68, 0.36, 1.0)
 const COOL := Color(0.82, 0.9, 1.0)
 
 
+const MOON_DIR := Vector3(-0.35, 0.5, -0.8)  # towards the moon: north-west, ~30° up
+
+
 func _lights() -> void:
 	# safe room: two ceiling fixtures, warm and inviting
 	for z in [12.6, 15.6]:
@@ -259,16 +265,17 @@ func _lights() -> void:
 		_prop("CeilingLamp", Vector3(x, H, -2.0), PI / 2)
 		_omni("Store%d" % int(x), Vector3(x, 2.7, -2.0), Color(1.0, 0.78, 0.5), 1.5, 8.0)
 	# yard: violet outbreak glow, sodium lamp posts, cold moon
-	_omni("Breach", Vector3(-7.5, 1.6, -20.0), VIOLET, 3.2, 13.0)
+	_omni("Breach", Vector3(-7.5, 1.6, -20.0), Color(0.85, 0.35, 1.0), 3.2, 13.0)
+	lights.get_node("Breach").set_meta("flicker", "pulse")
 	_omni("PostW", Vector3(-15, 3.8, -7.92), AMBER, 3.0, 15.0)
 	_omni("PostE", Vector3(15, 3.8, -7.92), AMBER, 3.0, 15.0)
 	_omni("YardFill", Vector3(0, 4.0, -15.0), Color(0.55, 0.62, 0.95), 1.6, 16.0)
 	_omni("GenLight", Vector3(16.9, 0.9, -12.5), Color(1.0, 0.25, 0.2), 0.7, 3.0, true)
 	var moon := DirectionalLight3D.new()
 	moon.name = "Moon"
-	moon.light_color = Color(0.6, 0.62, 0.95)
-	moon.light_energy = 1.15
-	moon.rotation = Vector3(deg_to_rad(-48), deg_to_rad(35), 0)
+	moon.light_color = Color(0.68, 0.64, 0.98)
+	moon.light_energy = 1.0
+	moon.basis = Basis.looking_at(-MOON_DIR)  # shines from the moon drawn by the sky shader
 	moon.shadow_enabled = false
 	moon.light_cull_mask = 2  # outdoor layer only (MapBatcher puts yard meshes on layer 2)
 	_add(lights, moon)
@@ -276,28 +283,108 @@ func _lights() -> void:
 
 func _environment() -> void:
 	var env := Environment.new()
-	env.background_mode = Environment.BG_COLOR
-	env.background_color = Color(0.05, 0.04, 0.09)
+	var sky_mat := ShaderMaterial.new()
+	sky_mat.shader = load("res://shaders/sky_night.gdshader")
+	sky_mat.set_shader_parameter("moon_dir", MOON_DIR.normalized())
+	var sky := Sky.new()
+	sky.sky_material = sky_mat
+	sky.radiance_size = Sky.RADIANCE_SIZE_64
+	env.background_mode = Environment.BG_SKY
+	env.sky = sky
 	env.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
-	env.ambient_light_color = Color(0.64, 0.62, 0.7)
+	env.ambient_light_color = Color(0.6, 0.57, 0.72)
 	env.ambient_light_energy = 0.85
+	env.reflected_light_source = Environment.REFLECTION_SOURCE_DISABLED
 	env.fog_enabled = true
-	env.fog_light_color = Color(0.2, 0.16, 0.3)
-	env.fog_density = 0.012
+	env.fog_light_color = Color(0.24, 0.15, 0.34)
+	env.fog_density = 0.009
+	env.fog_sky_affect = 0.0
 	env.tonemap_mode = Environment.TONE_MAPPER_ACES
 	env.tonemap_exposure = 1.15
 	env.glow_enabled = true
 	env.glow_intensity = 0.8
 	env.glow_strength = 1.0
 	env.glow_bloom = 0.04
-	env.glow_hdr_threshold = 1.0
+	env.glow_hdr_threshold = 1.25
 	env.adjustment_enabled = true
-	env.adjustment_saturation = 1.04
-	env.adjustment_contrast = 1.05
+	env.adjustment_saturation = 1.1
+	env.adjustment_contrast = 1.07
 	var we := WorldEnvironment.new()
 	we.name = "WorldEnvironment"
 	we.environment = env
 	_add(map_root, we)
+
+
+# ---------------------------------------------------------------- atmosphere
+
+const ARCANE := Color(0.72, 0.35, 1.0)
+const ICHOR := Color(1.0, 0.3, 0.8)
+const WARD := Color(1.0, 0.72, 0.32)
+
+
+## Dark-fantasy effect markers (group `map_fx`), built at runtime by Atmosphere.
+## Visual only: not exported to shared/maps.
+func _fx() -> void:
+	var floor_rot := Vector3(-PI / 2, 0, 0)
+	# the safe room is protected by a faint golden ward
+	_fxm("sigil", Vector3(0, 0.02, 14.0), floor_rot, {"tex": "rune_circle", "size": Vector2(5.2, 5.2), "color": WARD, "energy": 0.55, "spin": 0.04, "pulse": 0.2})
+	_fxm("motes", Vector3(0, 1.4, 14.0), Vector3.ZERO, {"extents": Vector3(4.2, 1.2, 3.4), "amount": 18, "color": Color(1.0, 0.78, 0.4)})
+	# the outbreak: a floating rift crystal over a large rune circle in the yard
+	_fxm("rift", Vector3(-7.5, 3.0, -20.0), Vector3.ZERO, {"color": ICHOR})
+	_fxm("sigil", Vector3(-7.5, 0.03, -20.0), floor_rot, {"tex": "rune_circle", "size": Vector2(6.0, 6.0), "color": ARCANE, "energy": 1.6, "spin": -0.07, "pulse": 0.3})
+	# zombie entries are marked by smaller summoning circles
+	for e in [[Vector3(-10, 0.025, -22.4), 2.6], [Vector3(10, 0.025, -22.4), 2.6], [Vector3(-16.4, 0.025, -2.0), 2.2], [Vector3(16.4, 0.025, -2.0), 2.2]]:
+		_fxm("sigil", e[0], floor_rot, {"tex": "rune_circle", "size": Vector2(e[1], e[1]), "color": ICHOR, "energy": 1.1, "spin": 0.12, "pulse": 0.35})
+	# corruption veins creeping from the windows and over the facade
+	for side in [-1.0, 1.0]:
+		var face := Vector3(0, -side * PI / 2, 0)  # west wall faces +X, east wall faces -X
+		for z in [-3.7, -0.3]:
+			_fxm("sigil", Vector3(side * 17.83, 1.25, z), face, {"tex": "veins", "size": Vector2(1.9, 2.5), "color": ARCANE, "energy": 1.2, "pulse": 0.35})
+		_fxm("sigil", Vector3(side * 4.2, 1.45, -6.17), Vector3(0, PI, 0), {"tex": "veins", "size": Vector2(3.2, 2.9), "color": ICHOR, "energy": 1.0, "pulse": 0.3})
+		# warding glyphs beside the room doors (yard side) and along the corridors
+		for dx in [-1.75, 1.75]:
+			_fxm("sigil", Vector3(side * 13.0 + dx, 2.25, -6.17), Vector3(0, PI, 0), {"tex": "glyphs", "size": Vector2(0.75, 0.75), "color": ARCANE, "energy": 0.9, "cell": _glyph(), "pulse": 0.4})
+		for z in [3.5, 8.0, 12.0]:
+			_fxm("sigil", Vector3(side * 13.84, 1.6, z), Vector3(0, -side * PI / 2, 0), {"tex": "glyphs", "size": Vector2(0.55, 0.55), "color": ARCANE, "energy": 0.7, "cell": _glyph(), "pulse": 0.45})
+	# glyph over the safe room door and the box
+	_fxm("sigil", Vector3(0, 2.45, 10.17), Vector3.ZERO, {"tex": "glyphs", "size": Vector2(0.7, 0.7), "color": WARD, "energy": 1.2, "cell": 5, "pulse": 0.2})
+	# lab: arcane residue around the crystal growth
+	_fxm("sigil", Vector3(-9.0, 0.02, 1.2), floor_rot, {"tex": "rune_circle", "size": Vector2(2.0, 2.0), "color": ARCANE, "energy": 1.0, "spin": 0.2, "pulse": 0.3})
+	_fxm("motes", Vector3(-13, 1.5, -2.0), Vector3.ZERO, {"extents": Vector3(4.5, 1.2, 3.5), "amount": 22, "color": Color(0.45, 0.9, 1.0)})
+	_fxm("motes", Vector3(13, 1.5, -2.0), Vector3.ZERO, {"extents": Vector3(4.5, 1.2, 3.5), "amount": 14, "color": Color(1.0, 0.7, 0.45)})
+	# yard: violet spores, ground mist, burn barrels
+	_fxm("motes", Vector3(0, 2.2, -15.0), Vector3.ZERO, {"extents": Vector3(20.0, 2.0, 8.5), "amount": 70, "color": Color(0.8, 0.45, 1.0)})
+	_fxm("mist", Vector3(0, 0.18, -15.0), floor_rot, {"size": Vector2(44, 18), "color": Color(0.42, 0.3, 0.62, 0.3), "speed": 1.0})
+	_fxm("mist", Vector3(0, 0.55, -15.0), floor_rot, {"size": Vector2(44, 18), "color": Color(0.5, 0.36, 0.7, 0.14), "speed": 1.6})
+	for x in [-4.6, 4.6]:
+		_fxm("fire", Vector3(x, 0.92, -7.6), Vector3.ZERO, {"energy": 2.0, "range": 7.0})
+	# light shafts under the ceiling lamps
+	for p in [Vector3(0, H - 0.05, 12.6), Vector3(0, H - 0.05, 15.6)]:
+		_fxm("shaft", p, Vector3.ZERO, {"color": WARM, "energy": 0.16})
+	_fxm("shaft", Vector3(-13, H - 0.05, -1.5), Vector3.ZERO, {"color": COOL, "energy": 0.14})
+	for x in [11.0, 15.0]:
+		_fxm("shaft", Vector3(x, H - 0.05, -2.0), Vector3.ZERO, {"color": Color(1.0, 0.78, 0.5), "energy": 0.14})
+
+
+var _glyph_i := 0
+
+
+## Deterministic glyph sequence (the scene stays stable when regenerated).
+func _glyph() -> int:
+	_glyph_i += 1
+	return (_glyph_i * 7 + 3) % 16
+
+
+func _fxm(kind: String, pos: Vector3, rot: Vector3, params: Dictionary) -> void:
+	var m := Marker3D.new()
+	m.name = "Fx_%s_%d" % [kind, markers.get_child_count()]
+	m.position = pos
+	m.rotation = rot
+	m.set_meta("fx", kind)
+	for k in params:
+		m.set_meta(k, params[k])
+	m.add_to_group("map_fx", true)
+	_add(markers, m)
 
 
 # ---------------------------------------------------------------- helpers
