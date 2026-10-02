@@ -382,13 +382,14 @@ func _start_showcase() -> void:
 func _start_soldier_showcase() -> void:
 	world.director.phase = WaveDirector.Phase.STOPPED
 	var me: SimPlayer = world.players[pid]
-	for i in 2:
+	var guns := ["rifle", "rifle", "smg", "pistol"]
+	for i in 4:
 		var fake := SimPlayer.new()
 		fake.id = 900 + i
-		fake.name = ["Ally", "Runner"][i]
-		fake.pos = me.pos + Vector2(-1.2 + 2.4 * i, -3.5)
-		fake.yaw = me.yaw + PI + (0.5 if i == 0 else 0.0)
-		fake.weapons = [WeaponState.create("rifle", _defs.weapons.rifle)]
+		fake.name = ["Ally", "Runner", "Viper", "Ghost"][i]
+		fake.pos = me.pos + [Vector2(-1.4, -3.2), Vector2(0, 0), Vector2(0.2, -3.6), Vector2(1.6, -3.0)][i]
+		fake.yaw = me.yaw + PI + [0.6, 0.0, 0.0, -0.6][i]
+		fake.weapons = [WeaponState.create(guns[i], _defs.weapons[guns[i]])]
 		var v := RemotePlayerView.new()
 		add_child(v)
 		v.setup(fake)

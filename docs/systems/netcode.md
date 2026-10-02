@@ -15,8 +15,8 @@ The client plays online through the same game scene as offline practice. Only th
   - Messages that arrive during a scene change are buffered.
 - `scripts/net/net_world.gd`: replica, prediction, interpolation, and event translation (protocol event kinds → the sim's event dictionaries).
 - `scripts/view/remote_player_view.gd`: other players.
-  - Model: `soldier.glb` with `idle` / `run` / `downed`. The run speed follows the measured speed (`visuals.json` → `players.soldier`).
-  - The held weapon is the first-person model hung at eye height, and the soldier's arms are solved onto it.
+  - Model: the operator `soldier.glb` with `idle_<hold>` / `run_<hold>` / `downed`, where the hold is long, smg or pistol depending on the weapon. The run speed follows the measured speed.
+  - The held weapon is the first-person model placed per hold class (`visuals.json` → `players.soldier.holds`), and the arms are solved onto it at build time.
   - A name tag shows above the head.
 - Server URL: `client/data/net.json` → `server` (set at deploy time). `?server=ws://…` overrides it, and `?name=` sets the dev name. The menu's QUICK PLAY ONLINE button is enabled only when a server is set.
 

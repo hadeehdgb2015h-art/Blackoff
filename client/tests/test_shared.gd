@@ -52,6 +52,21 @@ func test_art_models_have_required_parts() -> void:
 			for anim in ["idle", "attack", "hit", "death", str(v.zombies[id].get("locomotion", "walk"))]:
 				check(ap.has_animation(anim), "%s has animation %s" % [id, anim])
 		inst.free()
+	var soldier: Dictionary = v.get("players", {}).get("soldier", {})
+	var sm: PackedScene = load(str(soldier.get("model", "")))
+	check(sm != null, "soldier model loads")
+	if sm:
+		var si := sm.instantiate()
+		var sap := si.find_child("AnimationPlayer", true, false) as AnimationPlayer
+		check(sap != null, "soldier has an AnimationPlayer")
+		if sap:
+			check(sap.has_animation("downed"), "soldier has downed")
+			for hold in soldier.holds:
+				for a in ["idle_", "run_"]:
+					check(sap.has_animation(a + hold), "soldier has %s%s" % [a, hold])
+		for wid in soldier.weaponHold:
+			check(soldier.holds.has(soldier.weaponHold[wid]), "hold class for " + wid)
+		si.free()
 	var box: PackedScene = load(BoxView.MODEL)
 	check(box != null, "supply box model loads")
 	if box:

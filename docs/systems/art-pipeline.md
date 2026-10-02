@@ -17,7 +17,7 @@ python3 -m venv /opt/blender-venv && /opt/blender-venv/bin/pip install bpy==4.5.
 (cd art/textures && python3 build_fx_textures.py)                              # veins, mist, moon face, bolt
 /opt/blender-venv/bin/python art/blender/build_dark_props.py --preview /tmp/dp   # dark_props.glb (skeleton, graves, gothic arch...)
 /opt/blender-venv/bin/python art/blender/build_backdrop.py --preview /tmp/bd     # backdrop.glb (mountains, castle, giant hand, pine)
-/opt/blender-venv/bin/python art/blender/build_soldier.py --preview /tmp/sold    # soldier.glb (other players)
+/opt/blender-venv/bin/python art/blender/build_soldier.py --preview /tmp/op      # soldier.glb (operator for other players, ~3 min)
 tools/build_maps.sh                                                             # place props/lights in facility_01
 ```
 Outputs go to `client/assets/models/`. They are committed, and CI does not rebuild art. `--preview` renders Cycles stills for review.
@@ -59,10 +59,23 @@ The owner sent references: a skeleton with glowing violet eyes in blue fog, a go
 - In the map: gothic arches over both yard gates, spikes on all fences, a graveyard strip on both yard sides, three dead trees, sitting skeletons with candles, bone piles, hellfire fissures from the breach, braziers instead of burn barrels, and violet banners on the facade.
 - Camera far is now 520–700 m (the backdrop); the playable map is unchanged (gameplay blockers were added only for new solid props).
 
+## Operator (other players, art stage 4 v2)
+The owner found the first soldier crude and asked for something professional in the spirit of Black Ops. `build_soldier.py` now builds an original covert-ops operator:
+- **Head:** a full-face respirator with glass lenses and a cheek filter over a balaclava; a high-cut helmet with rails, NVG mount and counterweight; a headset; and a cyan IR strobe that marks allies.
+- **Carrier:** a coyote plate carrier with curved shooter's-cut plates, a cummerbund, a triple mag pouch with magazines, an admin pouch with patches, a radio with an antenna, and a flashbang.
+- **Kit:** an assault pack with a hydration tube, a battle belt with pouches, a drop-leg holster, cargo pocket and knee pads.
+- **Uniform:** dark tiger stripe, gloves and boots.
+- **Textures:** 2048 albedo, metallic/roughness, and a normal map baked from painted height (weave, MOLLE rows, seams, folds) via a Cycles bump bake.
+- **Rig:** the zombie rig with arms 15 % longer. Gear is weighted rigidly per bone, because heat weighting fails on overlapping gear.
+- **Weapon holds** (`HOLDS`, mirrored in `visuals.json` → `players.soldier.holds`): `long` (rifle, shotgun), `smg` and `pistol`. The weapon is the first-person model with its Root reset (origin = trigger grip), placed at the shoulder and slightly scaled. Both arms are solved with a two-bone IK onto the measured grip and support-hand points.
+- **Actions:** `idle_<hold>`, `run_<hold>`, `downed`.
+- **Review:** `?autostart=1&showcase=soldier&at=0,17.5,0,-10`.
+
 ## Budgets
 - Zombie: about 9–11k triangles, 1 texture, 2 materials. Godot generates LODs at import.
 - Supply box: about 3k triangles, 2 small textures.
 - Viewmodels: 7–13k triangles, one 1024² albedo + metallicRoughness each (only one is on screen at a time).
+- Operator: about 35k triangles (Godot generates LODs at import), one 2048² albedo + normal + 1024² metallicRoughness; at most 7 other players.
 - Environment: `env_props.glb` (≈ 21 prop meshes, 1 atlas), 5 surface texture pairs at 512².
 - Web download today: wasm about 10 MB gzip + pck about 6 MB (WebP textures), about 16 MB total (target < 25 MB).
 

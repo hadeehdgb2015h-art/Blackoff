@@ -111,11 +111,39 @@
     "soldier": {
       "model": "res://assets/models/soldier.glb",
       "runSpeed": 3.8,
-      "gunOffset": [
-        0.03,
-        -0.03,
-        0.05
-      ]
+      "_holds": "Weapon placement per hold class, Godot space relative to the player (Root of the weapon model reset = trigger grip). Must match HOLDS in art/blender/build_soldier.py (Blender x,y,z -> Godot x,z,-y).",
+      "holds": {
+        "long": {
+          "pos": [
+            0.17,
+            1.33,
+            -0.31
+          ],
+          "scale": 0.85
+        },
+        "smg": {
+          "pos": [
+            0.16,
+            1.32,
+            -0.3
+          ],
+          "scale": 0.9
+        },
+        "pistol": {
+          "pos": [
+            0.06,
+            1.34,
+            -0.42
+          ],
+          "scale": 0.95
+        }
+      },
+      "weaponHold": {
+        "pistol": "pistol",
+        "smg": "smg",
+        "rifle": "long",
+        "shotgun": "long"
+      }
     }
   }
 }

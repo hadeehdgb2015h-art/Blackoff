@@ -1,10 +1,12 @@
 class_name RemotePlayerView
 extends Node3D
 ## Another player in online play: interpolated body, held weapon, name tag.
-## Uses visuals.json `players.soldier` (soldier.glb: idle, run, downed) and
-## falls back to a procedural figure if the model is missing. The held weapon is
-## the first-person model, hung at eye height like the camera would hold it;
-## the soldier's arms are animated onto that weapon (art/blender/build_soldier.py).
+## Uses visuals.json `players.soldier` (soldier.glb: idle_/run_<hold> for the hold
+## classes long, smg and pistol, plus downed) and falls back to a procedural
+## figure if the model is missing. The held weapon is the first-person model with
+## its Root reset (origin = trigger grip), placed per hold class; the soldier's
+## arms are solved onto exactly that placement at build time
+## (art/blender/build_soldier.py, HOLDS).
 
 var pid: int = -1
 var _prev := Vector2.ZERO
@@ -23,6 +25,8 @@ var _kick: float = 0.0
 var _anim: AnimationPlayer
 var _run_speed: float = 3.8
 var _speed: float = 0.0
+var _vis: Dictionary = {}
+var _hold: String = "long"
 
 
 func setup(p: SimPlayer) -> void:
@@ -34,23 +38,20 @@ func setup(p: SimPlayer) -> void:
 	_body = Node3D.new()
 	add_child(_body)
 	var vis: Dictionary = Visuals.data().get("players", {}).get("soldier", {})
+	_vis = vis
 	var model := Visuals.try_model(str(vis.get("model", "")))
 	if model:
 		_body.add_child(model)
 		_anim = model.find_child("AnimationPlayer", true, false) as AnimationPlayer
 		if _anim:
-			for n in ["idle", "run", "downed"]:
-				if _anim.has_animation(n):
-					_anim.get_animation(n).loop_mode = Animation.LOOP_LINEAR
+			for n in _anim.get_animation_list():
+				_anim.get_animation(n).loop_mode = Animation.LOOP_LINEAR
 			_anim.playback_default_blend_time = 0.2
-			_anim.play("idle")
-			_anim.seek(randf())
 		_run_speed = float(vis.get("runSpeed", 3.8))
 	else:
 		_build_placeholder()
 	_gun_holder = Node3D.new()
-	var off: Array = vis.get("gunOffset", [0, 0, 0])
-	_gun_holder.position = Vector3(off[0], 1.6 + float(off[1]), off[2])  # weapon models are authored around the eye
+	_gun_holder.position = Vector3(0.17, 1.33, -0.31)
 	_body.add_child(_gun_holder)
 	_name = Label3D.new()
 	_name.position = Vector3(0, 2.15, 0)
@@ -80,6 +81,11 @@ func set_state(p: SimPlayer) -> void:
 			c.queue_free()
 		if wid != "":
 			_gun_holder.add_child(Visuals.weapon_world_node(wid))
+		_hold = str(_vis.get("weaponHold", {}).get(wid, "long"))
+		var h: Dictionary = _vis.get("holds", {}).get(_hold, {})
+		if not h.is_empty():
+			_gun_holder.position = Vector3(h.pos[0], h.pos[1], h.pos[2])
+			_gun_holder.scale = Vector3.ONE * float(h.scale)
 
 
 func on_fire() -> void:
@@ -95,10 +101,13 @@ func update_view(alpha: float, delta: float) -> void:
 	_kick = maxf(0.0, _kick - delta * 8.0)
 	_gun_holder.visible = not _downed
 	if _anim:
-		var want := "downed" if _downed else ("run" if _moving and _speed > 0.4 else "idle")
+		var running := _moving and _speed > 0.4
+		var want := "downed" if _downed else ("%s_%s" % ["run" if running else "idle", _hold])
+		if not _anim.has_animation(want):
+			want = "run_long" if running else "idle_long"
 		if _anim.current_animation != want:
 			_anim.play(want)
-		_anim.speed_scale = clampf(_speed / _run_speed, 0.5, 1.6) if want == "run" else 1.0
+		_anim.speed_scale = clampf(_speed / _run_speed, 0.5, 1.6) if running else 1.0
 		_gun_holder.rotation.x = 0.06 * _kick
 		return
 	if _moving:
