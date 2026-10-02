@@ -22,6 +22,14 @@ func _ready() -> void:
 		var path := "res://assets/sfx/%s.wav" % n
 		if ResourceLoader.exists(path):
 			_streams[n] = load(path)
+	# Web: a sound is turned into a browser sample (decoded) the first time it
+	# plays, which froze the first shot. Do it for all of them while loading.
+	if OS.has_feature("web"):
+		var t0 := Time.get_ticks_msec()
+		for s in _streams.values():
+			if not AudioServer.is_stream_registered_as_sample(s):
+				AudioServer.register_stream_as_sample(s)
+		print("[load] %d sounds registered in %d ms" % [_streams.size(), Time.get_ticks_msec() - t0])
 	for i in POOL_2D:
 		var p := AudioStreamPlayer.new()
 		p.bus = Audio.bus_for("SFX")

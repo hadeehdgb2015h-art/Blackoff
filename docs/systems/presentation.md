@@ -10,6 +10,15 @@ Measured in Chromium at phone pixel density (`scratchpad/measure.cjs`, `?debug=1
 - the menu pre-loads the zombie, start-weapon and soldier models under the loading curtain;
 - `?perf=1` prints a per-section script-time breakdown every 10 s; the FPS label shows the tier.
 
+## First-shot freeze, Arabic phones, saved settings (phase 16)
+From the owner's phone (Telegram in Arabic, 51 FPS, 161 draw calls):
+- **First shot froze the game:** on the web a sound becomes a browser sample (decoded) the first time it plays, and WebGL compiles a material's shader the first time it is drawn. `Sfx` now registers every sound as a sample while the game loads, and `game.gd: _prewarm_gpu` draws each zombie type (with its hit flash), a teammate, the muzzle flash, tracer, impacts, blast and bolt once in front of the camera behind a short "PREPARING" cover as the match starts.
+- **HUD and menu mirrored:** the engine mirrors every Control in right-to-left locales, and a Control positioned before it joins the tree stores its offsets mirrored (it takes its direction from the locale). The interface is English: `Platform` sets the English locale for layout and the root window left-to-right; Arabic player names are still shaped and ordered by the text server. `SMOKE_LOCALE=ar` reproduces the phone in the browser test.
+- **Slow to enter, every time:** placing the map's 210 props and merging its meshes took 1.5 s per match in the browser (more on a phone), repeated on every "play again". `MapCache` prepares the map once per session under the menu's curtain at start-up (with the model pre-load) and each match takes a cheap duplicate sharing the merged meshes.
+- **Still hot at 51 FPS:** the phone kept a 60 FPS cap saved by an older build. Settings now carry a version; older files are reset to automatic quality and frame cap (a steady 30 on phones).
+- Merged map meshes use compressed vertex attributes (less GPU memory traffic). Baking the merged map at build time was measured and rejected: 6 MB more on every update download for ~0.35 s (server CPU) less loading.
+- Telegram insets are scaled by the canvas's own height when the page turns the canvas.
+
 ## Audio on the web (phase 14)
 The web export runs without threads, so the engine plays every sound as a browser sample (an `AudioBufferSourceNode` per playback, gain nodes per bus). Buses added at runtime came out wired in a loop in that graph (bus → previous bus, master → bus), and Web Audio renders a loop without a delay as silence: the owner heard nothing. `Audio.flat` (true on the web) keeps every player on Master and applies the music and effects volumes per player (`Audio.bus_for`, `Audio.sfx_offset_db`); bus effects (reverb, low-pass) do not exist in sample mode anyway. The analyser probe (`scratchpad` during phase 14) confirmed sound reaches the destination. Phones: iPhone mutes Web Audio with the ringer switch; the first tap on the page also unlocks the browser's audio.
 

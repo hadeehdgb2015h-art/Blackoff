@@ -35,7 +35,8 @@ static func decorate(map_root: Node3D) -> int:
 		var mi := MeshInstance3D.new()
 		mi.name = "Art_" + prop_name
 		mi.mesh = meshes[prop_name]
-		mi.transform = map_root.global_transform.affine_inverse() * m.global_transform
+		# relative to the map root (works outside the scene tree)
+		mi.transform = MapBatcher.rel_xf(map_root, m)
 		mi.add_to_group("map_visual")
 		map_root.add_child(mi)
 		count += 1

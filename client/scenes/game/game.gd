@@ -56,12 +56,15 @@ var _debug_t: float = 0.0
 func _ready() -> void:
 	var defs := SharedData.data
 	var map_id: String = defs.constants.maps.default
-	_map_root = (load(MAP_SCENES[map_id]) as PackedScene).instantiate()
+	var t0 := Time.get_ticks_msec()
+	# props placed and meshes merged once per session (MapCache), then copied
+	_map_root = MapCache.instance(MAP_SCENES[map_id])
 	add_child(_map_root)
-	MapDecor.decorate(_map_root)
-	var batches := MapBatcher.batch(_map_root)
-	print("[game] map batched into %d meshes" % batches)
+	var t1 := Time.get_ticks_msec()
 	_atmosphere = Atmosphere.build(_map_root)
+	print("[load] map %d ms (%d merged meshes, %d lights), atmosphere %d ms" % [t1 - t0,
+		_map_root.find_children("Batched_*", "MeshInstance3D", false, false).size(),
+		_map_root.find_children("*", "Light3D", true, false).size(), Time.get_ticks_msec() - t1])
 
 	_rig = FpRig.new()
 	add_child(_rig)
@@ -159,6 +162,7 @@ func _ready() -> void:
 
 ## The local player exists (offline: at once; online: after the first snapshot).
 func _on_player_ready() -> void:
+	_prewarm_gpu()
 	var p: SimPlayer = world.players[pid]
 	_controls.set_look(p.yaw, p.pitch)
 	_rig.set_weapon(p.weapon().id if p.weapon() else str(_defs.constants.player.startWeapon))
@@ -763,6 +767,60 @@ func _cull_lights(p: SimPlayer, delta: float) -> void:
 	ranked.sort_custom(func(a, b): return a[0] < b[0])
 	for i in ranked.size():
 		(ranked[i][1] as Light3D).visible = i < keep
+
+
+## WebGL compiles a material's shader the first time it is drawn: on a phone
+## that is a freeze of up to a second the first time a gun fires, a zombie is
+## hit or a teammate appears. Draw each of them once, in front of the camera,
+## behind a short cover, as the match starts.
+func _prewarm_gpu() -> void:
+	if Platform.query_param("nohud") == "1":
+		return
+	var cover := ColorRect.new()
+	cover.color = Color(0.02, 0.02, 0.03, 1.0)
+	cover.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	cover.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var l := UiTheme.title("PREPARING", 26, UiTheme.GOLD)
+	l.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
+	l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	cover.add_child(l)
+	_hud.add_child(cover)
+	var t0 := Time.get_ticks_msec()
+	var p: SimPlayer = world.players[pid]
+	var yaw := p.yaw
+	var fwd := Vector3(-sin(yaw), 0, -cos(yaw))
+	var eye := Vector3(p.pos.x, float(world.constants.player.eyeHeight), p.pos.y)
+	var at := eye + fwd * 2.5
+	var temp: Array[Node] = []
+	var i := 0
+	for type in _defs.zombies:
+		var v := ZombieView.new()
+		add_child(v)
+		v.setup(-100 - i, type, _defs.zombies[type], Vector2(at.x, at.z) + Vector2(fwd.z, -fwd.x) * (i - 0.5), yaw + PI)
+		v.on_hit()   # the hit flash overlay is a material of its own
+		temp.append(v)
+		i += 1
+	var dummy := SimPlayer.new()
+	dummy.id = -99
+	dummy.name = " "
+	dummy.pos = Vector2(at.x, at.z) + Vector2(fwd.x, fwd.z) * 1.5
+	dummy.weapons = [WeaponState.create(str(_defs.constants.player.startWeapon), _defs.weapons[str(_defs.constants.player.startWeapon)])]
+	var rv := RemotePlayerView.new()
+	add_child(rv)
+	rv.setup(dummy)
+	temp.append(rv)
+	_rig.on_fire()
+	_effects.tracer(eye + fwd * 0.5, at)
+	_effects.impact(at, true)
+	_effects.impact(at + Vector3(0, 0.3, 0), false)
+	_effects.blast(eye, fwd, 4.0)
+	_effects.bolt(eye + fwd * 0.5, at, Color("#88e0ff"))
+	for f in 3:
+		await get_tree().process_frame
+	for n in temp:
+		n.queue_free()
+	cover.queue_free()
+	print("[load] prewarmed shaders in %d ms" % (Time.get_ticks_msec() - t0))
 
 
 ## Profiling (?perf=1): accumulates the section that ended now.

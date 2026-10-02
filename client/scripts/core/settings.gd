@@ -5,6 +5,7 @@ signal changed
 
 const PATH := "user://settings.cfg"
 const QUALITY := ["auto", "low", "medium", "high"]
+const SETTINGS_VERSION := 2
 
 var sensitivity: float = 1.0      ## multiplier on touch/mouse look speed
 var invert_y: bool = false
@@ -27,7 +28,13 @@ func _ready() -> void:
 	if DisplayServer.is_touchscreen_available():
 		auto_fps = 30
 	var cf := ConfigFile.new()
-	if cf.load(PATH) == OK:
+	var loaded := cf.load(PATH) == OK
+	if loaded and int(cf.get_value("meta", "version", 1)) < SETTINGS_VERSION:
+		# phase 15: older builds saved 60 FPS and a fixed quality by default:
+		# phones must start on automatic (a steady 30, low) like new players
+		cf.set_value("video", "fps_cap", 0)
+		cf.set_value("video", "quality", "auto")
+	if loaded:
 		sensitivity = clampf(float(cf.get_value("input", "sensitivity", sensitivity)), 0.2, 3.0)
 		invert_y = bool(cf.get_value("input", "invert_y", invert_y))
 		var q := str(cf.get_value("video", "quality", quality))
@@ -52,6 +59,7 @@ func save() -> void:
 	cf.set_value("video", "quality", quality)
 	cf.set_value("video", "show_fps", show_fps)
 	cf.set_value("video", "fps_cap", fps_cap)
+	cf.set_value("meta", "version", SETTINGS_VERSION)
 	cf.set_value("audio", "master_volume", master_volume)
 	cf.set_value("audio", "music_volume", music_volume)
 	cf.set_value("audio", "sfx_volume", sfx_volume)

@@ -11,6 +11,13 @@ var telegram_version: String = ""
 
 
 func _ready() -> void:
+	# The engine mirrors every Control in right-to-left locales (an Arabic phone):
+	# money on the left, the menu flipped, and controls positioned before they
+	# join the tree stored mirrored. The interface is English and laid out
+	# left-to-right: use an English locale for layout. Arabic text inside labels
+	# (player names) is still shaped and ordered right-to-left by the text server.
+	TranslationServer.set_locale("en")
+	get_tree().root.set_layout_direction(Window.LAYOUT_DIRECTION_LTR)
 	is_web = OS.has_feature("web")
 	is_touch = DisplayServer.is_touchscreen_available()
 	if is_web:
@@ -123,7 +130,8 @@ func safe_insets(view_size: Vector2) -> Dictionary:
 		return z
 	var v: Variant = _js("JSON.stringify(window.BlackoffTG.safeArea())")
 	var d: Variant = JSON.parse_string(str(v)) if v != null else null
-	var h: Variant = _js("window.innerHeight")
+	# the canvas's own height in CSS px (the page turns it on an upright phone)
+	var h: Variant = _js("(window.BlackoffRotate && window.BlackoffRotate.state.rotated) ? window.innerWidth : window.innerHeight")
 	if not (d is Dictionary) or h == null or float(h) <= 0.0:
 		return z
 	var k := view_size.y / float(h)  # CSS px -> virtual px (canvas_items stretch keeps the base height)

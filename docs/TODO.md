@@ -81,5 +81,12 @@
 - [x] Canvas capped at 720 lines on touch screens; 24 m batch chunks; props hidden beyond 42 m; lights culled by distance; far zombies hold their pose on low; sticky auto tier; auto 30 FPS cap; model pre-warm; on-screen counters and `?perf=1`
 - [ ] Next if still needed: fewer materials per chunk (texture atlas), simpler zombie meshes for far distance, Telegram WebView-specific findings from the owner's FPS screenshot
 
+## Phase 16: owner's phone report (lag, heat, slow entry, first-shot freeze)
+- [x] Sounds registered and shaders drawn once at load (first shot no longer freezes)
+- [x] Saved 60 FPS from older builds reset to automatic (30 on phones): heat
+- [x] Right-to-left mirroring on Arabic phones fixed (HUD and menu)
+- [x] Compressed vertex attributes on merged map meshes; load timings printed (`[load]`)
+- [ ] Waiting for the owner's next screenshot (FPS line) on the new build
+
 ## Open questions for the owner
 - Own subdomain or the free sslip.io address (installer default)

@@ -7,6 +7,7 @@ extends Control
 ## ?screen=layout|settings|howto|hunt opens that screen at once (screenshot tests).
 
 const GAME := "res://scenes/game/game.tscn"
+const MAP_PATH := "res://scenes/maps/facility_01.tscn"
 const BACKDROP := "res://assets/ui/menu_bg.jpg"
 
 var _profile_name: Label
@@ -62,6 +63,15 @@ func _ready() -> void:
 		Net.status_changed.connect(func(st: String):
 			if st == "ready" and _overlay == null:
 				_show_leaderboard())
+	# Once per session, under a curtain: place the map's props, merge its meshes
+	# and load the models a match needs, so PLAY (and play again) start at once.
+	if not MapCache.is_ready(MAP_PATH):
+		var cover := _loading("BLACKOFF")
+		await get_tree().process_frame
+		await get_tree().process_frame
+		MapCache.prepare(MAP_PATH)
+		_prewarm()
+		cover.queue_free()
 	if Platform.query_param("autostart") == "1":
 		var online := Platform.query_param("server") != "" or Platform.query_param("online") == "1"
 		var inf := Platform.query_param("mode") == "infection"
@@ -213,7 +223,7 @@ func _build_footer() -> void:
 
 ## A dark curtain with a line of text while the game scene loads (the map is
 ## batched on entry, which takes a moment on phones).
-func _loading(text: String) -> void:
+func _loading(text: String) -> Control:
 	var cover := ColorRect.new()
 	cover.color = Color(0.02, 0.02, 0.03, 0.82)
 	cover.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
@@ -231,13 +241,14 @@ func _loading(text: String) -> void:
 	var r := UiTheme.rule(360)
 	r.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	box.add_child(r)
-	var hint := UiTheme.label("LOADING THE FACILITY  ·  a few seconds on a phone", 15, UiTheme.MUTED)
+	var hint := UiTheme.label("LOADING THE FACILITY  ·  once per session", 15, UiTheme.MUTED)
 	hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	box.add_child(hint)
 	# the title breathes so nobody takes the curtain for a frozen screen
-	var tw := create_tween().set_loops()
+	var tw := l.create_tween().set_loops()  # bound to the label: dies with the curtain
 	tw.tween_property(l, "modulate:a", 0.45, 0.7).set_trans(Tween.TRANS_SINE)
 	tw.tween_property(l, "modulate:a", 1.0, 0.7).set_trans(Tween.TRANS_SINE)
+	return cover
 
 
 # ------------------------------------------------------------------ profile
@@ -285,7 +296,6 @@ func _enter(label: String) -> void:
 	_loading(label)
 	await get_tree().process_frame
 	await get_tree().process_frame
-	_prewarm()
 	get_tree().change_scene_to_file(GAME)
 
 

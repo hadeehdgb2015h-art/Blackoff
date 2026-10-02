@@ -117,7 +117,9 @@ function fakeMicWav() {
   const scale = Number(process.env.SMOKE_DPR || 2);
   // SMOKE_PORTRAIT=1: a phone held upright (the page must turn the game to landscape itself)
   const viewport = process.env.SMOKE_PORTRAIT === '1' ? { width: 390, height: 844 } : { width: 844, height: 390 };
-  const page = await browser.newPage({ viewport, hasTouch: true, isMobile: true, deviceScaleFactor: scale });
+  // SMOKE_LOCALE=ar: a phone whose language is Arabic (right-to-left)
+  const page = await browser.newPage({ viewport, hasTouch: true, isMobile: true, deviceScaleFactor: scale,
+    ...(process.env.SMOKE_LOCALE ? { locale: process.env.SMOKE_LOCALE } : {}) });
   const errors = [];
   const logs = [];
   page.on('pageerror', (e) => errors.push(String(e)));
