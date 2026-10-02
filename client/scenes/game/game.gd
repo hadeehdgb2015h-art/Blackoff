@@ -75,7 +75,7 @@ func _ready() -> void:
 	_sfx.occlusion_check = _occluded
 	Audio.play_music("ambient")
 	_atmosphere.thunder.connect(func(delay: float):
-		get_tree().create_timer(delay).timeout.connect(func(): _sfx.play("thunder", -3.0, 0.15)))
+		get_tree().create_timer(delay).timeout.connect(func(): _sfx.play("thunder", -9.0, 0.1)))
 
 	var vignette_layer := CanvasLayer.new()
 	vignette_layer.layer = 0
@@ -110,7 +110,7 @@ func _ready() -> void:
 	if _debug_js or Platform.query_param("audiocheck") == "1":
 		# how this platform plays sound (web without threads = sample playback; a
 		# stream that is not registered as a sample stays silent there)
-		var music: AudioStream = load("res://assets/sfx/music_menu.wav")
+		var music: AudioStream = load("res://assets/sfx/music_ambient.wav")
 		var shot: AudioStream = load("res://assets/sfx/pistol_shot.wav")
 		print("[audio] music sample=%s shot sample=%s; music class %s; buses %d; master %.1f dB" % [
 			AudioServer.is_stream_registered_as_sample(music), AudioServer.is_stream_registered_as_sample(shot),
@@ -410,13 +410,13 @@ func _on_event(e: Dictionary) -> void:
 			var wvis := Visuals.weapon(e.weapon)
 			var from: Vector3 = _rig.muzzle_position() if local else e.from + Vector3(0, -0.2, 0)
 			if not local:
-				_sfx.play_at(wvis.get("sound", "pistol_shot"), from, -6.0)
+				_sfx.play_at(wvis.get("sound", "pistol_shot"), from, -8.0)
 				var pv: RemotePlayerView = _pviews.get(e.pid)
 				if pv:
 					pv.on_fire()
 			else:
 				_rig.on_fire()
-				_sfx.play(wvis.get("sound", "pistol_shot"), -2.0)
+				_sfx.play(wvis.get("sound", "pistol_shot"), -4.0)
 				_controls.add_recoil(float(wvis.get("recoilPitch", 0.02)) * randf_range(0.6, 1.0), randf_range(-0.006, 0.006))
 			var fx := str(wvis.get("fx", "tracer"))
 			if fx == "blast":
@@ -593,8 +593,9 @@ func _body_sounds(p: SimPlayer, delta: float) -> void:
 	if p.is_alive() and p.moving:
 		_step_t -= delta * world.player_sys.perk_mul(p, "moveSpeedMul")
 		if _step_t <= 0.0:
-			_step_t = 0.42
-			_sfx.play("step%d" % (1 + randi() % 4), -16.0, 0.12)
+			_step_t = 0.5
+			# quiet and soft: heard under the action, not over it (phase 17)
+			_sfx.play("step%d" % (1 + randi() % 4), -24.0, 0.06)
 	else:
 		_step_t = minf(_step_t, 0.1)
 	if p.is_alive() and p.hp < p.max_hp * 0.3:
@@ -649,10 +650,10 @@ func _ambient_groans(delta: float) -> void:
 	_groan_t -= delta
 	if _groan_t > 0.0 or _zviews.is_empty():
 		return
-	_groan_t = randf_range(1.2, 3.5)
+	_groan_t = randf_range(2.5, 6.0)
 	var views := _zviews.values()
 	var v: ZombieView = views[randi() % views.size()]
-	_sfx.play_at("zombie_groan%d" % (1 + randi() % 2), v.global_position + Vector3(0, 1.5, 0), -4.0, 0.15)
+	_sfx.play_at("zombie_groan%d" % (1 + randi() % 4), v.global_position + Vector3(0, 1.5, 0), -6.0, 0.1)
 
 
 ## ?showcase=1: art review mode. Waves off, player invulnerable, one of each

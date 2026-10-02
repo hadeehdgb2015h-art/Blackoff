@@ -1,4 +1,0 @@
-Source: https://opengameart.org/content/gunshots
-Author: field-name-author-submitter field-type-ds field-label-above">Author:&nbsp;kurtFriday, February 10, 2017 - 17:42Art Type:&nbsp;Sound EffectTags:&nbsp;gungunshotshotsgunfireLicense(s):&nbsp;CC0Collections:&nbsp;2.5d FPS (cc0)BlackCortexMySFXOpenSpades Free assetsSound EffectZombie Tower Defense RPG
-Licence: CC0 1.0 (as stated on the page)
-Query: gunshot

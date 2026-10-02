@@ -1,19 +1,29 @@
 class_name Sfx
 extends Node
-## Sound playback with small player pools. Streams live in res://assets/sfx/
-## (generated placeholders, see tools/gen_sfx.py; replace files to upgrade).
+## Sound playback. Streams live in res://assets/sfx/ (real CC0 recordings cut by
+## tools/sfx/build_sfx.py).
+##
+## Phase 17 (crackle fix): in the browser a voice that is reused is stopped
+## dead, mid-waveform, which clicks. A shared pool of 8 players cycled every
+## few shots, so footsteps, hit ticks and shots kept cutting each other off: a
+## constant crackle in a fight. Now each 2D sound has its own player with a
+## small voice limit (a new shot only replaces an older shot, whose attack masks
+## the cut, and the sound files fade to silence before they end), and 3D sounds
+## take a free player before stealing the one that started first.
 
-const NAMES := ["pistol_shot", "rifle_shot", "dry_fire", "reload", "switch", "zombie_groan1", "zombie_groan2",
+const NAMES := ["pistol_shot", "rifle_shot", "dry_fire", "reload", "switch",
+	"zombie_groan1", "zombie_groan2", "zombie_groan3", "zombie_groan4",
 	"zombie_attack", "zombie_hit", "zombie_death", "player_hurt", "buy", "deny", "wave_start", "wave_end", "shotgun_shot", "smg_shot", "box_open", "box_roll", "box_offer", "thunder", "lmg_shot", "sniper_shot", "arc_shot", "gale_shot", "powerup",
 	"step1", "step2", "step3", "step4", "hit_tick", "headshot", "heartbeat"]
-const POOL_2D := 8
-const POOL_3D := 8
+## Voices per 2D sound (default 2). Fast guns need a few to overlap their tails.
+const VOICES := {"smg_shot": 3, "lmg_shot": 3, "rifle_shot": 3, "pistol_shot": 3, "zombie_hit": 3, "hit_tick": 2,
+	"step1": 1, "step2": 1, "step3": 1, "step4": 1, "heartbeat": 1, "reload": 1, "thunder": 1, "wave_start": 1, "wave_end": 1}
+const POOL_3D := 12
 
 var _streams := {}
-var _p2d: Array[AudioStreamPlayer] = []
+var _p2d := {}                                ## name -> AudioStreamPlayer
 var _p3d: Array[AudioStreamPlayer3D] = []
-var _i2d: int = 0
-var _i3d: int = 0
+var _started: Array[int] = []                 ## msec each 3D player last started
 var occlusion_check: Callable  ## set by the game: Callable(pos: Vector3) -> bool (true = behind a wall)
 
 
@@ -30,11 +40,13 @@ func _ready() -> void:
 			if not AudioServer.is_stream_registered_as_sample(s):
 				AudioServer.register_stream_as_sample(s)
 		print("[load] %d sounds registered in %d ms" % [_streams.size(), Time.get_ticks_msec() - t0])
-	for i in POOL_2D:
+	for n in _streams:
 		var p := AudioStreamPlayer.new()
 		p.bus = Audio.bus_for("SFX")
+		p.stream = _streams[n]
+		p.max_polyphony = int(VOICES.get(n, 2))
 		add_child(p)
-		_p2d.append(p)
+		_p2d[n] = p
 	for i in POOL_3D:
 		var p := AudioStreamPlayer3D.new()
 		p.bus = Audio.bus_for("SFX")
@@ -44,14 +56,13 @@ func _ready() -> void:
 		p.attenuation_filter_db = -18.0
 		add_child(p)
 		_p3d.append(p)
+		_started.append(0)
 
 
 func play(name: String, volume_db := 0.0, pitch_var := 0.05) -> void:
-	if not _streams.has(name):
+	var p: AudioStreamPlayer = _p2d.get(name)
+	if p == null:
 		return
-	var p := _p2d[_i2d]
-	_i2d = (_i2d + 1) % POOL_2D
-	p.stream = _streams[name]
 	p.volume_db = volume_db + Audio.sfx_offset_db()
 	p.pitch_scale = 1.0 + randf_range(-pitch_var, pitch_var)
 	p.play()
@@ -60,8 +71,16 @@ func play(name: String, volume_db := 0.0, pitch_var := 0.05) -> void:
 func play_at(name: String, pos: Vector3, volume_db := 0.0, pitch_var := 0.08) -> void:
 	if not _streams.has(name):
 		return
-	var p := _p3d[_i3d]
-	_i3d = (_i3d + 1) % POOL_3D
+	# a player that is free, else the one that started longest ago
+	var pick := 0
+	for i in POOL_3D:
+		if not _p3d[i].playing:
+			pick = i
+			break
+		if _started[i] < _started[pick]:
+			pick = i
+	var p := _p3d[pick]
+	_started[pick] = Time.get_ticks_msec()
 	p.stream = _streams[name]
 	p.global_position = pos
 	# Behind a wall: muffled and quieter (cheap occlusion from the sim map).

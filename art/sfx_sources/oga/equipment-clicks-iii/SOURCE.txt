@@ -1,4 +1,0 @@
-Source: https://opengameart.org/content/equipment-clicks-iii
-Author: field-name-author-submitter field-type-ds field-label-above">Author:&nbsp;LFAFriday, May 20, 2011 - 12:03Art Type:&nbsp;Sound EffectTags:&nbsp;clickclickssnapreloadreloadinggunweaponcockingActionRPGWarfareBattleLicense(s):&nbsp;CC0Collections:&nbsp;All CC0 - Uploader: LFABlackCortexFPS - Boomer Shooter SFXMusic and soundfx for a 3d action rpgMySFXOpenSpades Free assetsSFXsfx-normalSound EffectSound EffectsSound Effectssound fxStirling SFXWeapons &amp; Fighting Sounds
-Licence: CC0 1.0 (as stated on the page)
-Query: reload

@@ -8,7 +8,7 @@ metadata={
 "vram_texture": false
 }
 generator_parameters={
-"md5": "434de8bc260f559484c2032a7c16072a"
+"md5": "389b966fc380fc1bb9d63ea6564438fa"
 }
 
 [deps]
@@ -20,7 +20,7 @@ dest_files=["res://.godot/imported/env_props_env_props_orm.jpg-b7d73fdd6353254db
 
 compress/mode=1
 compress/high_quality=false
-compress/lossy_quality=0.85
+compress/lossy_quality=0.75
 compress/uastc_level=0
 compress/rdo_quality_loss=0.0
 compress/hdr_compression=1

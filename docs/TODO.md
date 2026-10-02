@@ -88,5 +88,14 @@
 - [x] Compressed vertex attributes on merged map meshes; load timings printed (`[load]`)
 - [ ] Waiting for the owner's next screenshot (FPS line) on the new build
 
+## Phase 17: real sounds and a 10 MB target (owner: crackle, a sound every 15 s, cheap sounds, annoying steps, 50 MB is too big)
+- [x] All sounds cut from real CC0 recordings (`tools/sfx/build_sfx.py`, sources in `docs/ASSET_LICENSES.md`); rain bed as seamless music loop
+- [x] Crackle: one player per sound with a voice limit, free-first 3D pool, master limiter in the page
+- [x] Thunder every 45-90 s (was 9-20 s); footsteps softer and quieter
+- [x] Models decimated (soldier 7k, zombies 3.5k, weapons 3-4.5k triangles), 512 px textures, 256 px material maps, no unused LODs or shadow meshes
+- [x] Stripped engine template (no physics, navigation, XR, advanced GUI, unused modules; ICU without CJK/Thai dictionaries), built and cached by CI
+- [ ] Owner listens on the phone and reports which sounds still feel wrong
+- [ ] Next size step if needed: brotli on the server (nginx module), or fewer weapon models shipped at start
+
 ## Open questions for the owner
 - Own subdomain or the free sslip.io address (installer default)

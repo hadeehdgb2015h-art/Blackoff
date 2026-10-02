@@ -66,6 +66,21 @@ jobs:
         run: |
           sudo mkdir -p /opt/godot && sudo chown "$USER" /opt/godot
           tools/setup_godot.sh
+      - name: Cache stripped engine template
+        id: engine
+        uses: actions/cache@v4
+        with:
+          path: build/engine/web_nothreads_release.zip
+          key: engine-web-${{ env.GODOT_VERSION }}-${{ env.GODOT_STATUS }}-${{ env.EMSDK_VERSION }}-${{ hashFiles('tools/engine/**') }}
+      - name: Build stripped engine template (cache miss only, about 20 min)
+        if: steps.engine.outputs.cache-hit != 'true'
+        run: |
+          sudo apt-get install -y icu-devtools >/dev/null
+          pipx install scons >/dev/null
+          git clone -q --depth 1 --branch "${GODOT_VERSION}-${GODOT_STATUS}" https://github.com/godotengine/godot.git /tmp/godot-src
+          git clone -q --depth 1 https://github.com/emscripten-core/emsdk.git /tmp/emsdk
+          /tmp/emsdk/emsdk install "$EMSDK_VERSION" >/dev/null && /tmp/emsdk/emsdk activate "$EMSDK_VERSION" >/dev/null
+          tools/engine/build_web_template.sh /tmp/godot-src /tmp/emsdk build/engine/web_nothreads_release.zip
       - name: Map data in sync with map scene
         env:
           GODOT: /opt/godot/godot
@@ -73,6 +88,7 @@ jobs:
       - name: Test and export Web build
         env:
           GODOT: /opt/godot/godot
+          WEB_TEMPLATE: build/engine/web_nothreads_release.zip
         run: tools/export_web.sh
       - name: Headless game run (bot, 120 s of game time)
         run: |

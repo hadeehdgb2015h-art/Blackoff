@@ -1,4 +1,0 @@
-Source: https://opengameart.org/content/2-gun-reloads
-Author: field-name-author-submitter field-type-ds field-label-above">Author:&nbsp;StarNinjasTuesday, March 9, 2021 - 14:24Art Type:&nbsp;Sound EffectTags:&nbsp;gunreloaddoor openshotgunammobulletLicense(s):&nbsp;CC0Collections:&nbsp;1 TestFPS - Boomer Shooter SFXSound Effect
-Licence: CC0 1.0 (as stated on the page)
-Query: shotgun

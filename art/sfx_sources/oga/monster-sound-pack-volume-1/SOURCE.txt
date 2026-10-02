@@ -1,4 +1,0 @@
-Source: https://opengameart.org/content/monster-sound-pack-volume-1
-Author: field-name-author-submitter field-type-ds field-label-above">Author:&nbsp;OgrebaneSaturday, October 2, 2010 - 07:34Art Type:&nbsp;Sound EffectTags:&nbsp;monstercreaturedeathhitattackdefendgrowldiebeastEnemyActionRPGStrategyFantasySci-FiWarfareBattleVocalsLicense(s):&nbsp;CC0Collections:&nbsp;3D Quake ModCC0 Sound EffectscohesionCool ThingsCreature SoundsCuspD-RPG (Art/Music Assets)Drawn GameElemental Verbs Tower DefenseGeneric SFX CollectionKOLEKCJALibrary of Game SoundsMusic and soundfx for a 3d action rpgMySFXNotMeNotUNuclear TeddyPossible SoundFXQnD001 AssetsRPG Sound Archive - Spooky and MonstersSCP ReturnalSFXSFX for potential fantasy card gameSlappa Assetssound fxSound FXsounds
-Licence: CC0 1.0 (as stated on the page)
-Query: monster growl

@@ -67,7 +67,8 @@ tools/export_web.sh                              # sync shared → headless test
 SMOKE_DPR=0.5 NODE_PATH=$(npm root -g) node tools/smoke_web.cjs build/web /tmp/s.png "?autostart=1&bot=1" 45
 SMOKE_TOUCH=1 NODE_PATH=$(npm root -g) node tools/smoke_web.cjs build/web /tmp/t.png "?autostart=1&debug=1" 5
 cd server && npm ci && npm run typecheck && npm test
-python3 tools/gen_sfx.py; python3 tools/gen_textures.py   # regenerate placeholder audio/textures
+python3 tools/gen_textures.py                    # regenerate placeholder textures
+/opt/blender-venv/bin/python tools/sfx/build_sfx.py   # rebuild the sounds from art/sfx_sources (ffmpeg + numpy)
 # art: see docs/systems/art-pipeline.md (Blender as a Python module)
 ```
 

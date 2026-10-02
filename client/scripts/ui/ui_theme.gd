@@ -126,7 +126,7 @@ static func _face_texture(key: String, top: Color, bottom: Color, border: Color,
 	if _tex_cache.has(key):
 		return _tex_cache[key]
 	var n := 48
-	var img := Image.create(n, n, false, Image.FORMAT_RGBA8)
+	var img := Image.create_empty(n, n, false, Image.FORMAT_RGBA8)
 	for y in n:
 		var k := float(y) / float(n - 1)
 		var c := top.lerp(bottom, k)
@@ -155,7 +155,7 @@ static func knob_texture() -> ImageTexture:
 	if _tex_cache.has("knob"):
 		return _tex_cache["knob"]
 	var n := 22
-	var img := Image.create(n, n, false, Image.FORMAT_RGBA8)
+	var img := Image.create_empty(n, n, false, Image.FORMAT_RGBA8)
 	var c := Vector2(n / 2.0 - 0.5, n / 2.0 - 0.5)
 	for y in n:
 		for x in n:

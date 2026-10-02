@@ -1,4 +1,0 @@
-Source: https://opengameart.org/content/equipment-clicks-ii
-Author: field-name-author-submitter field-type-ds field-label-above">Author:&nbsp;LFAThursday, August 5, 2010 - 13:46Art Type:&nbsp;Sound EffectTags:&nbsp;clickequipmentloadreloadreloadsnapobjectinventoryclicksActionModernWarfareOtherLicense(s):&nbsp;CC0Collections:&nbsp;All CC0 - Uploader: LFACrux InspoMusic and soundfx for a 3d action rpgMySFXSFXsfx-normalStuff I might need laterTurn Based OverheadUI sounds RPG Inventory soundsUntitled Zombie Game
-Licence: CC0 1.0 (as stated on the page)
-Query: reload

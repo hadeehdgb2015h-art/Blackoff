@@ -20,10 +20,13 @@ for imp in glob.glob(os.path.join(ROOT, "assets", "**", "*.import"), recursive=T
         continue
     # fx_ sprites are additive: lossy alpha noise would light up the whole quad
     want = {"compress/mode": "0" if os.path.basename(imp).startswith("fx_") else "1", "mipmaps/generate": "true"}
-    want["compress/lossy_quality"] = "0.9" if "_normal." in imp else "0.85"
+    want["compress/lossy_quality"] = "0.9" if "_normal." in imp else ("0.75" if "_orm." in imp else "0.85")
     want["compress/normal_map"] = "1" if "_normal." in imp else "0"
-    # memory budget: roughness/metal maps are low-frequency
-    limit = 512 if "_orm." in imp else 0
+    # memory and download budget: roughness/metal maps are low-frequency, so a
+    # character's or weapon's map is 256 px (the prop libraries' shared one 512)
+    limit = 0
+    if "_orm." in imp:
+        limit = 512 if "_props_" in imp else 256
     want["process/size_limit"] = str(limit)
     new = text
     for k, v in want.items():

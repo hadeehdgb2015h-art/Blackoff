@@ -478,7 +478,7 @@ func _process(delta: float) -> void:
 	if _storm:
 		_next_strike -= delta
 		if _next_strike <= 0.0:
-			_next_strike = randf_range(9.0, 20.0)
+			_next_strike = randf_range(45.0, 90.0)  # was 9-20 s: heard as a sound every 15 s
 			_strike()
 		for bolt in _bolts:
 			if bolt.visible:

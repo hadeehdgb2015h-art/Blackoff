@@ -1,4 +1,0 @@
-Source: https://opengameart.org/content/gunshot-sound-effect
-Author: field-name-author-submitter field-type-ds field-label-above">Author:&nbsp;hingydunyasTuesday, September 15, 2026 - 01:08Art Type:&nbsp;Sound EffectTags:&nbsp;gunshotLicense(s):&nbsp;CC0
-Licence: CC0 1.0 (as stated on the page)
-Query: gunshot

@@ -1,4 +1,0 @@
-Source: https://opengameart.org/content/shotgun-reload-sound-effects
-Author: field-name-author-submitter field-type-ds field-label-above">Author:&nbsp;zer0_solSunday, June 20, 2021 - 13:00Art Type:&nbsp;Sound EffectTags:&nbsp;pumpaction shotgunshotgunreloadfirearmgunLicense(s):&nbsp;CC0Collections:&nbsp;1 TestSound Effect
-Licence: CC0 1.0 (as stated on the page)
-Query: shotgun

@@ -8,7 +8,7 @@ metadata={
 "vram_texture": false
 }
 generator_parameters={
-"md5": "eac6b51ff7526cd64f270bd392419943"
+"md5": "348497f8583990483e13fbcb47f419e1"
 }
 
 [deps]
@@ -20,7 +20,7 @@ dest_files=["res://.godot/imported/vm_gale_vm_gale_orm.jpg-31bac30b96266f4338757
 
 compress/mode=1
 compress/high_quality=false
-compress/lossy_quality=0.85
+compress/lossy_quality=0.75
 compress/uastc_level=0
 compress/rdo_quality_loss=0.0
 compress/hdr_compression=1
@@ -39,5 +39,5 @@ process/premult_alpha=false
 process/normal_map_invert_y=false
 process/hdr_as_srgb=false
 process/hdr_clamp_exposure=false
-process/size_limit=512
+process/size_limit=256
 detect_3d/compress_to=1

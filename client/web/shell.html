@@ -175,6 +175,34 @@ window.addEventListener('pointermove', function (e) {
 // Phones outside Telegram: go fullscreen on the first tap.
 if (matchMedia('(pointer: coarse)').matches) window.BlackoffTG._wantFs = true;
 </script>
+<script>
+// Master limiter (phase 17). The engine connects every sound straight to the
+// audio context's speakers; several gunshots, hits and a zombie at once add up
+// past full scale and the browser clips them: the crackle heard in fights.
+// Each context the page makes now sends `destination` through a fast
+// compressor that only acts on peaks.
+(function () {
+  var Base = window.AudioContext || window.webkitAudioContext;
+  if (!Base) return;
+  function Limited(opts) {
+    var ctx = opts === undefined ? new Base() : new Base(opts);
+    try {
+      var lim = ctx.createDynamicsCompressor();
+      lim.threshold.value = -4;
+      lim.knee.value = 4;
+      lim.ratio.value = 20;
+      lim.attack.value = 0.002;
+      lim.release.value = 0.12;
+      lim.connect(ctx.destination);
+      Object.defineProperty(ctx, 'destination', { value: lim });
+    } catch (e) { /* no limiter: plain output */ }
+    return ctx;
+  }
+  Limited.prototype = Base.prototype;
+  window.AudioContext = Limited;
+  if (window.webkitAudioContext) window.webkitAudioContext = Limited;
+})();
+</script>
 <!-- Optional site config (game server URL), written by deploy/install.sh. -->
 <script src="config.js" onerror="void 0"></script>
 <!-- Voice chat: microphone capture, codec and playback (tools/hash_web_build.py renames it). -->
