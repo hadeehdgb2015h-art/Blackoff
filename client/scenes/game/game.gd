@@ -63,6 +63,10 @@ func _ready() -> void:
 	Settings.changed.connect(_apply_quality)
 	_apply_quality()
 	_debug_js = Platform.is_web and Platform.query_param("debug") == "1"
+	var forced := Platform.query_param("weapon")  # art review: ?weapon=rifle
+	if forced != "" and defs.weapons.has(forced):
+		world.player_sys.give_weapon(p, forced)
+		_rig.set_weapon(forced)
 	var showcase := Platform.query_param("showcase")
 	if showcase == "1":
 		_start_showcase()

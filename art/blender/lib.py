@@ -358,3 +358,113 @@ def add_camera(loc, target, lens=50):
 def render(path):
     bpy.context.scene.render.filepath = path
     bpy.ops.render.render(write_still=True)
+
+
+# ------------------------------------------------------------------ hard-surface helpers
+
+def bake_pointiness(ob, size, contrast=(0.48, 0.56)):
+    """Bakes a convex-edge mask (Cycles pointiness) for edge-wear painting.
+    Returns a float32 (size, size) array in UV space."""
+    import numpy as np
+    img = bpy.data.images.new("edges_" + ob.name, size, size, float_buffer=True)
+    saved = [s.material for s in ob.material_slots]
+    tmp = bpy.data.materials.new("__pointiness__")
+    tmp.use_nodes = True
+    nt = tmp.node_tree
+    for n in list(nt.nodes):
+        nt.nodes.remove(n)
+    out = nt.nodes.new("ShaderNodeOutputMaterial")
+    emit = nt.nodes.new("ShaderNodeEmission")
+    geo = nt.nodes.new("ShaderNodeNewGeometry")
+    ramp = nt.nodes.new("ShaderNodeValToRGB")
+    ramp.color_ramp.elements[0].position = contrast[0]
+    ramp.color_ramp.elements[1].position = contrast[1]
+    nt.links.new(geo.outputs["Pointiness"], ramp.inputs[0])
+    nt.links.new(ramp.outputs[0], emit.inputs[0])
+    nt.links.new(emit.outputs[0], out.inputs[0])
+    tex = nt.nodes.new("ShaderNodeTexImage")
+    tex.image = img
+    nt.nodes.active = tex
+    for s in ob.material_slots:
+        s.material = tmp
+    sc = bpy.context.scene
+    sc.render.engine = 'CYCLES'
+    sc.cycles.samples = 4
+    sc.render.bake.margin = 3
+    activate(ob)
+    bpy.ops.object.bake(type='EMIT')
+    for s, m in zip(ob.material_slots, saved):
+        s.material = m
+    return np.array(img.pixels[:], np.float32).reshape(size, size, 4)[..., 0]
+
+
+def bake_ao(ob, size, samples=32):
+    import numpy as np
+    img = bpy.data.images.new("ao_" + ob.name, size, size)
+    for s in ob.material_slots:
+        nt = s.material.node_tree
+        n = nt.nodes.new("ShaderNodeTexImage")
+        n.image = img
+        nt.nodes.active = n
+    sc = bpy.context.scene
+    sc.render.engine = 'CYCLES'
+    sc.cycles.samples = samples
+    sc.render.bake.margin = 3
+    activate(ob)
+    bpy.ops.object.bake(type='AO')
+    return np.array(img.pixels[:], np.float32).reshape(size, size, 4)[..., 0]
+
+
+def pbr_material(name, albedo_img, orm_img=None, emissive=None):
+    """Principled material with base colour and optional ORM-style texture
+    (G = roughness, B = metallic), which the glTF exporter packs as metallicRoughness."""
+    mat = bpy.data.materials.new(name)
+    mat.use_nodes = True
+    nt = mat.node_tree
+    bsdf = nt.nodes["Principled BSDF"]
+    t = nt.nodes.new("ShaderNodeTexImage")
+    t.image = albedo_img
+    nt.links.new(t.outputs[0], bsdf.inputs["Base Color"])
+    if orm_img is not None:
+        o = nt.nodes.new("ShaderNodeTexImage")
+        o.image = orm_img
+        o.image.colorspace_settings.name = 'Non-Color'
+        sep = nt.nodes.new("ShaderNodeSeparateColor")
+        nt.links.new(o.outputs[0], sep.inputs[0])
+        nt.links.new(sep.outputs["Green"], bsdf.inputs["Roughness"])
+        nt.links.new(sep.outputs["Blue"], bsdf.inputs["Metallic"])
+    return mat
+
+
+def separate_by_groups(ob, names):
+    """Splits a joined mesh into objects by vertex groups 'node_<name>'.
+    Returns {name: object}."""
+    out = {}
+    for name in names:
+        g = ob.vertex_groups.get("node_" + name)
+        if g is None:
+            continue
+        activate(ob)
+        bpy.ops.object.mode_set(mode='EDIT')
+        bpy.ops.mesh.select_all(action='DESELECT')
+        ob.vertex_groups.active_index = g.index
+        bpy.ops.object.vertex_group_select()
+        bpy.ops.mesh.separate(type='SELECTED')
+        bpy.ops.object.mode_set(mode='OBJECT')
+        new = [o for o in bpy.context.selected_objects if o != ob][0]
+        new.name = name
+        out[name] = new
+    return out
+
+
+def push_object_actions(ob, actions):
+    """Turns {track_name: action} into muted NLA tracks so the glTF exporter
+    merges same-named tracks of different objects into one animation."""
+    if ob.animation_data is None:
+        ob.animation_data_create()
+    for name, act in actions.items():
+        tr = ob.animation_data.nla_tracks.new()
+        tr.name = name
+        tr.strips.new(name, int(act.frame_range[0]), act)
+        tr.mute = True
+    ob.animation_data.action = None

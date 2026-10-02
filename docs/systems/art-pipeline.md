@@ -11,6 +11,7 @@ python3 -m venv /opt/blender-venv && /opt/blender-venv/bin/pip install bpy==4.5.
 ```bash
 /opt/blender-venv/bin/python art/blender/build_zombies.py --preview /tmp/art   # zombie_walker.glb, zombie_runner.glb
 /opt/blender-venv/bin/python art/blender/build_props.py --preview /tmp/art     # supply_box.glb
+/opt/blender-venv/bin/python art/blender/build_weapons.py --preview /tmp/vm    # vm_pistol/rifle/shotgun/smg.glb (--only rifle)
 ```
 Outputs go to `client/assets/models/`. They are committed, and CI does not rebuild art. `--preview` renders Cycles stills for review.
 
@@ -24,9 +25,20 @@ Outputs go to `client/assets/models/`. They are committed, and CI does not rebui
 | Textures | `painter.py` rasterises the UV layout, recovers each texel's 3D rest position and paints with numpy: skin rot, veins, bruises, eye sockets, teeth, blood soak and drips, torn clothing with ragged edges, insignia. A Cycles AO bake is multiplied in. 1024² for zombies, 512² for the crate |
 | Export | GLB, JPEG textures, one primitive per material, emissive eyes and glow kept as separate materials |
 
+## Weapons (first-person viewmodels)
+- `build_weapons.py` uses a small hard-surface kit: side-profile extrusions (`prism`), cylinders, boxes and boolean cuts, plus angle-limited bevels with hardened normals so edges catch the light.
+- Each GLB is authored in **camera space**: origin = eye, forward = -Z. Nodes: `Root` (animated: kick, tilt, draw) > `Weapon`, `Mag`, `Slide` (pistol slide, rifle charging handle, shotgun pump, SMG knob), `ArmL`, `ArmR`, `Muzzle`.
+- Textures: Cycles **pointiness** bake gives a convex-edge mask for worn edges; an AO bake is multiplied in; the albedo is painted per material (parkerised steel, stippled polymer, FDE furniture, gloves, camo sleeves); metal and roughness are packed into the glTF metallicRoughness texture.
+- Animations: `idle`, `fire` (shotgun includes the pump), `reload` (authored as 2 s; `FpRig` time-scales it to `reloadSec`; magazine out/in or 3 shells loaded), `draw`.
+- In game, `FpRig` scales the model by `VM_SCALE` (0.5) about the camera. The picture is identical, but the gun stays inside the player's collision radius and does not poke through walls.
+- The same GLBs serve as world models in the supply cache (`Visuals.weapon_world_node`), with arms hidden.
+- Review: `?autostart=1&showcase=box&weapon=rifle` (any weapon id).
+
 ## Budgets
 - Zombie: about 9–11k triangles, 1 texture, 2 materials. Godot generates LODs at import.
 - Supply box: about 3k triangles, 2 small textures.
+- Viewmodels: 7–13k triangles, one 1024² albedo + metallicRoughness each (only one is on screen at a time).
+- Web download today: wasm about 10 MB gzip + pck about 7.5 MB, about 18 MB total (target < 25 MB). The next saving is to drop the duplicate desktop VRAM texture formats (phase 6).
 
 ## Game integration
 - `client/data/visuals.json` → `zombies.<id>.model`, `locomotion`, `locoSpeed` (playback speed follows real movement speed).

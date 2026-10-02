@@ -3,7 +3,7 @@
   "_comment": "Client-only presentation data. 'model' is the art integration point (res:// .glb/.tscn); empty = procedural placeholder. Zombie models need an AnimationPlayer with idle, walk/run, attack (strike at 13/30 s), hit, death.",
   "weapons": {
     "pistol": {
-      "model": "",
+      "model": "res://assets/models/vm_pistol.glb",
       "shape": "pistol",
       "body": "#43474c",
       "accent": "#7a8086",
@@ -15,7 +15,7 @@
       "sound": "pistol_shot"
     },
     "rifle": {
-      "model": "",
+      "model": "res://assets/models/vm_rifle.glb",
       "shape": "rifle",
       "body": "#3c4245",
       "accent": "#5f7060",
@@ -27,7 +27,7 @@
       "sound": "rifle_shot"
     },
     "shotgun": {
-      "model": "",
+      "model": "res://assets/models/vm_shotgun.glb",
       "shape": "shotgun",
       "body": "#3a3530",
       "accent": "#5a4632",
@@ -39,7 +39,7 @@
       "sound": "shotgun_shot"
     },
     "smg": {
-      "model": "",
+      "model": "res://assets/models/vm_smg.glb",
       "shape": "smg",
       "body": "#33373b",
       "accent": "#55595e",

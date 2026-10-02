@@ -35,3 +35,24 @@ static func try_model(path: String) -> Node3D:
 		if res is PackedScene:
 			return res.instantiate()
 	return null
+
+
+## A weapon as a world object (supply cache display): the viewmodel scene with
+## arms hidden and the camera placement removed, or the procedural mesh.
+static func weapon_world_node(id: String) -> Node3D:
+	var node := try_model(weapon(id).get("model", ""))
+	if node:
+		var root := node.find_child("Root", true, false) as Node3D
+		if root:
+			root.transform = Transform3D.IDENTITY
+		for n in ["ArmL", "ArmR"]:
+			var arm := node.find_child(n, true, false) as Node3D
+			if arm:
+				arm.visible = false
+		var ap := node.find_child("AnimationPlayer", true, false) as AnimationPlayer
+		if ap:
+			ap.stop()
+		return node
+	var mi := MeshInstance3D.new()
+	mi.mesh = FpRig.weapon_mesh(id)
+	return mi

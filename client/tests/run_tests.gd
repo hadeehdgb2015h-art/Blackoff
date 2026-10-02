@@ -34,7 +34,13 @@ func _initialize() -> void:
 	for f in files:
 		if not (f.begins_with("test_") and f.ends_with(".gd")):
 			continue
+		catcher.errors.clear()
 		var script: GDScript = load("res://tests/" + f)
+		if script == null or not script.can_instantiate():
+			total += 1
+			failed += 1
+			printerr("  FAIL %s: cannot load test file: %s" % [f, "; ".join(catcher.errors)])
+			continue
 		for m in script.get_script_method_list():
 			var name: String = m.name
 			if not name.begins_with("test_") or (filter != "" and not (f + ":" + name).contains(filter)):

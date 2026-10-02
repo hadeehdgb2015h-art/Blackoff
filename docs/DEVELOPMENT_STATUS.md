@@ -30,12 +30,12 @@ URL flags: `?autostart=1` (skip menu), `?bot=1` (test bot plays), `?debug=1` (ex
 
 ## Art stage (in progress, owner request)
 
-The owner asked for original "Black Ops-like" art built by us in stages: (1) zombies + supply cache ✅, (2) weapons + first-person hands, (3) facility props/textures, (4) soldier character. The pipeline is in `docs/systems/art-pipeline.md`. Phase 2 (server) waits until the art stages are done, unless the owner says otherwise.
+The owner asked for original "Black Ops-like" art built by us in stages: (1) zombies + supply cache ✅, (2) weapons + first-person hands ✅, (3) facility props/textures, (4) soldier character. The pipeline is in `docs/systems/art-pipeline.md`. Phase 2 (server) waits until the art stages are done, unless the owner says otherwise.
 Also added on request: the supply cache (random weapon box) and two box-only weapons (KS-12 shotgun, VX-9 SMG).
 
 ## Known limitations
 
-- Zombies and the supply cache use the generated models; weapons, map and player are still placeholders (art stages 2–4).
+- Zombies, supply cache and the four weapons use generated models; map props/textures and the soldier character are still placeholders (art stages 3–4).
 - No baked lighting yet: lights are dynamic without shadows.
 - UI text is English only. Arabic needs a bundled font.
 - Revive is not implemented yet (phase 5); solo play goes down → bleed-out → game over.

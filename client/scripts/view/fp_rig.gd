@@ -1,11 +1,15 @@
 class_name FpRig
 extends Node3D
 ## First-person camera and weapon viewmodel for the local player.
-## Art integration: weapons.<id>.model in data/visuals.json (a scene whose
-## origin is the grip; optional child Marker3D "Muzzle").
+## Art integration: weapons.<id>.model in data/visuals.json. Model scenes are
+## authored in CAMERA space (origin = eye, -Z forward) with nodes Root, Weapon,
+## Mag, Slide, ArmL, ArmR, Muzzle and animations idle/fire/reload/draw
+## (see art/blender/build_weapons.py). They are scaled by VM_SCALE about the
+## camera: the image is unchanged but the gun no longer pokes through walls.
 
 const BOB_FREQ := 9.0
 const BOB_AMP := 0.012
+const VM_SCALE := 0.5
 
 var camera := Camera3D.new()
 var muzzle_light_enabled: bool = false
@@ -27,6 +31,7 @@ var _switch_t: float = -1.0
 var _pending_weapon := ""
 var _shake: float = 0.0
 var _down: float = 0.0
+var _anim: AnimationPlayer
 
 static var _weapon_mesh_cache := {}
 
@@ -57,13 +62,27 @@ func set_weapon(id: String) -> void:
 	if _weapon_node:
 		_weapon_node.queue_free()
 	_weapon_node = Visuals.try_model(_vis.get("model", ""))
-	if _weapon_node == null:
+	_anim = null
+	if _weapon_node:
+		_vm_holder.position = Vector3.ZERO
+		_vm_holder.scale = Vector3.ONE * VM_SCALE
+		for mi in _weapon_node.find_children("*", "MeshInstance3D", true, false):
+			(mi as MeshInstance3D).cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		_anim = _weapon_node.find_child("AnimationPlayer", true, false) as AnimationPlayer
+		if _anim:
+			if _anim.has_animation("idle"):
+				_anim.get_animation("idle").loop_mode = Animation.LOOP_LINEAR
+			_anim.animation_finished.connect(_on_anim_finished)
+			_anim.play("draw" if _anim.has_animation("draw") else "idle")
+	else:
 		var mi := MeshInstance3D.new()
 		mi.mesh = weapon_mesh(id, _vis)
 		mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 		_weapon_node = mi
 	_vm_holder.add_child(_weapon_node)
-	_vm_holder.position = Visuals.v3(_vis.offset)
+	if _anim == null:
+		_vm_holder.position = Visuals.v3(_vis.offset)
+		_vm_holder.scale = Vector3.ONE
 	if _muzzle.get_parent():
 		_muzzle.get_parent().remove_child(_muzzle)
 	var marker := _weapon_node.find_child("Muzzle", true, false) as Node3D
@@ -93,8 +112,21 @@ func muzzle_position() -> Vector3:
 	return _muzzle.global_position
 
 
+func _on_anim_finished(_name: StringName) -> void:
+	if _anim and _anim.has_animation("idle"):
+		_anim.play("idle", 0.15)
+
+
+func _play_once(anim_name: String, speed := 1.0) -> bool:
+	if _anim == null or not _anim.has_animation(anim_name):
+		return false
+	_anim.stop()
+	_anim.play(anim_name, 0.05, speed)
+	return true
+
+
 func on_fire() -> void:
-	_kick = 1.0
+	_kick = 0.35 if _play_once("fire") else 1.0
 	_flash_t = 0.05
 	_flash.visible = true
 	_flash.rotation.z = randf() * TAU
@@ -105,6 +137,10 @@ func on_fire() -> void:
 
 
 func on_reload(duration: float) -> void:
+	if _anim and _anim.has_animation("reload"):
+		var length := _anim.get_animation("reload").length
+		_play_once("reload", length / maxf(duration, 0.1))  # authored as 2 s, stretched to reloadSec
+		return
 	_reload_len = duration
 	_reload_t = 0.0
 
@@ -146,6 +182,8 @@ func _animate(delta: float) -> void:
 			if _pending_weapon != "":
 				set_weapon(_pending_weapon)
 				_pending_weapon = ""
+				if _anim:  # the model's draw animation brings it up
+					_switch_t = -1.0
 			pos.y -= 0.25 * (1.0 - clampf((_switch_t - half) / half, 0.0, 1.0))
 			if _switch_t > half * 2.0:
 				_switch_t = -1.0

@@ -12,7 +12,8 @@ var box_id: String
 var _model: Node3D
 var _lid: Node3D
 var _glow := OmniLight3D.new()
-var _weapon := MeshInstance3D.new()
+var _weapon := Node3D.new()          ## holder; one child per pool weapon, one visible
+var _weapon_nodes := {}
 var _lid_target: float = 0.0
 var _rolling: bool = false
 var _offer: bool = false
@@ -42,9 +43,13 @@ func setup(id: String, pos: Vector2, facing_yaw: float, weapon_pool: Array) -> v
 	add_child(_glow)
 	_weapon.position = Vector3(0, 0.75, 0)
 	_weapon.rotation.y = PI / 2
-	_weapon.scale = Vector3.ONE * 1.6
 	_weapon.visible = false
 	add_child(_weapon)
+	for wid in _pool:
+		var n := Visuals.weapon_world_node(wid)
+		n.visible = false
+		_weapon.add_child(n)
+		_weapon_nodes[wid] = n
 
 
 func on_open(roll_sec: float) -> void:
@@ -60,7 +65,7 @@ func on_open(roll_sec: float) -> void:
 func on_offer(weapon_id: String) -> void:
 	_rolling = false
 	_offer = true
-	_weapon.mesh = FpRig.weapon_mesh(weapon_id)
+	_show_weapon(weapon_id)
 	_weapon.visible = true
 
 
@@ -83,7 +88,7 @@ func _process(delta: float) -> void:
 		_shuffle_t -= delta
 		_weapon.position.y = lerpf(_weapon.position.y, 1.05, delta * 2.0)
 		if _shuffle_t <= 0.0 and not _pool.is_empty():
-			_weapon.mesh = FpRig.weapon_mesh(_pool[randi() % _pool.size()])
+			_show_weapon(_pool[randi() % _pool.size()])
 			_shuffle_step = lerpf(_shuffle_step, 0.3, 0.12)  # slows down as the roll ends
 			_shuffle_t = _shuffle_step
 	elif _offer:
@@ -91,6 +96,15 @@ func _process(delta: float) -> void:
 		_weapon.position.y = 1.05 + sin(_t * 2.0) * 0.04
 	else:
 		_weapon.position.y = 0.75
+
+
+func _show_weapon(id: String) -> void:
+	if not _weapon_nodes.has(id):
+		var n := Visuals.weapon_world_node(id)
+		_weapon.add_child(n)
+		_weapon_nodes[id] = n
+	for k in _weapon_nodes:
+		_weapon_nodes[k].visible = k == id
 
 
 func _placeholder() -> Node3D:
