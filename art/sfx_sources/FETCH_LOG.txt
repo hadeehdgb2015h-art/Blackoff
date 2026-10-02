@@ -1,0 +1,134 @@
+kenney impact-sounds: https://kenney.nl/media/pages/assets/impact-sounds/87b4ddecda-1677589768/kenney_impact-sounds.zip
+  kept 130 files
+kenney interface-sounds: https://kenney.nl/media/pages/assets/interface-sounds/fa43c1dd4d-1677589452/kenney_interface-sounds.zip
+  kept 100 files
+kenney rpg-audio: https://kenney.nl/media/pages/assets/rpg-audio/8e99002d76-1677590336/kenney_rpg-audio.zip
+  kept 52 files
+kenney sci-fi-sounds: https://kenney.nl/media/pages/assets/sci-fi-sounds/6b296f9ecf-1677589334/kenney_sci-fi-sounds.zip
+  kept 73 files
+oga 'gunshot': 9 results
+  faq: no audio files
+  light-machine-gun: not CC0, skipped
+  gunshots: Preview_1.ogg
+  gunshots: Preview_1.ogg.png___div
+  gunshots: 22_Pistol.wav
+  gunshots: 22_Magnum.wav
+  gunshots: Black_Powder.wav
+  gunshots: Unkown.wav
+  gunshot-sounds: guns.mp3
+  gunshot-sounds: guns.mp3.png___div
+  gunshot-sounds: sounds.zip
+  futuristic-shotgun: not CC0, skipped
+  shots: not CC0, skipped
+  futuristic-sniper-rifle: not CC0, skipped
+  gunshots-0: not CC0, skipped
+  gunshot-sound-effect: gunshot_1.mp3
+  gunshot-sound-effect: gunshot_1.mp3.png___div
+  gunshot-sound-effect: gunshot.mp3
+oga 'pistol': 12 results
+  faq: not CC0, skipped
+  chaingun-pistol-rifle-shotgun-shots: not CC0, skipped
+  the-free-firearm-sound-library: ak47.ogg
+  the-free-firearm-sound-library: ak47.ogg.png___div
+  q009s-weapon-sounds: not CC0, skipped
+  shotgun-shoot-reload: not CC0, skipped
+  gun-reload-sounds: gunreload1pres.mp3
+  gun-reload-sounds: gunreload1pres.mp3.png___div
+  gun-reload-sounds: assaultriflereload1pres_0.mp3.png___div
+  gun-reload-sounds: shotguncockpres_0.mp3.png___div
+  gun-reload-sounds: gunreload1.wav
+  gun-reload-sounds: assaultriflereload1_0.wav
+  gun-reload-sounds: shotguncock_0.wav
+oga 'shotgun': 14 results
+  faq: not CC0, skipped
+  chaingun-pistol-rifle-shotgun-shots: not CC0, skipped
+  q009s-weapon-sounds: not CC0, skipped
+  handling-guns: not CC0, skipped
+  shotgun-shoot-reload: not CC0, skipped
+  25-spooky-sound-effects: not CC0, skipped
+  red-eclipse-sounds: not CC0, skipped
+  futuristic-shotgun: not CC0, skipped
+  shotgun-reload-sound-effects: 4_shell_reload.mp3
+  shotgun-reload-sound-effects: 4_shell_reload.mp3.png___div
+  shotgun-reload-sound-effects: shotgunsounds.zip
+  2-gun-reloads: gun_-_preview.ogg
+  2-gun-reloads: gun_-_preview.ogg.png___div
+  2-gun-reloads: gun_reload_-_starninjas.zip
+oga 'machine gun': 4 results
+  faq: not CC0, skipped
+  light-machine-gun: not CC0, skipped
+  red-eclipse-sounds: not CC0, skipped
+  futuristic-smg: not CC0, skipped
+oga 'reload': 16 results
+  faq: not CC0, skipped
+  chaingun-pistol-rifle-shotgun-shots: not CC0, skipped
+  q009s-weapon-sounds: not CC0, skipped
+  handling-guns: not CC0, skipped
+  shotgun-shoot-reload: not CC0, skipped
+  equipment-clicks-ii: equipmentclicks.wav
+  equipment-clicks-ii: equipmentclicks.wav.png___div
+  equipment-clicks-ii: equipmentclicks.wav
+  equipment-clicks-iii: equipment_clicks3.wav
+  equipment-clicks-iii: equipment_clicks3.wav.png___div
+  equipment-clicks-iii: equipment_clicks3.wav
+oga 'zombie': 25 results
+  faq: not CC0, skipped
+  zombies-sound-pack: zombprev.mp3
+  zombies-sound-pack: zombprev.mp3.png___div
+  zombies-sound-pack: zombies.zip
+  punches-hits-swords-and-squishes: Socapex_-_Evol_Online_all.mp3
+  punches-hits-swords-and-squishes: Socapex_-_Evol_Online_all.mp3.png___div
+  punches-hits-swords-and-squishes: Socapex_-_Evol_Online_SFX_-_Punches_and_hits.zip
+  2-wooden-squish-splatter-sequences: crack.mp3
+  2-wooden-squish-splatter-sequences: crack.mp3.png___div
+  horror-sound-effects-library: Horror_Sample.mp3
+  horror-sound-effects-library: Horror_Sample.mp3.png___div
+  skip (too big 70038824): https://opengameart.org/sites/default/files/Horror%20Sound%20Library.zip
+oga 'monster growl': 12 results
+  faq: not CC0, skipped
+  monster-sound-pack-volume-1: mon.mp3
+  monster-sound-pack-volume-1: mon.mp3.png___div
+  monster-sound-pack-volume-1: monster-sounds-volume-2.zip
+  big-scary-troll-sounds: troll-roars.ogg
+  big-scary-troll-sounds: troll-roars.ogg.png___div
+  big-scary-troll-sounds: troll-idle-noises.ogg.png___div
+  big-scary-troll-sounds: troll-roars_0.ogg
+  big-scary-troll-sounds: troll-idle-noises_0.ogg
+  big-scary-troll-sounds: scrapped-troll-sounds.ogg
+oga 'footsteps': 24 results
+  faq: not CC0, skipped
+  fantasy-sound-effects-library: Fantasy_Sample.mp3
+  fantasy-sound-effects-library: Fantasy_Sample.mp3.png___div
+  skip (too big 31024230): https://opengameart.org/sites/default/files/Fantasy%20Sound%20Library.zip
+  fps-placeholder-sounds: not CC0, skipped
+  sound-effects-pack: Samples.mp3
+  sound-effects-pack: Samples.mp3.png___div
+  skip (too big 142384346): https://opengameart.org/sites/default/files/Owlish%20Media%20Sound%20Effects.zip
+oga 'horror ambient': 15 results
+  faq: not CC0, skipped
+  4-atmospheric-ghostly-loops: at.mp3
+  4-atmospheric-ghostly-loops: at.mp3.png___div
+  dark-ambience-soundscapes: not CC0, skipped
+  horror-ambient: not CC0, skipped
+  horror-atmosphere-lite: not CC0, skipped
+  rain-ambient-not-loopable-2-versions-available: Ove_Melaa_-_Rainy__28NOT_loopable_29_0.ogg
+  rain-ambient-not-loopable-2-versions-available: Ove_Melaa_-_Rainy__28NOT_loopable_29_0.ogg.png___div
+  rain-ambient-not-loopable-2-versions-available: Ove_Melaa_-_Rainy__28NOT_loopable_29.ogg
+  rain-ambient-not-loopable-2-versions-available: Ove_Melaa_-_Rainy__28NOT_loopable_29_Long_Version.ogg
+oga 'dark ambient loop': 2 results
+  faq: not CC0, skipped
+oga 'heartbeat': 4 results
+  faq: no audio files
+  heartbeat-sounds: heartbeat_slow_0.wav
+  heartbeat-sounds: heartbeat_slow_0.wav.png___div
+  heartbeat-sounds: heartbeat_slow_0.wav
+  heartbeat-sounds: heartbeat_fast_0.wav
+  heartbeat-sounds: heartbeat_slow_reverb.wav
+  heartbeat-sounds: heartbeat_fast_reverb.wav
+oga 'thunder': 15 results
+  faq: not CC0, skipped
+  100-cc0-sfx-2: sfx100v2_prev.ogg
+  100-cc0-sfx-2: sfx100v2_prev.ogg.png___div
+  skip (budget): https://opengameart.org/sites/default/files/sfx_100_v2.zip
+total downloaded: 45523 KB
+audio files: 457

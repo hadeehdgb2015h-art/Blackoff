@@ -1,0 +1,4 @@
+Source: https://opengameart.org/content/gunshot-sounds
+Author: field-name-author-submitter field-type-ds field-label-above">Author:&nbsp;TabascoFriday, July 2, 2010 - 21:27Art Type:&nbsp;Sound EffectTags:&nbsp;gunshotsActionRPGHistoricalModernWarfareBattleLicense(s):&nbsp;CC0Collections:&nbsp;MySFXSFXsfx-normalTop Down Shooter
+Licence: CC0 1.0 (as stated on the page)
+Query: gunshot
