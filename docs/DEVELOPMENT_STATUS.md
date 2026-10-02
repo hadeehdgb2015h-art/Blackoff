@@ -18,6 +18,11 @@ Read this first in a new session. Then read `docs/TECHNICAL_ARCHITECTURE.md` and
 | CI | `.github/workflows/ci.yml`: server typecheck, test and build; client Godot install (cached), tests, export, Chromium smoke test, and the web build uploaded as an Actions artifact. |
 | Deploy | not yet (phase 4). `deploy/.env.example` lists every variable. |
 
+## Owner device test (phase 0)
+
+- 2026-10-02, owner's phone browser (not Telegram): steady 60 FPS, Compatibility renderer, touch detected, shared data OK.
+- The browser reports GPU as `WebKit WebGL` (real name hidden), so the phase 6 auto quality tier must rely on a frame-time probe, not the GPU name.
+
 ## How to build and test (cloud session or CI)
 
 ```bash

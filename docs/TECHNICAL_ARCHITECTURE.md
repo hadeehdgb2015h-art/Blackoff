@@ -40,7 +40,7 @@ Client structure rules:
 - **Autoloads stay thin.** `SharedData` loads JSON; `Platform` is the only place that talks to JavaScript or Telegram. Later: `Net` (socket + codec), `Settings` (quality and sensitivity, saved in `user://`), `Session` (identity and profile from the server).
 - **Data-driven.** Weapon, zombie and wave stats are never hard-coded; scenes take a definition id and read `SharedData`.
 - **Presentation only in online mode.** In online play the client renders server state: interpolated remote entities, a predicted local player, and cosmetic effects. Damage, ammo, currency, kills, waves and position are decided by the server. The phase 1 offline mode runs the same gameplay rules locally so we can tune the feel before networking exists. The rules are written so they can be mirrored on the server from the same JSON.
-- **Quality tiers** (phase 6): low, medium and high change resolution scale, shadows, fog, light count and draw distance. The first launch suggests a tier from GPU name and a short frame-time probe.
+- **Quality tiers** (phase 6): low, medium and high change resolution scale, shadows, fog, light count and draw distance. The first launch suggests a tier from a short frame-time probe; GPU names are usually masked by browsers (seen as `WebKit WebGL` on the owner's phone).
 
 ## 3. Server
 
