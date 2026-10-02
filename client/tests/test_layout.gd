@@ -8,6 +8,8 @@ func test_defaults_and_resolve() -> void:
 	for name in TouchLayout.NAMES:
 		check(d.has(name), "default has " + name)
 	check(not d.fire2.enabled, "second fire button off by default")
+	check(d.has("mic") and d.has("speaker"), "voice buttons are part of the layout")
+	near(TouchLayout.position(d, "mic", size).x, 1280 - 46, 0.01, "mic under the pause button")
 	var fire := TouchLayout.position(d, "fire", size)
 	near(fire.x, 1280 - 155, 0.01, "fire default x")
 	near(fire.y, 720 - 165, 0.01, "fire default y")

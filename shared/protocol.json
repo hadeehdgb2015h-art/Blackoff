@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "protocolVersion": 5,
+  "protocolVersion": 6,
   "endianness": "little",
   "frame": "u8 messageId followed by fields in declared order; one message per WebSocket binary frame. Decoders reject unknown ids, short frames and trailing bytes.",
   "primitives": {
@@ -18,29 +18,14 @@
     "pitch": "i16 quantized radians, value = raw / 32767 * PI/2",
     "bool": "u8 0/1",
     "array8": "u8 count + items",
-    "array16": "u16 count + items"
+    "array16": "u16 count + items",
+    "bytes16": "u16 byte length + raw bytes (opaque payload, e.g. a voice frame)"
   },
-  "quantization": {
-    "posScale": 64
-  },
+  "quantization": {"posScale": 64},
   "enums": {
-    "entityKind": {
-      "player": 0,
-      "zombie": 1,
-      "powerup": 2
-    },
-    "playerState": {
-      "alive": 0,
-      "downed": 1,
-      "dead": 2,
-      "spectating": 3
-    },
-    "zoneState": {
-      "lobby": 0,
-      "intermission": 1,
-      "wave": 2,
-      "gameOver": 3
-    },
+    "entityKind": {"player": 0, "zombie": 1, "powerup": 2},
+    "playerState": {"alive": 0, "downed": 1, "dead": 2, "spectating": 3},
+    "zoneState": {"lobby": 0, "intermission": 1, "wave": 2, "gameOver": 3},
     "errorCode": {
       "badVersion": 1,
       "authFailed": 2,
@@ -78,534 +63,153 @@
       "powerupTaken": 25,
       "powerupExpired": 26
     },
-    "entityFlags": {
-      "moving": 1,
-      "attacking": 2,
-      "downed": 4,
-      "reloading": 8,
-      "beingRevived": 16,
-      "dead": 32
-    },
-    "selfFlags": {
-      "reloading": 1,
-      "switching": 2
-    },
-    "shotHit": {
-      "none": 0,
-      "wall": 1,
-      "zombie": 2
-    }
+    "entityFlags": {"moving": 1, "attacking": 2, "downed": 4, "reloading": 8, "beingRevived": 16, "dead": 32},
+    "selfFlags": {"reloading": 1, "switching": 2},
+    "shotHit": {"none": 0, "wall": 1, "zombie": 2}
   },
   "types": {
     "inputButtons": "u8 bitmask: 1=fireHeld 2=reload 4=interact 8=revive 16=switchWeapon 32=firePressed (latched edge since last input)",
     "entityState": [
-      [
-        "id",
-        "u16"
-      ],
-      [
-        "kind",
-        "u8"
-      ],
-      [
-        "sub",
-        "u8"
-      ],
-      [
-        "x",
-        "pos"
-      ],
-      [
-        "y",
-        "pos"
-      ],
-      [
-        "floor",
-        "u8"
-      ],
-      [
-        "yaw",
-        "angle"
-      ],
-      [
-        "hp",
-        "u8"
-      ],
-      [
-        "flags",
-        "u8"
-      ]
+      ["id", "u16"],
+      ["kind", "u8"],
+      ["sub", "u8"],
+      ["x", "pos"],
+      ["y", "pos"],
+      ["floor", "u8"],
+      ["yaw", "angle"],
+      ["hp", "u8"],
+      ["flags", "u8"]
     ],
-    "weaponSlot": [
-      [
-        "weapon",
-        "u8"
-      ],
-      [
-        "mag",
-        "u8"
-      ],
-      [
-        "reserve",
-        "u16"
-      ]
-    ],
-    "rosterEntry": [
-      [
-        "id",
-        "u16"
-      ],
-      [
-        "name",
-        "str8"
-      ]
-    ],
+    "weaponSlot": [["weapon", "u8"], ["mag", "u8"], ["reserve", "u16"]],
+    "rosterEntry": [["id", "u16"], ["name", "str8"]],
     "entitySub": "u8: zombieType index for zombies, held weapon index for players",
     "scoreEntry": [
-      [
-        "id",
-        "u16"
-      ],
-      [
-        "name",
-        "str8"
-      ],
-      [
-        "kills",
-        "u16"
-      ],
-      [
-        "headshots",
-        "u16"
-      ],
-      [
-        "downs",
-        "u8"
-      ],
-      [
-        "revives",
-        "u8"
-      ]
+      ["id", "u16"],
+      ["name", "str8"],
+      ["kills", "u16"],
+      ["headshots", "u16"],
+      ["downs", "u8"],
+      ["revives", "u8"]
     ],
-    "leaderboardEntry": [
-      [
-        "rank",
-        "u8"
-      ],
-      [
-        "name",
-        "str8"
-      ],
-      [
-        "kills",
-        "u32"
-      ],
-      [
-        "tonMicro",
-        "u32"
-      ]
-    ]
+    "leaderboardEntry": [["rank", "u8"], ["name", "str8"], ["kills", "u32"], ["tonMicro", "u32"]]
   },
   "messages": {
     "C2S": {
       "hello": {
         "id": 1,
-        "fields": [
-          [
-            "protocolVersion",
-            "u16"
-          ],
-          [
-            "initData",
-            "str16"
-          ],
-          [
-            "resumeToken",
-            "str8"
-          ]
-        ]
+        "fields": [["protocolVersion", "u16"], ["initData", "str16"], ["resumeToken", "str8"]]
       },
-      "quickPlay": {
-        "id": 2,
-        "fields": []
-      },
+      "quickPlay": {"id": 2, "fields": []},
       "input": {
         "id": 3,
         "fields": [
-          [
-            "seq",
-            "u16"
-          ],
-          [
-            "moveX",
-            "i8"
-          ],
-          [
-            "moveY",
-            "i8"
-          ],
-          [
-            "yaw",
-            "angle"
-          ],
-          [
-            "pitch",
-            "pitch"
-          ],
-          [
-            "buttons",
-            "u8"
-          ]
+          ["seq", "u16"],
+          ["moveX", "i8"],
+          ["moveY", "i8"],
+          ["yaw", "angle"],
+          ["pitch", "pitch"],
+          ["buttons", "u8"]
         ]
       },
-      "buy": {
-        "id": 4,
-        "fields": [
-          [
-            "itemId",
-            "str8"
-          ]
-        ]
-      },
-      "ping": {
-        "id": 5,
-        "fields": [
-          [
-            "clientTime",
-            "u32"
-          ]
-        ]
-      },
-      "leave": {
-        "id": 6,
-        "fields": []
-      },
-      "leaderboard": {
-        "id": 7,
-        "fields": []
-      }
+      "buy": {"id": 4, "fields": [["itemId", "str8"]]},
+      "ping": {"id": 5, "fields": [["clientTime", "u32"]]},
+      "leave": {"id": 6, "fields": []},
+      "leaderboard": {"id": 7, "fields": []},
+      "voice": {"id": 8, "fields": [["seq", "u16"], ["data", "bytes16"]]},
+      "voiceListen": {"id": 9, "fields": [["on", "bool"]]}
     },
     "S2C": {
       "welcome": {
         "id": 64,
         "fields": [
-          [
-            "playerId",
-            "u32"
-          ],
-          [
-            "displayName",
-            "str8"
-          ],
-          [
-            "resumeToken",
-            "str8"
-          ],
-          [
-            "tickRate",
-            "u8"
-          ],
-          [
-            "games",
-            "u32"
-          ],
-          [
-            "kills",
-            "u32"
-          ],
-          [
-            "bestWave",
-            "u16"
-          ],
-          [
-            "tonMicro",
-            "u32"
-          ],
-          [
-            "weekKills",
-            "u32"
-          ],
-          [
-            "weekRank",
-            "u16"
-          ],
-          [
-            "tonPerKill",
-            "u32"
-          ]
+          ["playerId", "u32"],
+          ["displayName", "str8"],
+          ["resumeToken", "str8"],
+          ["tickRate", "u8"],
+          ["games", "u32"],
+          ["kills", "u32"],
+          ["bestWave", "u16"],
+          ["tonMicro", "u32"],
+          ["weekKills", "u32"],
+          ["weekRank", "u16"],
+          ["tonPerKill", "u32"],
+          ["voice", "bool"]
         ]
       },
-      "zoneJoined": {
-        "id": 65,
-        "fields": [
-          [
-            "zoneId",
-            "u32"
-          ],
-          [
-            "mapId",
-            "str8"
-          ],
-          [
-            "entityId",
-            "u16"
-          ]
-        ]
-      },
+      "zoneJoined": {"id": 65, "fields": [["zoneId", "u32"], ["mapId", "str8"], ["entityId", "u16"]]},
       "snapshot": {
         "id": 66,
         "fields": [
-          [
-            "tick",
-            "u32"
-          ],
-          [
-            "ackSeq",
-            "u16"
-          ],
-          [
-            "zoneState",
-            "u8"
-          ],
-          [
-            "wave",
-            "u16"
-          ],
-          [
-            "remaining",
-            "u16"
-          ],
-          [
-            "timer",
-            "u16"
-          ],
-          [
-            "entities",
-            "array8:entityState"
-          ],
-          [
-            "removed",
-            "array8:u16"
-          ],
-          [
-            "instaKill",
-            "u8"
-          ],
-          [
-            "doublePoints",
-            "u8"
-          ],
-          [
-            "fireSale",
-            "u8"
-          ]
+          ["tick", "u32"],
+          ["ackSeq", "u16"],
+          ["zoneState", "u8"],
+          ["wave", "u16"],
+          ["remaining", "u16"],
+          ["timer", "u16"],
+          ["entities", "array8:entityState"],
+          ["removed", "array8:u16"],
+          ["instaKill", "u8"],
+          ["doublePoints", "u8"],
+          ["fireSale", "u8"]
         ]
       },
       "selfState": {
         "id": 67,
         "fields": [
-          [
-            "hp",
-            "u8"
-          ],
-          [
-            "state",
-            "u8"
-          ],
-          [
-            "currency",
-            "u32"
-          ],
-          [
-            "slot",
-            "u8"
-          ],
-          [
-            "weapons",
-            "array8:weaponSlot"
-          ],
-          [
-            "flags",
-            "u8"
-          ],
-          [
-            "revive",
-            "u8"
-          ],
-          [
-            "bleedout",
-            "u8"
-          ],
-          [
-            "perks",
-            "u8"
-          ]
+          ["hp", "u8"],
+          ["state", "u8"],
+          ["currency", "u32"],
+          ["slot", "u8"],
+          ["weapons", "array8:weaponSlot"],
+          ["flags", "u8"],
+          ["revive", "u8"],
+          ["bleedout", "u8"],
+          ["perks", "u8"]
         ]
       },
       "event": {
         "id": 68,
-        "fields": [
-          [
-            "kind",
-            "u8"
-          ],
-          [
-            "a",
-            "u16"
-          ],
-          [
-            "b",
-            "u16"
-          ],
-          [
-            "value",
-            "i16"
-          ],
-          [
-            "flags",
-            "u8"
-          ]
-        ]
+        "fields": [["kind", "u8"], ["a", "u16"], ["b", "u16"], ["value", "i16"], ["flags", "u8"]]
       },
-      "pong": {
-        "id": 69,
-        "fields": [
-          [
-            "clientTime",
-            "u32"
-          ],
-          [
-            "serverTick",
-            "u32"
-          ]
-        ]
-      },
-      "error": {
-        "id": 70,
-        "fields": [
-          [
-            "code",
-            "u8"
-          ],
-          [
-            "message",
-            "str8"
-          ]
-        ]
-      },
+      "pong": {"id": 69, "fields": [["clientTime", "u32"], ["serverTick", "u32"]]},
+      "error": {"id": 70, "fields": [["code", "u8"], ["message", "str8"]]},
       "shot": {
         "id": 71,
         "fields": [
-          [
-            "playerId",
-            "u16"
-          ],
-          [
-            "weapon",
-            "u8"
-          ],
-          [
-            "toX",
-            "pos"
-          ],
-          [
-            "toY",
-            "pos"
-          ],
-          [
-            "toZ",
-            "pos"
-          ],
-          [
-            "hit",
-            "u8"
-          ]
+          ["playerId", "u16"],
+          ["weapon", "u8"],
+          ["toX", "pos"],
+          ["toY", "pos"],
+          ["toZ", "pos"],
+          ["hit", "u8"]
         ]
       },
-      "roster": {
-        "id": 72,
-        "fields": [
-          [
-            "players",
-            "array8:rosterEntry"
-          ]
-        ]
-      },
+      "roster": {"id": 72, "fields": [["players", "array8:rosterEntry"]]},
       "profile": {
         "id": 73,
         "fields": [
-          [
-            "games",
-            "u32"
-          ],
-          [
-            "kills",
-            "u32"
-          ],
-          [
-            "bestWave",
-            "u16"
-          ],
-          [
-            "tonMicro",
-            "u32"
-          ],
-          [
-            "weekKills",
-            "u32"
-          ],
-          [
-            "weekRank",
-            "u16"
-          ],
-          [
-            "tonPerKill",
-            "u32"
-          ]
+          ["games", "u32"],
+          ["kills", "u32"],
+          ["bestWave", "u16"],
+          ["tonMicro", "u32"],
+          ["weekKills", "u32"],
+          ["weekRank", "u16"],
+          ["tonPerKill", "u32"]
         ]
       },
-      "scoreboard": {
-        "id": 74,
-        "fields": [
-          [
-            "wave",
-            "u16"
-          ],
-          [
-            "players",
-            "array8:scoreEntry"
-          ]
-        ]
-      },
+      "scoreboard": {"id": 74, "fields": [["wave", "u16"], ["players", "array8:scoreEntry"]]},
       "leaderboard": {
         "id": 75,
         "fields": [
-          [
-            "week",
-            "str8"
-          ],
-          [
-            "prize",
-            "str8"
-          ],
-          [
-            "entries",
-            "array8:leaderboardEntry"
-          ],
-          [
-            "myRank",
-            "u16"
-          ],
-          [
-            "myKills",
-            "u32"
-          ],
-          [
-            "myTonMicro",
-            "u32"
-          ]
+          ["week", "str8"],
+          ["prize", "str8"],
+          ["entries", "array8:leaderboardEntry"],
+          ["myRank", "u16"],
+          ["myKills", "u32"],
+          ["myTonMicro", "u32"]
         ]
-      }
+      },
+      "voice": {"id": 76, "fields": [["entityId", "u16"], ["seq", "u16"], ["data", "bytes16"]]}
     }
   },
   "coordinates": "Sim plane is Godot (x, z); y is up. yaw=0 faces -Z, positive yaw turns left (Godot rotation.y). pitch>0 looks up.",
@@ -654,5 +258,6 @@
     "doublePoints": "seconds left",
     "fireSale": "seconds left"
   },
-  "_tonNote": "tonMicro = TON points in millionths (1000 = 0.001 TON). Earned per kill in online zones only; the server owns every number. Prizes are paid by the owner by hand from the weekly leaderboard."
+  "_tonNote": "tonMicro = TON points in millionths (1000 = 0.001 TON). Earned per kill in online zones only; the server owns every number. Prizes are paid by the owner by hand from the weekly leaderboard.",
+  "_voiceNote": "Voice frames are opaque to the server: it relays each C2S voice frame to the other connected members of the zone that listen (voiceListen), stamped with the speaker's entityId. Format (client/web/voice.js): 40 ms of 16 kHz mono IMA ADPCM, 4-byte header + 320 bytes."
 }

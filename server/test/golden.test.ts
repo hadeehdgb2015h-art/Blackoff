@@ -11,6 +11,10 @@ import { defs, sharedDir } from "./helpers.js";
 // make the client (client/tests/test_golden.gd) agree.
 const golden = JSON.parse(fs.readFileSync(path.join(sharedDir, "tests", "golden.json"), "utf8"));
 
+/** Decoded bytes16 fields come back as Uint8Array; golden.json holds plain arrays. */
+const plain = (v: unknown): unknown =>
+  v instanceof Uint8Array ? Array.from(v) : Array.isArray(v) ? v.map(plain) : v && typeof v === "object" ? Object.fromEntries(Object.entries(v).map(([k, x]) => [k, plain(x)])) : v;
+
 describe("golden cross-language contract", () => {
   const codec = new Codec(defs().protocol);
 
@@ -19,7 +23,7 @@ describe("golden cross-language contract", () => {
       expect(Buffer.from(codec.encode(c.dir as Dir, c.name, c.msg)).toString("hex"), c.name).toBe(c.hex);
       const back = codec.decode(c.dir as Dir, Buffer.from(c.hex, "hex"));
       expect(back.name).toBe(c.name);
-      expect(back.msg).toEqual(c.msg);
+      expect(plain(back.msg)).toEqual(c.msg);
     }
   });
 

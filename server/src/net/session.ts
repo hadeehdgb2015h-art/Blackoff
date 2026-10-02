@@ -114,12 +114,18 @@ export class Session implements ZoneClient {
   private dropped = 0;
   private readonly inputs: Bucket;
   private readonly other = new Bucket(10, 20);
+  private readonly voice: Bucket;
+  /** speaker on (default): receive other players' voice frames */
+  voiceListen = true;
+  voiceSent = 0;
   private helloTimer: NodeJS.Timeout | null;
 
   constructor(private readonly ws: WebSocket, private readonly hub: SessionHub, readonly ip: string) {
     if (Object.keys(ERR).length === 0) Object.assign(ERR, hub.shared.protocol.enums.errorCode);
     const rate = hub.shared.constants.net.maxInputsPerSecond;
     this.inputs = new Bucket(rate, rate);
+    const vr = hub.shared.constants.voice.maxFramesPerSecond;
+    this.voice = new Bucket(vr, vr * 2);
     this.helloTimer = setTimeout(() => this.fail("authFailed", "hello timeout"), HELLO_TIMEOUT_MS);
     ws.on("message", (data, isBinary) => this.onFrame(data as Buffer, isBinary));
     ws.on("close", () => this.onClose());
@@ -149,6 +155,11 @@ export class Session implements ZoneClient {
       return this.strike(err instanceof CodecError ? err.message : "decode error");
     }
     const { name, msg } = decoded;
+    if (name === "voice") {
+      // voice floods are dropped quietly: a lossy stream, never a strike
+      if (this.voice.take()) this.onVoice(msg);
+      return;
+    }
     if (name === "input" ? !this.inputs.take() : !this.other.take()) {
       this.dropped += 1;
       if (this.dropped === 1 || this.dropped % 200 === 0) log.warn("rate limited", { ip: this.ip, account: this.account?.id, message: name, dropped: this.dropped });
@@ -164,6 +175,7 @@ export class Session implements ZoneClient {
       case "ping": return this.send("pong", { clientTime: msg.clientTime as number, serverTick: (this.zone?.world.tick ?? 0) >>> 0 });
       case "leave": return this.leaveZone();
       case "leaderboard": return void this.onLeaderboard();
+      case "voiceListen": this.voiceListen = !!msg.on; return;
       default: return this.strike("unexpected message " + name);
     }
   }
@@ -251,6 +263,7 @@ export class Session implements ZoneClient {
     this.send("welcome", {
       playerId: account.playerId, displayName: account.name, resumeToken: token,
       tickRate: this.hub.shared.constants.sim.tickRate, ...profileMsg(account.profile, account.weekly, this.hub.env.TON_MICRO_PER_KILL),
+      voice: this.hub.env.VOICE_CHAT,
     });
     const zone = slot ? this.hub.zones.zones.get(slot.zoneId) : undefined;
     if (zone && slot && zone.attach(slot.entityId, this)) {
@@ -275,6 +288,16 @@ export class Session implements ZoneClient {
     this.zone = zone;
     this.entityId = member.entityId;
     log.info("joined zone", { account: this.account!.id, zone: zone.id, players: zone.size });
+  }
+
+  /** A voice frame: relayed as-is to the other members of the zone. The
+   *  server does not decode audio; size and rate are the only checks. */
+  private onVoice(msg: Msg): void {
+    if (!this.zone || !this.hub.env.VOICE_CHAT) return;
+    const data = msg.data as Uint8Array;
+    if (data.length === 0 || data.length > this.hub.shared.constants.voice.maxFrameBytes) return;
+    this.voiceSent += 1;
+    this.zone.relayVoice(this.entityId, msg.seq as number, data);
   }
 
   private onInput(msg: Msg): void {

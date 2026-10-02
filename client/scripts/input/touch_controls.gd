@@ -6,6 +6,7 @@ extends Control
 ## Produces one PlayerIntent per sim tick via sample().
 
 signal pause_requested
+signal voice_toggled(which: String)   ## "mic" or "speaker" tapped
 
 const AIM_DEG_PER_PX := 0.16     ## touch look at sensitivity 1.0 (view is 720 px tall)
 const AIM_PITCH_SCALE := 0.8     ## vertical look is a bit slower than horizontal
@@ -26,6 +27,11 @@ var aim_friction: float = 1.0     ## set by the game each frame: < 1 slows the l
 var edit_mode: bool = false       ## layout editor: draw every control, take no input
 var layout: Dictionary = {}       ## TouchLayout (resolved on first use)
 var opacity: float = 1.0
+var voice_buttons: bool = false   ## show MIC and SPK (online with voice chat)
+var mic_on: bool = false
+var speaker_on: bool = true
+var mic_talking: bool = false     ## pulse the mic ring while the player speaks
+var mic_blocked: bool = false     ## permission denied / unsupported: drawn crossed and grey
 
 var _touches := {}  ## index -> {role, button, start, last}
 var _stick_origin := Vector2.ZERO
@@ -97,7 +103,7 @@ func sample() -> PlayerIntent:
 
 # ------------------------------------------------------------ layout
 
-const BASE_RADIUS := {"fire": 78.0, "fire2": 64.0, "reload": 44.0, "switch": 44.0, "use": 52.0, "pause": 30.0}
+const BASE_RADIUS := {"fire": 78.0, "fire2": 64.0, "reload": 44.0, "switch": 44.0, "use": 52.0, "pause": 30.0, "mic": 28.0, "speaker": 28.0}
 
 
 func _buttons() -> Dictionary:
@@ -113,6 +119,9 @@ func _buttons() -> Dictionary:
 	d["reload"] = {"pos": at.call("reload"), "r": rad.call("reload"), "label": "R"}
 	d["switch"] = {"pos": at.call("switch"), "r": rad.call("switch"), "label": "SWAP"}
 	d["pause"] = {"pos": at.call("pause"), "r": rad.call("pause"), "label": "II"}
+	if voice_buttons or edit_mode:
+		d["mic"] = {"pos": at.call("mic"), "r": rad.call("mic"), "label": "MIC"}
+		d["speaker"] = {"pos": at.call("speaker"), "r": rad.call("speaker"), "label": "SPK"}
 	if revive_available:
 		d["revive"] = {"pos": at.call("use"), "r": rad.call("use"), "label": "REVIVE"}
 	elif interact_label != "" or edit_mode:
@@ -262,6 +271,8 @@ func _press(name: String) -> void:
 			_latched |= PlayerIntent.FIRE_PRESSED
 		"pause":
 			pause_requested.emit()
+		"mic", "speaker":
+			voice_toggled.emit(name)
 		_:
 			_held_buttons[name] = true
 			_latched |= _bit(name)
@@ -333,8 +344,23 @@ func _draw() -> void:
 		var col := Color(0.78, 0.19, 0.16) if name.begins_with("fire") else Color(1, 1, 1)
 		if name == "interact" and not interact_ok:
 			col = Color(0.6, 0.6, 0.6)
+		var voice_on: bool = (name == "mic" and mic_on) or (name == "speaker" and speaker_on)
+		if name in ["mic", "speaker"]:
+			col = Color(0.45, 0.85, 0.5) if voice_on else Color(0.75, 0.75, 0.75)
+			if name == "mic" and mic_blocked:
+				col = Color(0.55, 0.55, 0.55)
+			held = held or voice_on
 		draw_circle(b.pos, b.r, Color(col.r, col.g, col.b, (0.38 if held else 0.18) * op))
 		draw_arc(b.pos, b.r, 0, TAU, 48, Color(col.r, col.g, col.b, 0.7 * op), 2.5, true)
+		if name in ["mic", "speaker"]:
+			if not voice_on or (name == "mic" and mic_blocked):
+				# a slash: muted
+				var d: Vector2 = Vector2(1, -1).normalized() * float(b.r) * 0.72
+				draw_line(b.pos - d, b.pos + d, Color(0, 0, 0, 0.5 * op), 5.0, true)
+				draw_line(b.pos - d, b.pos + d, Color(1, 0.35, 0.3, 0.9 * op), 2.5, true)
+			elif name == "mic" and mic_talking:
+				var pulse := 1.0 + 0.12 * sin(Time.get_ticks_msec() / 90.0)
+				draw_arc(b.pos, b.r * pulse + 4.0, 0, TAU, 48, Color(0.45, 0.85, 0.5, 0.8 * op), 2.0, true)
 		var fs := 22 if b.r > 40 else 18
 		var label: String = b.label
 		var tw := _font.get_string_size(label, HORIZONTAL_ALIGNMENT_CENTER, -1, fs).x

@@ -54,6 +54,66 @@ func web_config(key: String) -> String:
 	return str(v) if v != null else ""
 
 
+# ---- Voice chat (web/voice.js). Off the web every call is a no-op.
+
+## True when the page can capture and play audio (not in every Telegram version).
+func voice_supported() -> bool:
+	if not is_web:
+		return false
+	return bool(_js("!!(window.BlackoffVoice && window.BlackoffVoice.supported())"))
+
+
+func voice_configure(c: Dictionary) -> void:
+	if is_web:
+		_js("window.BlackoffVoice && window.BlackoffVoice.configure(%s)" % JSON.stringify(c))
+
+
+func voice_set_mic(on: bool) -> void:
+	if is_web:
+		_js("window.BlackoffVoice && window.BlackoffVoice.setMic(%s)" % ("true" if on else "false"))
+
+
+func voice_set_speaker(on: bool) -> void:
+	if is_web:
+		_js("window.BlackoffVoice && window.BlackoffVoice.setSpeaker(%s)" % ("true" if on else "false"))
+
+
+## Next encoded microphone frame, or an empty array.
+func voice_take() -> PackedByteArray:
+	if not is_web:
+		return PackedByteArray()
+	var v: Variant = _js("window.BlackoffVoice ? window.BlackoffVoice.take() : null")
+	return v if v is PackedByteArray else PackedByteArray()
+
+
+## Plays a frame from another player.
+func voice_play(entity_id: int, seq: int, data: PackedByteArray) -> void:
+	if is_web:
+		_js("window.BlackoffVoice && window.BlackoffVoice.play(%d, %d, '%s')" % [entity_id, seq, Marshalls.raw_to_base64(data)])
+
+
+## {mic: off|starting|on|denied|unsupported, speaker: on|off, talking: bool, sent, received, played}
+func voice_status() -> Dictionary:
+	if not is_web:
+		return {}
+	var v: Variant = _js("window.BlackoffVoice ? window.BlackoffVoice.status() : ''")
+	var d: Variant = JSON.parse_string(str(v)) if v != null and str(v) != "" else null
+	return d if d is Dictionary else {}
+
+
+## Entity ids heard in the last moment.
+func voice_speaking() -> Array:
+	if not is_web:
+		return []
+	var v: Variant = _js("window.BlackoffVoice ? window.BlackoffVoice.speaking() : '[]'")
+	var d: Variant = JSON.parse_string(str(v)) if v != null else null
+	var out: Array = []
+	if d is Array:
+		for x in d:
+			out.append(int(x))
+	return out
+
+
 func request_fullscreen() -> void:
 	if is_web:
 		_js("window.BlackoffTG && window.BlackoffTG.enterFullscreen()")

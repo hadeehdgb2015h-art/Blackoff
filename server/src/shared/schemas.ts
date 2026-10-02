@@ -30,6 +30,11 @@ export const ConstantsSchema = z.object({
     protocolVersion: z.number().int().positive(), maxMessageBytes: z.number().int().positive(), interestRadius: pos,
     reconnectGraceSec: pos, clientInterpDelayMs: pos, inputRate: pos, maxInputsPerSecond: pos,
   }),
+  voice: z.object({
+    sampleRate: z.number().int().positive(), frameMs: z.number().int().positive(), maxFrameBytes: z.number().int().positive(),
+    maxFramesPerSecond: z.number().int().positive(), vadThreshold: num.min(0), vadHoldFrames: z.number().int().nonnegative(),
+    jitterMs: pos, speakingHoldMs: pos,
+  }),
   anticheat: z.object({
     speedToleranceFactor: num.min(1), fireRateToleranceMs: pos, logOnly: z.boolean(),
     minShotsForRates: z.number().int().nonnegative(), maxHeadshotRate: num.min(0).max(1), maxHitRate: num.min(0).max(1), maxKillsPerMin: pos,

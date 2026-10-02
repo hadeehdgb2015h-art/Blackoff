@@ -6,6 +6,9 @@
 // checks only the files whose names changed are downloaded;
 // SMOKE_URL=http://host/ tests a deployed site instead of serving <dir>;
 // SMOKE_TG_INITDATA=<signed initData> makes the page look like a Telegram Mini App.
+// SMOKE_VOICE=1 gives Chromium a fake microphone (a tone, then silence, looping)
+// and checks that voice frames are sent and that frames from others are played
+// (pair it with ?voice=1 and server/tools/voiceBot.ts on the same server).
 // Serves <dir> on a random port, opens it in Chromium (landscape phone viewport,
 // touch enabled), waits for the engine to start and fails on page errors.
 const http = require('http');
@@ -72,12 +75,33 @@ async function touchScenario(page) {
   if (after.shots <= before.shots) throw new Error('fire button did not fire');
 }
 
+// A WAV for Chromium's fake microphone: 1.5 s of a 440 Hz tone, 0.5 s of silence (looped by Chromium).
+function fakeMicWav() {
+  const rate = 48000, secs = 2, n = rate * secs;
+  const pcm = Buffer.alloc(n * 2);
+  for (let i = 0; i < n; i++) {
+    const v = i < rate * 1.5 ? Math.round(0.4 * 32767 * Math.sin((2 * Math.PI * 440 * i) / rate)) : 0;
+    pcm.writeInt16LE(v, i * 2);
+  }
+  const h = Buffer.alloc(44);
+  h.write('RIFF', 0); h.writeUInt32LE(36 + pcm.length, 4); h.write('WAVE', 8);
+  h.write('fmt ', 12); h.writeUInt32LE(16, 16); h.writeUInt16LE(1, 20); h.writeUInt16LE(1, 22);
+  h.writeUInt32LE(rate, 24); h.writeUInt32LE(rate * 2, 28); h.writeUInt16LE(2, 32); h.writeUInt16LE(16, 34);
+  h.write('data', 36); h.writeUInt32LE(pcm.length, 40);
+  const file = path.join(require('os').tmpdir(), 'blackoff-fake-mic.wav');
+  fs.writeFileSync(file, Buffer.concat([h, pcm]));
+  return file;
+}
+
 (async () => {
   await new Promise((r) => server.listen(0, '127.0.0.1', r));
   const url = process.env.SMOKE_URL || `http://127.0.0.1:${server.address().port}/`;
+  const voiceWav = process.env.SMOKE_VOICE === '1' ? fakeMicWav() : null;
   const browser = await chromium.launch({
     executablePath: process.env.CHROMIUM_PATH || undefined,
     args: ['--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist',
+      ...(voiceWav ? ['--use-fake-device-for-media-stream', '--use-fake-ui-for-media-stream', '--use-file-for-fake-audio-capture=' + voiceWav,
+        '--autoplay-policy=no-user-gesture-required'] : []),
       // a plain-HTTP rehearsal site must count as a secure context, as HTTPS would
       ...(process.env.SMOKE_URL ? ['--unsafely-treat-insecure-origin-as-secure=' + new URL(process.env.SMOKE_URL).origin] : [])],
   });
@@ -135,6 +159,22 @@ async function touchScenario(page) {
       if (again.sort().join() !== expected.sort().join()) errors.push('second visit downloaded ' + JSON.stringify(again) + ', expected ' + JSON.stringify(expected));
       if (!(await page.evaluate(() => !!navigator.serviceWorker.controller))) errors.push('page not controlled by the service worker');
     } catch (e) { errors.push('cache scenario: ' + e.message); }
+  }
+  if (voiceWav) {
+    try {
+      // the game turned the mic on (?voice=1): frames must have been encoded and sent,
+      // and whatever the voice bot said must have been decoded and scheduled for playback
+      let st = {};
+      for (let i = 0; i < 60; i++) {
+        st = JSON.parse(await page.evaluate(() => window.BlackoffVoice ? window.BlackoffVoice.status() : '{}'));
+        if (st.sent > 0 && st.played > 0) break;
+        await page.waitForTimeout(500);
+      }
+      logs.push('[voice] ' + JSON.stringify(st));
+      if (st.mic !== 'on') errors.push('microphone not on: ' + JSON.stringify(st));
+      if (!(st.sent > 0)) errors.push('no voice frames sent: ' + JSON.stringify(st));
+      if (!(st.played > 0)) errors.push('no voice frames played: ' + JSON.stringify(st));
+    } catch (e) { errors.push('voice scenario: ' + e.message); }
   }
   if (shot) await page.screenshot({ path: shot, timeout: 180000 });  // software GL can take a while per frame
   await browser.close();

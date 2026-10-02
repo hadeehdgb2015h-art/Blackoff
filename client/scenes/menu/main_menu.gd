@@ -127,7 +127,7 @@ func _build_left_column() -> void:
 	_board_button = UiTheme.button("WEEKLY HUNT  ·  TON leaderboard", _show_leaderboard)
 	_board_button.disabled = true
 	col.add_child(_board_button)
-	var soon := UiTheme.label("Coming next: INFECTION mode (players vs players), 5-player rooms, voice chat", 16, UiTheme.MUTED)
+	var soon := UiTheme.label("Online: voice chat with MIC / SPK on the HUD. Coming next: INFECTION mode (players vs players)", 16, UiTheme.MUTED)
 	col.add_child(soon)
 	if Platform.query_param("debug") == "1":
 		col.add_child(UiTheme.button("DIAGNOSTICS", func(): get_tree().change_scene_to_file("res://scenes/boot/boot.tscn")))

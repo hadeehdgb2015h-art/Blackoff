@@ -41,6 +41,13 @@ def main(out, build):
     pck_new = f"{exe}.{phash}.pck"
     os.rename(os.path.join(out, f"{exe}.pck"), os.path.join(out, pck_new))
     hashed[f"{exe}.pck"] = pck_new
+    # page scripts of our own (voice chat): hashed on their own content
+    for extra in ("voice.js",):
+        if os.path.exists(os.path.join(out, extra)):
+            name, ext = os.path.splitext(extra)
+            new = f"{name}.{sha([os.path.join(out, extra)])}{ext}"
+            os.rename(os.path.join(out, extra), os.path.join(out, new))
+            hashed[extra] = new
 
     html_path = os.path.join(out, "index.html")
     html = open(html_path, encoding="utf-8").read()
@@ -56,6 +63,11 @@ def main(out, build):
     html = html.replace(f'src="{exe}.js"', f'src="{hashed[exe + ".js"]}"')
     if f'src="{hashed[exe + ".js"]}"' not in html:
         sys.exit("engine script tag not rewritten")
+    for extra, new in hashed.items():
+        if extra.endswith(".js") and not extra.startswith(exe):
+            html = html.replace(f'src="{extra}"', f'src="{new}"')
+            if f'src="{new}"' not in html:
+                sys.exit(f"{extra} script tag not rewritten")
     html = html.replace("__BLACKOFF_BUILD__", build)
     open(html_path, "w", encoding="utf-8").write(html)
 

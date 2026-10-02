@@ -19,6 +19,9 @@
 ## Weekly hunt (TON points, phase 11)
 Every kill in an online zone earns `TON_MICRO_PER_KILL` points (millionths of a TON, default 1000 = 0.001). The zone reports each member's kills, shots and hits when they leave; the hub turns that into TON points and anti-cheat flags and writes the profile plus a `weekly_scores` row (ISO week, Monday 00:00 UTC). `welcome`/`profile` carry `tonMicro`, `weekKills`, `weekRank`, `tonPerKill`; the `leaderboard` request answers with the week's top 10 and the player's standing. The owner reads `/admin/leaderboard?token=ADMIN_TOKEN` (account ids such as `tg:12345`, to pay the prize by hand) and `/admin/suspects?token=…` before paying. Nothing is paid automatically and the client never decides a number.
 
+## Voice relay (phase 12)
+`voice` frames (C2S, `bytes16` payload) are relayed by `Zone.relayVoice` to the other connected members whose `voiceListen` is on, as S2C `voice {entityId, seq, data}`. Checks: in a zone, 1..`constants.voice.maxFrameBytes` bytes, `maxFramesPerSecond` with a burst of two seconds (a flood is thinned, never a strike or a disconnect). `VOICE_CHAT=0` turns the relay off (`welcome.voice = false`). The server never decodes audio.
+
 ## Connection flow
 1. `hello {protocolVersion, initData, resumeToken}`. A wrong version gets `error.badVersion` and the socket closes.
    - Identity comes from Telegram `initData`, checked with `TELEGRAM_BOT_TOKEN`.

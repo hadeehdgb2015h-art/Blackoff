@@ -38,6 +38,8 @@ function sample(type: string): unknown {
     case "bool": return rng.next() % 2 === 1;
     case "varuint": return [0, 127, 128, 300, 70000, 4294967295][rng.next() % 6];
     case "str8": case "str16": return ["", "zombie", "Ali_99", "علي", "hello world"][rng.next() % 5];
+    // opaque bytes are written to golden.json as plain arrays of byte values
+    case "bytes16": return Array.from({ length: rng.next() % 40 }, () => rng.next() % 256);
     case "pos": return ri(-32768, 32767) / shared.protocol.quantization.posScale;
     case "angle": return (ri(0, 65535) / 65536) * Math.PI * 2;
     case "pitch": return (ri(-32767, 32767) / 32767) * (Math.PI / 2);

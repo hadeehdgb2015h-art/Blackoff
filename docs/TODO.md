@@ -57,7 +57,12 @@
 - [x] TON points per kill (`TON_MICRO_PER_KILL`, server-side), in profile and weekly scores (Postgres + memory)
 - [x] Weekly leaderboard in the menu, standing in the profile card, HUD pops; `/admin/leaderboard` and `/admin/suspects`
 - [x] Anti-cheat flags (hit rate, head-shot rate, kills per minute) logged and counted; no automatic bans
-## Phase 12: voice chat (mic/speaker on-off, clean audio; Telegram WebView permitting)
+## Phase 12: voice chat (done)
+- [x] Microphone capture in the page (`client/web/voice.js`): echo cancellation, noise suppression, auto gain, 16 kHz mono, voice gate, IMA ADPCM frames (40 ms, 324 bytes)
+- [x] Server relay per zone (`voice` / `voiceListen`, protocol v6, `VOICE_CHAT` env), rate- and size-limited, never decoded
+- [x] MIC and SPK buttons on the HUD (movable in CONTROLS), talking marks in the team panel, speaker choice remembered, mic always off at start
+- [x] Tests: codec and relay (Node), fake-microphone browser test with a talking bot (CI)
+- [ ] Known limit: some Telegram versions give the page no microphone (the MIC button then says so); the speaker still works
 ## Phase 13: infection mode (real zombies vs real soldiers, up to 10, no bots)
 
 ## Open questions for the owner

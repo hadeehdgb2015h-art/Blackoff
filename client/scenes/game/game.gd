@@ -80,6 +80,8 @@ func _ready() -> void:
 	_controls = TouchControls.new()
 	ui.add_child(_controls)
 	_controls.pause_requested.connect(_toggle_pause)
+	_controls.voice_toggled.connect(_on_voice_toggled)
+	Net.voice_changed.connect(_sync_voice_buttons)
 	if Platform.query_param("nohud") == "1":  # clean captures (menu backdrop)
 		_hud.visible = false
 		_controls.visible = false
@@ -149,6 +151,9 @@ func _process(delta: float) -> void:
 			pid = nw.local_pid
 			_on_player_ready()
 			print("[game] online: joined zone %d as entity %d" % [nw.zone_id, pid])
+			_sync_voice_buttons()
+			if Platform.query_param("voice") == "1":  # browser tests: talk right away
+				Net.set_voice_mic(true)
 		return
 	if _paused and _online:
 		# The zone keeps running on the server: keep stepping with idle input.
@@ -611,11 +616,39 @@ func _on_net_failed(reason: String) -> void:
 	_hud.show_status("Connection failed: %s" % reason)
 
 
+# ---- voice chat buttons (online only; frames flow through Net and web/voice.js)
+
+func _on_voice_toggled(which: String) -> void:
+	if which == "mic":
+		Net.set_voice_mic(not Net.voice_mic)
+		if Net.voice_mic:
+			_hud.show_toast("Microphone on")
+	else:
+		Net.set_voice_speaker(not Net.voice_speaker)
+		_hud.show_toast("Voice chat on" if Net.voice_speaker else "Voice chat muted")
+
+
+func _sync_voice_buttons() -> void:
+	_controls.voice_buttons = _online and Net.voice_available
+	_controls.mic_on = Net.voice_mic
+	_controls.speaker_on = Net.voice_speaker
+	_controls.mic_talking = Net.voice_talking
+	var blocked := Net.voice_mic_state in ["denied", "unsupported"]
+	if blocked and not _controls.mic_blocked:
+		_hud.show_toast("Microphone not allowed here" if Net.voice_mic_state == "denied" else "Microphone not available in this app")
+	_controls.mic_blocked = blocked
+	_controls.queue_redraw()
+
+
 func _exit_tree() -> void:
 	if world is NetWorld:
 		(world as NetWorld).close()
 	if Net.failed.is_connected(_on_net_failed):
 		Net.failed.disconnect(_on_net_failed)
+	if Net.voice_changed.is_connected(_sync_voice_buttons):
+		Net.voice_changed.disconnect(_sync_voice_buttons)
+	if Net.voice_mic:
+		Net.set_voice_mic(false)  # never keep the microphone open outside a match
 
 
 func _to_menu() -> void:

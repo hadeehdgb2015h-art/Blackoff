@@ -25,6 +25,8 @@ export interface ZoneResult {
 /** What a zone needs from a connection (implemented by Session). */
 export interface ZoneClient {
   readonly displayName: string;
+  /** false while the player has the speaker off: no voice frames are sent to them */
+  readonly voiceListen?: boolean;
   sendBytes(bytes: Uint8Array): void;
   onZoneClosed(zone: Zone): void;
 }
@@ -210,6 +212,19 @@ export class Zone {
 
   private sendTo(m: Member, name: string, msg: Msg): void {
     m.client?.sendBytes(this.codec.encode("S2C", name, msg));
+  }
+
+  /** Relays one voice frame from `from` to every other listening member.
+   *  Returns how many received it. The frame bytes are never inspected. */
+  relayVoice(from: number, seq: number, data: Uint8Array): number {
+    const bytes = this.codec.encode("S2C", "voice", { entityId: from, seq, data });
+    let n = 0;
+    for (const m of this.members.values()) {
+      if (m.entityId === from || !m.client || m.client.voiceListen === false) continue;
+      m.client.sendBytes(bytes);
+      n += 1;
+    }
+    return n;
   }
 
   private broadcast(name: string, msg: Msg): void {

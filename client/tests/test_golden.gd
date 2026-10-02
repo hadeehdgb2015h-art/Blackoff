@@ -62,6 +62,8 @@ static func _same(a: Variant, b: Variant) -> bool:
 			if not b.has(k) or not _same(a[k], b[k]):
 				return false
 		return true
+	if a is PackedByteArray:
+		a = Array(a)
 	if a is Array and b is Array:
 		if a.size() != b.size():
 			return false

@@ -114,7 +114,17 @@ jobs:
           # the web export joins too (WebSocket from the browser)
           export NODE_PATH=/tmp/smoke/node_modules SMOKE_DPR=0.5
           SMOKE_EXPECT="[game] online: joined" node tools/smoke_web.cjs build/web build/online.png "?autostart=1&bot=1&server=ws://127.0.0.1:8799/ws&name=WebBot" 20
-          ! grep -E '"level":"error"' /tmp/server.log
+          # voice chat on a fresh server (its own zone): the browser talks through a fake
+          # microphone, a Node bot talks back; both must hear each other
+          (cd server && ALLOW_DEV_AUTH=1 PORT=8798 node dist/index.js > /tmp/server-voice.log 2>&1 &)
+          for i in $(seq 1 30); do curl -sf http://127.0.0.1:8798/healthz >/dev/null && break; sleep 0.5; done
+          (cd server && npx tsx tools/voiceBot.ts ws://127.0.0.1:8798/ws Talker 60 --expect-receive > /tmp/voicebot.json 2>&1 &)
+          sleep 2
+          SMOKE_VOICE=1 node tools/smoke_web.cjs build/web build/voice.png "?autostart=1&voice=1&server=ws://127.0.0.1:8798/ws&name=WebVoice" 12
+          for i in $(seq 1 120); do grep -q '"received"' /tmp/voicebot.json && break; sleep 0.5; done
+          cat /tmp/voicebot.json
+          python3 -c "import json,sys; d=json.loads(open('/tmp/voicebot.json').read().strip().splitlines()[-1]); sys.exit(0 if d['received']>0 and d['decoded']>0 else 1)"
+          ! grep -E '"level":"error"' /tmp/server.log /tmp/server-voice.log
       - uses: actions/upload-artifact@v4
         with:
           name: web-build

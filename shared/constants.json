@@ -1,11 +1,6 @@
 {
   "schemaVersion": 1,
-  "sim": {
-    "tickRate": 20,
-    "snapshotRate": 15,
-    "floorHeight": 3.0,
-    "gravity": 0
-  },
+  "sim": {"tickRate": 20, "snapshotRate": 15, "floorHeight": 3.0, "gravity": 0},
   "zone": {
     "maxPlayers": 5,
     "maxPlayersHardCap": 8,
@@ -33,11 +28,7 @@
     "weaponSwitchSec": 0.45,
     "stepHeight": 0.4
   },
-  "economy": {
-    "hitReward": 10,
-    "headshotKillBonus": 40,
-    "reviveReward": 100
-  },
+  "economy": {"hitReward": 10, "headshotKillBonus": 40, "reviveReward": 100},
   "progression": {
     "xpPerKill": 10,
     "xpPerHeadshot": 5,
@@ -47,7 +38,7 @@
     "maxLevel": 100
   },
   "net": {
-    "protocolVersion": 5,
+    "protocolVersion": 6,
     "maxMessageBytes": 4096,
     "interestRadius": 45,
     "reconnectGraceSec": 30,
@@ -65,16 +56,8 @@
     "maxHitRate": 0.98,
     "maxKillsPerMin": 70
   },
-  "maps": {
-    "default": "facility_01",
-    "navCellSize": 0.5,
-    "navAgentRadius": 0.3
-  },
-  "supplyBox": {
-    "price": 950,
-    "rollSec": 4.0,
-    "offerSec": 9.0
-  },
+  "maps": {"default": "facility_01", "navCellSize": 0.5, "navAgentRadius": 0.3},
+  "supplyBox": {"price": 950, "rollSec": 4.0, "offerSec": 9.0},
   "powerups": {
     "_comment": "Drops from killed zombies, picked up by any alive player, applied to the whole zone.",
     "dropChance": 0.035,
@@ -83,33 +66,22 @@
     "pickupRadius": 1.3,
     "maxOnGround": 1,
     "types": {
-      "instaKill": {
-        "displayName": "INSTA-KILL",
-        "weight": 3,
-        "durationSec": 20
-      },
-      "doublePoints": {
-        "displayName": "DOUBLE POINTS",
-        "weight": 3,
-        "durationSec": 25
-      },
-      "maxAmmo": {
-        "displayName": "MAX AMMO",
-        "weight": 4,
-        "durationSec": 0
-      },
-      "nuke": {
-        "displayName": "NUKE",
-        "weight": 2,
-        "durationSec": 0,
-        "reward": 400
-      },
-      "fireSale": {
-        "displayName": "FIRE SALE",
-        "weight": 1,
-        "durationSec": 30,
-        "boxPrice": 10
-      }
+      "instaKill": {"displayName": "INSTA-KILL", "weight": 3, "durationSec": 20},
+      "doublePoints": {"displayName": "DOUBLE POINTS", "weight": 3, "durationSec": 25},
+      "maxAmmo": {"displayName": "MAX AMMO", "weight": 4, "durationSec": 0},
+      "nuke": {"displayName": "NUKE", "weight": 2, "durationSec": 0, "reward": 400},
+      "fireSale": {"displayName": "FIRE SALE", "weight": 1, "durationSec": 30, "boxPrice": 10}
     }
+  },
+  "voice": {
+    "_comment": "Voice chat (phase 12): frames are encoded on the phone (client/web/voice.js) and relayed by the server; the server never decodes them.",
+    "sampleRate": 16000,
+    "frameMs": 40,
+    "maxFrameBytes": 400,
+    "maxFramesPerSecond": 30,
+    "vadThreshold": 0.012,
+    "vadHoldFrames": 8,
+    "jitterMs": 80,
+    "speakingHoldMs": 350
   }
 }

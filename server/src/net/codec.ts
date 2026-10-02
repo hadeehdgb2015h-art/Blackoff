@@ -100,6 +100,7 @@ export class Codec {
       case "varuint": return w.varuint(int(v, 0, 0xffffffff, fname));
       case "str8": return w.str(String(v), 8, fname);
       case "str16": return w.str(String(v), 16, fname);
+      case "bytes16": return w.raw(v, fname);
       case "pos": return w.i16(clampInt(Math.round(num(v, fname) * this.posScale), -0x8000, 0x7fff));
       case "angle": {
         const a = num(v, fname);
@@ -132,6 +133,7 @@ export class Codec {
       case "varuint": return r.varuint();
       case "str8": return r.str(8);
       case "str16": return r.str(16);
+      case "bytes16": return r.raw();
       case "pos": return r.i16() / this.posScale;
       case "angle": return (r.u16() / 65536) * TWO_PI;
       case "pitch": return (r.i16() / 32767) * (Math.PI / 2);
@@ -188,6 +190,16 @@ class Writer {
     this.buf.set(b, this.n);
     this.n += b.length;
   }
+  /** bytes16: u16 length + raw bytes (a Uint8Array or an array of byte values) */
+  raw(v: unknown, fname: string): void {
+    const b = v instanceof Uint8Array ? v : Array.isArray(v) ? Uint8Array.from(v as number[]) : null;
+    if (!b) throw new CodecError(`${fname}: expected bytes`);
+    if (b.length > 65535) throw new CodecError(`${fname}: too long (${b.length} bytes)`);
+    this.u16(b.length);
+    this.ensure(b.length);
+    this.buf.set(b, this.n);
+    this.n += b.length;
+  }
   bytes(): Uint8Array { return this.buf.slice(0, this.n); }
 }
 
@@ -215,6 +227,13 @@ class Reader {
       if ((b & 0x80) === 0) return v;
     }
     throw new CodecError("varuint too long");
+  }
+  raw(): Uint8Array {
+    const len = this.u16();
+    this.need(len);
+    const out = this.data.slice(this.n, this.n + len);
+    this.n += len;
+    return out;
   }
   str(bits: 8 | 16): string {
     const len = bits === 8 ? this.u8() : this.u16();

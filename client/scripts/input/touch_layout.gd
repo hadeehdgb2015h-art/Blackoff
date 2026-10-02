@@ -5,7 +5,7 @@ extends RefCounted
 ## one phone fits another; `s` scales the button. Saved by Settings; edited by
 ## LayoutEditor. Pure functions, unit-tested.
 
-const NAMES := ["stick", "fire", "fire2", "reload", "switch", "use", "pause"]
+const NAMES := ["stick", "fire", "fire2", "reload", "switch", "use", "pause", "mic", "speaker"]
 const MIN_SCALE := 0.6
 const MAX_SCALE := 1.7
 
@@ -21,6 +21,8 @@ static func defaults(size: Vector2) -> Dictionary:
 		"switch": _n(size, Vector2(size.x - 95, size.y - 320), 1.0),
 		"use": _n(size, Vector2(size.x - 300, size.y - 230), 1.0),
 		"pause": _n(size, Vector2(size.x - 46, 46), 1.0),
+		"mic": _n(size, Vector2(size.x - 46, 118), 1.0),
+		"speaker": _n(size, Vector2(size.x - 46, 182), 1.0),
 	}
 	d["fire2"]["enabled"] = false
 	return d

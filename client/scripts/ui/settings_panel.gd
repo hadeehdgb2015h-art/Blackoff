@@ -101,6 +101,12 @@ func _ready() -> void:
 	fps.toggled.connect(func(on): Settings.show_fps = on)
 	v.add_child(fps)
 
+	var spk := CheckButton.new()
+	spk.text = "Voice chat: hear other players"
+	spk.button_pressed = Settings.voice_speaker
+	spk.toggled.connect(func(on): Settings.voice_speaker = on)
+	v.add_child(spk)
+
 	v.add_child(UiTheme.button("Done", _close))
 	_refresh()
 

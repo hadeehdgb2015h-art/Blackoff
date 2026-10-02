@@ -26,6 +26,11 @@ const EnvSchema = z.object({
   TON_MICRO_PER_KILL: z.coerce.number().int().nonnegative().default(1000),
   /** Shown on the weekly leaderboard, e.g. "1 TON for the week's top hunter". */
   TON_PRIZE_TEXT: z.string().max(200).default(""),
+  /** Voice chat relay (phase 12). 0 switches it off for every player. */
+  VOICE_CHAT: z
+    .enum(["0", "1", "true", "false"])
+    .default("1")
+    .transform((v) => v === "1" || v === "true"),
   /** Protects /admin/* (leaderboard with account ids, suspects). Unset = endpoints off. */
   ADMIN_TOKEN: z.string().optional(),
 });

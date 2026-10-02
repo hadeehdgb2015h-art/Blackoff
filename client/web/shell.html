@@ -101,6 +101,8 @@ if (matchMedia('(pointer: coarse)').matches) window.BlackoffTG._wantFs = true;
 </script>
 <!-- Optional site config (game server URL), written by deploy/install.sh. -->
 <script src="config.js" onerror="void 0"></script>
+<!-- Voice chat: microphone capture, codec and playback (tools/hash_web_build.py renames it). -->
+<script src="voice.js"></script>
 <script src="$GODOT_URL"></script>
 <script>
 const GODOT_CONFIG = $GODOT_CONFIG;

@@ -75,7 +75,7 @@ class Crosshair extends Control:
 
 ## Teammates under the health bar: name, health, DOWN with bleed-out, or DEAD.
 class TeamPanel extends Control:
-	var rows: Array = []  ## [{name, hp_k, state, bleed, revived}]
+	var rows: Array = []  ## [{name, hp_k, state, bleed, revived, speaking}]
 	var font: Font
 
 	func _draw() -> void:
@@ -83,6 +83,12 @@ class TeamPanel extends Control:
 		for r in rows:
 			var col := Color(0.85, 0.85, 0.82)
 			var text: String = r.name
+			if r.get("speaking", false):
+				# sound waves next to a talking teammate
+				var c := Vector2(-14, y + 8)
+				draw_circle(c, 2.5, Color(0.45, 0.85, 0.5))
+				draw_arc(c, 6.0, -0.9, 0.9, 8, Color(0.45, 0.85, 0.5), 1.5, true)
+				draw_arc(c, 10.0, -0.9, 0.9, 10, Color(0.45, 0.85, 0.5, 0.7), 1.5, true)
 			if r.state == SimPlayer.State.DOWNED:
 				col = UiTheme.ACCENT
 				text += "  REVIVING" if r.revived else "  DOWN %d" % ceili(r.bleed)
@@ -288,13 +294,14 @@ func update_state(p: SimPlayer, w: SimWorld, interact: Dictionary, delta: float)
 	_cross.visible = p.is_alive()
 	var mates := 0
 	var rows := []
+	var speaking: Array = Net.voice_speaking() if Net.online_requested else []
 	for o in w.players.values():
 		if o == p:
 			continue
 		if o.is_alive():
 			mates += 1
 		rows.append({"name": o.name, "hp_k": clampf(o.hp / maxf(1.0, o.max_hp), 0.0, 1.0), "state": o.state,
-			"bleed": w.bleedout_left(o), "revived": w.is_being_revived(o)})
+			"bleed": w.bleedout_left(o), "revived": w.is_being_revived(o), "speaking": o.id in speaking})
 	_team.rows = rows
 	_team.queue_redraw()
 	var prog := w.revive_progress(p)

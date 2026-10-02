@@ -107,6 +107,10 @@ func _write_value(b: StreamPeerBuffer, type: String, v: Variant) -> void:
 			else:
 				b.put_u16(bytes.size())
 			b.put_data(bytes)
+		"bytes16":
+			var raw: PackedByteArray = v if v is PackedByteArray else PackedByteArray(v)
+			b.put_u16(raw.size())
+			b.put_data(raw)
 		"pos": b.put_16(clampi(roundi(float(v) * _pos_scale), -32768, 32767))
 		"angle":
 			var turns := float(v) / TWO_PI - floorf(float(v) / TWO_PI)
@@ -171,6 +175,14 @@ func _read_value(b: StreamPeerBuffer, type: String) -> Variant:
 				return ""
 			var res: Array = b.get_data(n)
 			return (res[1] as PackedByteArray).get_string_from_utf8()
+		"bytes16":
+			if not _need(b, 2):
+				return PackedByteArray()
+			var n := b.get_u16()
+			if not _need(b, n):
+				return PackedByteArray()
+			var res: Array = b.get_data(n)
+			return res[1] as PackedByteArray
 	_err = "unknown type " + type
 	return null
 

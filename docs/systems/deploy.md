@@ -36,7 +36,7 @@ Default: `blackoff.<ip-with-dashes>.sslip.io`, which resolves to the server with
 `index.html` loads an optional `config.js` (`window.BLACKOFF_CONFIG = { server: "wss://DOMAIN/ws" }`), written by the updater. The client picks the server from `?server=`, then `config.js`, then `res://data/net.json`. GitHub Pages has no `config.js`, so the preview stays offline unless `?server=` is given. Outside Telegram the online button reads "open in Telegram" (the live server accepts Telegram logins only).
 
 ## Weekly prize (owner)
-`curl "https://<domain>/healthz"` shows the server is up. With `ADMIN_TOKEN` set in `/opt/blackoff/.env` (then `pm2 restart blackoff`): `https://<domain>/admin/leaderboard?token=…` lists this week's hunters with their Telegram account ids; `…/admin/suspects?token=…` lists players with anti-cheat flags. Pay the prize by hand; the game only counts.
+`curl "https://<domain>/healthz"` shows the server is up. With `ADMIN_TOKEN` set in `/opt/blackoff/.env` (then `pm2 restart blackoff`): `https://<domain>/admin/leaderboard?token=…` lists this week's hunters with their Telegram account ids; `…/admin/suspects?token=…` lists players with anti-cheat flags. Pay the prize by hand; the game only counts. `VOICE_CHAT=0` in `.env` switches the voice chat relay off for everyone (default on); `TON_MICRO_PER_KILL` and `TON_PRIZE_TEXT` set the hunt (see `deploy/.env.example`).
 
 ## Commands on the server
 ```bash

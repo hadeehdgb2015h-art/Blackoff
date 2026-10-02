@@ -4,7 +4,7 @@ Read this first in a new session. Then read `docs/TECHNICAL_ARCHITECTURE.md`, `d
 
 ## Current phase
 
-**Phases 5 and 7–11 done** (revive and HUD; client caching; zombies classic; main menu, controls layout editor, audio system; the map doubled with the old grounds and 5 players per zone; TON points with the weekly hunt leaderboard and anti-cheat flags). The owner's expansion list (13 items) is scheduled as phases 7–13 in `docs/TODO.md`; phase 12 (voice chat) is next. The owner decides the TON economics: `TON_MICRO_PER_KILL` and `TON_PRIZE_TEXT` in the server `.env`, prizes paid by hand from `/admin/leaderboard`. Phase 6 (performance tiers, anti-cheat logging) is folded into phase 11. **Phase 4 (Telegram, DB, deploy): built and rehearsed in CI; waiting for the owner to run the installer.** The owner's server (from `deploy/check.sh`): Ubuntu 22.04, 2 CPUs, 3.9 GB RAM (1.5 GB free), 3.4 GB disk free, Node 20.20, pm2 7.0.1 with ~25 apps, nginx 1.18 with 8 sites, certbot 1.21, Postgres on 5432, public IP 93.115.22.64, free port 8787. They run one command (`deploy/install.sh`, see `docs/systems/deploy.md`); the default address `blackoff.93-115-22-64.sslip.io` needs no DNS work. Then they create a bot with @BotFather and paste the token when asked.
+**Phases 5 and 7–12 done** (revive and HUD; client caching; zombies classic; main menu, controls layout editor, audio system; the map doubled with the old grounds and 5 players per zone; TON points with the weekly hunt leaderboard and anti-cheat flags; voice chat with MIC/SPK buttons, relayed by the server). The owner's expansion list (13 items) is scheduled as phases 7–13 in `docs/TODO.md`; phase 13 (infection mode) is next. The owner decides the TON economics: `TON_MICRO_PER_KILL` and `TON_PRIZE_TEXT` in the server `.env`, prizes paid by hand from `/admin/leaderboard`. Phase 6 (performance tiers, anti-cheat logging) is folded into phase 11. **Phase 4 (Telegram, DB, deploy): built and rehearsed in CI; waiting for the owner to run the installer.** The owner's server (from `deploy/check.sh`): Ubuntu 22.04, 2 CPUs, 3.9 GB RAM (1.5 GB free), 3.4 GB disk free, Node 20.20, pm2 7.0.1 with ~25 apps, nginx 1.18 with 8 sites, certbot 1.21, Postgres on 5432, public IP 93.115.22.64, free port 8787. They run one command (`deploy/install.sh`, see `docs/systems/deploy.md`); the default address `blackoff.93-115-22-64.sslip.io` needs no DNS work. Then they create a bot with @BotFather and paste the token when asked.
 
 | Phase | State |
 |---|---|
@@ -19,7 +19,8 @@ Read this first in a new session. Then read `docs/TECHNICAL_ARCHITECTURE.md`, `d
 | 9 Menu, controls layout, audio | done (`docs/systems/presentation.md`, `input-and-hud.md`) |
 | 10 Map ×2, 5 players | done (`docs/systems/maps.md`) |
 | 11 TON hunt, anti-cheat | done (`docs/systems/server.md`) |
-| 12–13 Expansion (owner list) | planned in `docs/TODO.md` |
+| 12 Voice chat | done (`docs/systems/netcode.md`, `input-and-hud.md`) |
+| 13 Infection mode | planned in `docs/TODO.md` |
 
 ## Live preview
 
@@ -36,7 +37,7 @@ URL flags: `?autostart=1` (skip menu), `?bot=1` (test bot plays), `?debug=1` (ex
 | Input / UI | multi-touch stick, aim, fire-aim, reload, swap, use, pause; keyboard/mouse; movable/resizable controls with an editor; HUD; pause; settings (look, volumes, quality, layout); game over; main menu with profile card (`docs/systems/input-and-hud.md`). |
 | Server | phase 2: authoritative TypeScript sim (port of the client rules), binary codec from `protocol.json`, Telegram initData HMAC, sessions with validation, rate limits and resume, zones with quick play, snapshots with interest radius, `/healthz` stats, load-test bots (`docs/systems/server.md`). |
 | Deploy | release bundle + GitHub release `edge`, `deploy/install.sh` (own pm2 apps, own nginx site, own certificate, own DB), self-updater with health-check rollback, uninstall (`docs/systems/deploy.md`). Player profiles in Postgres (games, kills, best wave) shown in the menu. |
-| Tests / CI | 39 headless client tests (incl. golden contract), online end-to-end (2 Godot bots + web build vs a real server), bot playthrough, 2-minute headless game run, browser bot and multi-touch runs, 48 server tests (sim incl. revive/respawn, power-ups, perks, energy/wind weapons, codec, auth, WebSocket flow incl. revive, scoreboard and the weekly hunt, admin pages, anti-cheat flags, perf, profiles and weekly scores incl. real Postgres), deploy rehearsal (installer on a clean runner, Telegram Mini App login through nginx, restart, update, uninstall), golden freshness check, 16-bot load test with a 2 ms tick budget, map sync check, Pages deploy and verification (`docs/systems/testing.md`). |
+| Tests / CI | 39 headless client tests (incl. golden contract), online end-to-end (2 Godot bots + web build vs a real server), voice end-to-end (Chromium with a fake microphone and a talking Node bot hear each other), bot playthrough, 2-minute headless game run, browser bot and multi-touch runs, 52 server tests (sim incl. revive/respawn, power-ups, perks, energy/wind weapons, codec, auth, WebSocket flow incl. revive, scoreboard and the weekly hunt, admin pages, anti-cheat flags, voice codec and relay, perf, profiles and weekly scores incl. real Postgres), deploy rehearsal (installer on a clean runner, Telegram Mini App login through nginx, restart, update, uninstall), golden freshness check, 16-bot load test with a 2 ms tick budget, map sync check, Pages deploy and verification (`docs/systems/testing.md`). |
 
 ## Art stage (in progress, owner request)
 
