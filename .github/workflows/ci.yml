@@ -184,7 +184,11 @@ jobs:
           echo ci-next > /tmp/next/blackoff/VERSION && tar -C /tmp/next -czf /tmp/next/blackoff.tar.gz blackoff
           (cd /tmp/next && sha256sum blackoff.tar.gz > blackoff.tar.gz.sha256 && echo ci-next > version.txt)
           sudo sed -i 's#^BLACKOFF_RELEASE_URL=.*#BLACKOFF_RELEASE_URL=file:///tmp/next#' /opt/blackoff/.env
+          # a player is still in a zone (the Mini App test), so a normal check waits...
           $SUDO bash /opt/blackoff/bin/update.sh --once
+          test "$(cat /opt/blackoff/current/VERSION)" != ci-next
+          # ...and --force installs it anyway
+          $SUDO bash /opt/blackoff/bin/update.sh --once --force
           test "$(cat /opt/blackoff/current/VERSION)" = ci-next
           curl -fsS http://blackoff.localhost/healthz >/dev/null
           $SUDO bash /opt/blackoff/bin/uninstall.sh --yes --drop-db
