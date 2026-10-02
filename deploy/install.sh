@@ -362,11 +362,14 @@ if [ -n "$BOT_USER" ] && [ "$TLS" = 1 ]; then
   fi
 fi
 
+BOT_LINE="not set (run the installer again to add the token)"
+if [ -n "${BOT_USER:-}" ]; then BOT_LINE="https://t.me/$BOT_USER"; fi
+
 cat <<EOF
 
 =================== Blackoff is installed ===================
  Game:     $GAME_URL
- Bot:      ${BOT_USER:+https://t.me/$BOT_USER}${BOT_USER:-not set (run the installer again to add the token)}
+ Bot:      $BOT_LINE
  Server:   127.0.0.1:$PORT  (pm2: blackoff, blackoff-updater)
  Updates:  automatic every 5 minutes (waits for running games)
  Logs:     pm2 logs blackoff
