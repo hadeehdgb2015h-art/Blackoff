@@ -47,10 +47,13 @@ func option(b: Box, p: SimPlayer) -> Dictionary:
 	match b.state:
 		State.IDLE:
 			return {"action": "box", "cost": int(cfg.price), "label": "Supply Cache", "full": false}
+		State.ROLLING:
+			if b.owner_pid == p.id:
+				return {"action": "wait", "cost": 0, "label": "Rolling...", "full": false, "busy": true}
 		State.OFFER:
 			if b.owner_pid == p.id:
 				return {"action": "take", "item": b.result, "cost": 0, "label": str(w.defs.weapons[b.result].displayName), "full": false}
-	return {"action": "wait", "cost": 0, "label": "Supply Cache", "full": false, "busy": true}
+	return {"action": "wait", "cost": 0, "label": "Supply Cache in use", "full": false, "busy": true}
 
 
 ## Charges the price and starts a roll. Returns false (no charge) if nothing can be rolled.

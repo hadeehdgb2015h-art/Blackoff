@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "_comment": "Client-only presentation data. 'model' is the art integration point: a res:// path to a .glb/.tscn. Empty = procedural placeholder.",
+  "_comment": "Client-only presentation data. 'model' is the art integration point (res:// .glb/.tscn); empty = procedural placeholder. Zombie models need an AnimationPlayer with idle, walk/run, attack (strike at 13/30 s), hit, death.",
   "weapons": {
     "pistol": {
       "model": "",
@@ -53,22 +53,26 @@
   },
   "zombies": {
     "walker": {
-      "model": "",
+      "model": "res://assets/models/zombie_walker.glb",
       "skin": "#76806a",
       "cloth": "#3b3f46",
       "eyes": "#ffb347",
       "scale": 1.0,
       "lean": 0.05,
-      "sway": 0.09
+      "sway": 0.09,
+      "locomotion": "walk",
+      "locoSpeed": 1.2
     },
     "runner": {
-      "model": "",
+      "model": "res://assets/models/zombie_runner.glb",
       "skin": "#8c7466",
       "cloth": "#5e2620",
       "eyes": "#ff4a3a",
       "scale": 0.95,
       "lean": 0.3,
-      "sway": 0.16
+      "sway": 0.16,
+      "locomotion": "run",
+      "locoSpeed": 3.8
     }
   },
   "players": {

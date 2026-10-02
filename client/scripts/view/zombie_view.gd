@@ -33,6 +33,11 @@ var _attack_t: float = -1.0
 var _attack_len: float = 0.4
 var _flash_t: float = 0.0
 var _death_t: float = 0.0
+var _busy_t: float = 0.0          ## attack/hit animation time left (model path)
+var _meshes: Array[MeshInstance3D] = []
+
+const STRIKE_SEC := 13.0 / 30.0   ## frame the attack lands in the authored animation
+const LOOPING := ["idle", "walk", "run"]
 
 
 func setup(zombie_id: int, type: String, zombie_def: Dictionary, pos: Vector2, yaw: float) -> void:
@@ -49,7 +54,15 @@ func setup(zombie_id: int, type: String, zombie_def: Dictionary, pos: Vector2, y
 	if _model:
 		add_child(_model)
 		_anim = _model.find_child("AnimationPlayer", true, false) as AnimationPlayer
-		_play("walk")
+		if _anim:
+			for n in LOOPING:
+				if _anim.has_animation(n):
+					_anim.get_animation(n).loop_mode = Animation.LOOP_LINEAR
+			_anim.playback_default_blend_time = 0.15
+			_play("idle")
+			_anim.seek(randf() * 1.5)  # desync crowds
+		for mi in _model.find_children("*", "MeshInstance3D", true, false):
+			_meshes.append(mi)
 	else:
 		_build_placeholder()
 	var shadow := MeshInstance3D.new()
@@ -75,6 +88,7 @@ func update_view(alpha: float, delta: float) -> void:
 		return
 	_apply_transform(alpha)
 	if _model:
+		_update_model_anim(delta)
 		return
 	_phase += delta * (2.5 + _speed * 2.2)
 	var sway: float = vis.get("sway", 0.1)
@@ -98,12 +112,20 @@ func update_view(alpha: float, delta: float) -> void:
 func on_attack(windup: float) -> void:
 	_attack_len = windup
 	_attack_t = 0.0
-	_play("attack")
+	if _anim:
+		var speed := STRIKE_SEC / maxf(windup, 0.05)  # land the swing exactly when the sim deals damage
+		_anim.speed_scale = 1.0
+		_anim.play("attack", 0.1, speed)
+		_busy_t = _anim.get_animation("attack").length / speed if _anim.has_animation("attack") else windup
 
 
 func on_hit() -> void:
 	_flash_t = 0.08
 	_set_overlay(_flash())
+	if _anim and _busy_t <= 0.0 and _anim.has_animation("hit"):
+		_anim.speed_scale = 1.0
+		_anim.play("hit", 0.05, 1.6)
+		_busy_t = _anim.get_animation("hit").length / 1.6
 
 
 func on_death(pos: Vector2, yaw: float) -> void:
@@ -113,7 +135,28 @@ func on_death(pos: Vector2, yaw: float) -> void:
 	cur_yaw = yaw
 	_apply_transform(1.0)
 	_set_overlay(null)
-	_play("death")
+	_busy_t = 999.0
+	if _anim:
+		_anim.speed_scale = 1.0
+		_anim.play("death", 0.08, 1.0)
+
+
+func _update_model_anim(delta: float) -> void:
+	if _flash_t > 0.0:
+		_flash_t -= delta
+		if _flash_t <= 0.0:
+			_set_overlay(null)
+	if _anim == null:
+		return
+	if _busy_t > 0.0:
+		_busy_t -= delta
+		return
+	if _speed > 0.2:
+		var loco: String = vis.get("locomotion", "walk")
+		var nominal: float = vis.get("locoSpeed", 1.2)
+		_play(loco, clampf(_speed / nominal, 0.6, 1.8))
+	else:
+		_play("idle")
 
 
 func _update_death(delta: float) -> void:
@@ -135,16 +178,21 @@ func _apply_transform(alpha: float) -> void:
 	rotation.y = lerp_angle(prev_yaw, cur_yaw, alpha)
 
 
-func _play(anim: String) -> void:
-	if _anim and _anim.has_animation(anim):
+func _play(anim: String, speed := 1.0) -> void:
+	if _anim == null or not _anim.has_animation(anim):
+		return
+	_anim.speed_scale = speed
+	if _anim.current_animation != anim:
 		_anim.play(anim)
 
 
 func _set_overlay(m: Material) -> void:
+	for mi in _meshes:
+		mi.material_overlay = m
 	for mi in [_body, _head]:
 		if mi:
 			mi.material_overlay = m
-	if _arms:
+	if _arms and _arms.get_child_count() > 0:
 		(_arms.get_child(0) as MeshInstance3D).material_overlay = m
 
 

@@ -28,9 +28,14 @@ URL flags: `?autostart=1` (skip menu), `?bot=1` (test bot plays), `?debug=1` (ex
 | Server | phase 0 skeleton plus map schema validation (loads `shared/maps`). |
 | Tests / CI | 21 headless client tests, bot playthrough, 2-minute headless game run, browser bot run, browser multi-touch run, server tests, map sync check, Pages deploy and verification (`docs/systems/testing.md`). |
 
+## Art stage (in progress, owner request)
+
+The owner asked for original "Black Ops-like" art built by us in stages: (1) zombies + supply cache ✅, (2) weapons + first-person hands, (3) facility props/textures, (4) soldier character. The pipeline is in `docs/systems/art-pipeline.md`. Phase 2 (server) waits until the art stages are done, unless the owner says otherwise.
+Also added on request: the supply cache (random weapon box) and two box-only weapons (KS-12 shotgun, VX-9 SMG).
+
 ## Known limitations
 
-- All art is placeholder; we are waiting for owner-supplied CC0 assets (see `docs/ASSET_LICENSES.md`).
+- Zombies and the supply cache use the generated models; weapons, map and player are still placeholders (art stages 2–4).
 - No baked lighting yet: lights are dynamic without shadows.
 - UI text is English only. Arabic needs a bundled font.
 - Revive is not implemented yet (phase 5); solo play goes down → bleed-out → game over.

@@ -21,3 +21,6 @@
 - Waves: count = round((base + perWave·(w−1))^exponent · (1 + perExtraPlayer·(players−1))), capped by `count.max`. At most `zone.maxAliveZombies` alive at once.
 - Down → bleed out → dead. When nobody is alive, it is game over (revive arrives in phase 5).
 - Views read state and per-tick `events` only. Nothing else writes to the sim except `set_input`.
+
+## Supply cache
+`box_system.gd`: interact to pay `constants.supplyBox.price`. The sim picks the weapon immediately with a weighted roll over `weapons.<id>.boxWeight`, excluding weapons the buyer owns, and keeps it hidden until `box_offer`, which comes after `rollSec`. Only the buyer can take it within `offerSec`. Taking an owned weapon refills it; otherwise it fills a free slot or replaces the held one. Events: `box_opened`, `box_offer`, `box_taken`, `box_expired`. Pellet weapons (shotgun) cast one ray per pellet and apply summed damage once per zombie per trigger pull.

@@ -43,6 +43,11 @@ func set_look(y: float, p: float) -> void:
 	pitch = p
 
 
+## Queues a one-tick button press (used by scripted showcases and tutorials).
+func queue_press(bit: int) -> void:
+	_latched |= bit
+
+
 func add_recoil(pitch_kick: float, yaw_jitter: float) -> void:
 	pitch = clampf(pitch + pitch_kick, -PITCH_LIMIT, PITCH_LIMIT)
 	yaw += yaw_jitter

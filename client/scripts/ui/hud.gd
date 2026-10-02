@@ -166,7 +166,7 @@ func update_state(p: SimPlayer, w: SimWorld, interact: Dictionary, delta: float)
 			"take":
 				_prompt.text = "Take %s" % interact.label
 			"wait":
-				_prompt.text = "Supply Cache in use"
+				_prompt.text = str(interact.label)
 			_:
 				var verb := "Buy" if interact.action == "weapon" else "Refill"
 				var suffix := "  (full)" if interact.full else ""

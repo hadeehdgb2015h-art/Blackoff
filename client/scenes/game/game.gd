@@ -63,6 +63,11 @@ func _ready() -> void:
 	Settings.changed.connect(_apply_quality)
 	_apply_quality()
 	_debug_js = Platform.is_web and Platform.query_param("debug") == "1"
+	var showcase := Platform.query_param("showcase")
+	if showcase == "1":
+		_start_showcase()
+	elif showcase == "box":
+		_start_box_showcase()
 
 
 func _process(delta: float) -> void:
@@ -228,6 +233,35 @@ func _ambient_groans(delta: float) -> void:
 	var views := _zviews.values()
 	var v: ZombieView = views[randi() % views.size()]
 	_sfx.play_at("zombie_groan%d" % (1 + randi() % 2), v.global_position + Vector3(0, 1.5, 0), -4.0, 0.15)
+
+
+## ?showcase=1: art review mode. Waves off, player invulnerable, one of each
+## zombie type spawned a few metres in front of the camera.
+func _start_showcase() -> void:
+	world.director.phase = WaveDirector.Phase.STOPPED
+	var spots := [Vector2(-1.1, 11.6), Vector2(1.2, 12.0)]
+	var types := ["walker", "runner"]
+	for i in 2:
+		if world.zombie_sys.spawn(types[i], 1):
+			var z: SimZombie = world.zombies.values()[world.zombies.size() - 1]
+			z.pos = spots[i]
+			z.prev_pos = z.pos
+			z.speed *= 0.35
+			z.def = z.def.duplicate()
+			z.def.attackDamage = 0.0
+
+
+## ?showcase=box: stand at the supply cache with credits; it opens after 1 s.
+func _start_box_showcase() -> void:
+	world.director.phase = WaveDirector.Phase.STOPPED
+	var p: SimPlayer = world.players[pid]
+	var b = world.box_sys.boxes.values()[0]
+	p.pos = b.pos + Vector2(0.4, -1.2)
+	p.prev_pos = p.pos
+	p.currency = 5000
+	var yaw := SimMath.yaw_to(p.pos, b.pos + Vector2(0, 1.2))
+	_controls.set_look(yaw, -0.25)
+	get_tree().create_timer(1.0).timeout.connect(func(): _controls.queue_press(PlayerIntent.INTERACT))
 
 
 func _toggle_pause() -> void:
