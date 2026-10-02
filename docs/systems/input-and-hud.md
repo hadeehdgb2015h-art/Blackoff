@@ -9,6 +9,7 @@
 - Aim assist (touch only, visual): the look slows to 0.55× while the crosshair is over a visible zombie. The server still validates every shot.
 - Browser quirk: Godot's web runtime turns every `pointermove`, touch fingers included, into mouse motion. That made the move-stick finger turn the camera and doubled the look speed. `shell.html` drops non-mouse `pointermove`s, and the controls ignore mouse events for 1.5 s after a real touch (the compatibility clicks phones send after a tap).
 - Desktop: WASD, mouse look (click to capture), LMB fire, R, Q swap, E use (hold E or F to revive), Esc pause.
+- Layout (phase 9): every control's position (normalised to the view) and size live in `Settings.layout` (`scripts/input/touch_layout.gd`, pure functions, tested). `LayoutEditor` (Settings → CONTROLS LAYOUT, or CONTROLS on the menu) lets the player drag the stick and buttons, resize the selected one, add a second FIRE button on the left, set the HUD opacity, Reset or Save. The controls read the layout on `Settings.changed`.
 
 ## HUD (`scripts/ui/hud.gd`)
 Health bar, wave and remaining count or intermission countdown, credits with +reward pop-ups, ammo and weapon name, reload or no-ammo status, interaction prompt with price (greyed out when you can't afford it or ammo is full), crosshair that widens while moving, hit markers (red for head or kill), damage vignette, wave banners, game-over panel.

@@ -20,6 +20,7 @@ SharedData="*res://scripts/core/shared_data.gd"
 Platform="*res://scripts/core/platform.gd"
 Settings="*res://scripts/core/settings.gd"
 Net="*res://scripts/core/net.gd"
+Audio="*res://scripts/core/audio.gd"
 
 [display]
 

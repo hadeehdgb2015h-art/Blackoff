@@ -46,10 +46,10 @@
 - [x] Perk machines (Ironhide Brew, Quickhand Soda, Longstride Tonic, Switchblade Fizz) on the map; lost when downed
 - [x] New weapons: BR-80 Mauler (LMG), LR-50 Longshot (sniper), Arc Lance (rare, splash), Gale Cannon (rare, cone blast)
 - [x] Green beacon beam over the supply cache
-## Phase 9: UI and audio
-- [ ] Professional main menu (modes, profile, settings, how to play)
-- [ ] Movable HUD buttons (layout editor in settings, like the owner's screenshot)
-- [ ] Audio system: buses, 3D attenuation, reverb per room, music/ambient layers, better SFX
+## Phase 9: UI and audio ✅ done
+- [x] Main menu: backdrop, PLAY ONLINE, solo, settings / controls / how to play, profile card, coming-next line
+- [x] Controls layout editor: drag, resize, second FIRE button, opacity, reset/save (saved per device)
+- [x] Audio: Music/SFX/UI buses with settings, room reverb, occlusion, music loops with crossfades, footsteps, heartbeat, hit tick, headshot chime, UI clicks
 ## Phase 10: map x2 + 5 players per zone
 ## Phase 11: TON points per kill (server-side, env-configurable), weekly leaderboard, anti-cheat logging
 ## Phase 12: voice chat (mic/speaker on-off, clean audio; Telegram WebView permitting)

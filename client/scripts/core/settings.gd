@@ -11,6 +11,10 @@ var invert_y: bool = false
 var quality: String = "medium"
 var show_fps: bool = true
 var master_volume: float = 0.8
+var music_volume: float = 0.5
+var sfx_volume: float = 1.0
+var hud_opacity: float = 1.0
+var layout: Dictionary = {}       ## touch control layout (TouchLayout), {} = defaults
 
 
 func _ready() -> void:
@@ -22,6 +26,11 @@ func _ready() -> void:
 		quality = q if q in QUALITY else quality
 		show_fps = bool(cf.get_value("video", "show_fps", show_fps))
 		master_volume = clampf(float(cf.get_value("audio", "master_volume", master_volume)), 0.0, 1.0)
+		music_volume = clampf(float(cf.get_value("audio", "music_volume", music_volume)), 0.0, 1.0)
+		sfx_volume = clampf(float(cf.get_value("audio", "sfx_volume", sfx_volume)), 0.0, 1.0)
+		hud_opacity = clampf(float(cf.get_value("hud", "opacity", hud_opacity)), 0.3, 1.0)
+		var l: Variant = cf.get_value("hud", "layout", {})
+		layout = l if l is Dictionary else {}
 	_apply_audio()
 
 
@@ -32,6 +41,10 @@ func save() -> void:
 	cf.set_value("video", "quality", quality)
 	cf.set_value("video", "show_fps", show_fps)
 	cf.set_value("audio", "master_volume", master_volume)
+	cf.set_value("audio", "music_volume", music_volume)
+	cf.set_value("audio", "sfx_volume", sfx_volume)
+	cf.set_value("hud", "opacity", hud_opacity)
+	cf.set_value("hud", "layout", layout)
 	cf.save(PATH)
 	_apply_audio()
 	changed.emit()

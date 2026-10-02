@@ -4,7 +4,7 @@ Read this first in a new session. Then read `docs/TECHNICAL_ARCHITECTURE.md`, `d
 
 ## Current phase
 
-**Phases 5, 7 and 8 done** (revive and HUD; client caching; zombies classic: power-up drops, perk machines, 4 new weapons incl. two rare box-only ones, cache beam). The owner's expansion list (13 items) is scheduled as phases 7–13 in `docs/TODO.md`; phase 9 (professional main menu, movable HUD buttons, audio system) is next. Phase 6 (performance tiers, anti-cheat logging) is folded into phase 11. **Phase 4 (Telegram, DB, deploy): built and rehearsed in CI; waiting for the owner to run the installer.** The owner's server (from `deploy/check.sh`): Ubuntu 22.04, 2 CPUs, 3.9 GB RAM (1.5 GB free), 3.4 GB disk free, Node 20.20, pm2 7.0.1 with ~25 apps, nginx 1.18 with 8 sites, certbot 1.21, Postgres on 5432, public IP 93.115.22.64, free port 8787. They run one command (`deploy/install.sh`, see `docs/systems/deploy.md`); the default address `blackoff.93-115-22-64.sslip.io` needs no DNS work. Then they create a bot with @BotFather and paste the token when asked.
+**Phases 5, 7, 8 and 9 done** (revive and HUD; client caching; zombies classic; main menu, controls layout editor, audio system). The owner's expansion list (13 items) is scheduled as phases 7–13 in `docs/TODO.md`; phase 10 (map ×2 with new dark-fantasy areas, 5 players per zone) is next. Phase 6 (performance tiers, anti-cheat logging) is folded into phase 11. **Phase 4 (Telegram, DB, deploy): built and rehearsed in CI; waiting for the owner to run the installer.** The owner's server (from `deploy/check.sh`): Ubuntu 22.04, 2 CPUs, 3.9 GB RAM (1.5 GB free), 3.4 GB disk free, Node 20.20, pm2 7.0.1 with ~25 apps, nginx 1.18 with 8 sites, certbot 1.21, Postgres on 5432, public IP 93.115.22.64, free port 8787. They run one command (`deploy/install.sh`, see `docs/systems/deploy.md`); the default address `blackoff.93-115-22-64.sslip.io` needs no DNS work. Then they create a bot with @BotFather and paste the token when asked.
 
 | Phase | State |
 |---|---|
@@ -16,7 +16,8 @@ Read this first in a new session. Then read `docs/TECHNICAL_ARCHITECTURE.md`, `d
 | 5 Revive, buy, final HUD | done (`docs/systems/simulation.md`, `input-and-hud.md`) |
 | 7 Client caching | done (`docs/systems/deploy.md`) |
 | 8 Zombies classic | done (`docs/systems/simulation.md`, `presentation.md`) |
-| 9–13 Expansion (owner list) | planned in `docs/TODO.md` |
+| 9 Menu, controls layout, audio | done (`docs/systems/presentation.md`, `input-and-hud.md`) |
+| 10–13 Expansion (owner list) | planned in `docs/TODO.md` |
 
 ## Live preview
 
@@ -30,10 +31,10 @@ URL flags: `?autostart=1` (skip menu), `?bot=1` (test bot plays), `?debug=1` (ex
 | Map | `facility_01` (art stage 3: textured, prop-dressed, bright with a violet dark-fantasy tint): safe room (spawn, ammo, Ironhide machine), 2 corridors, lab (AR-7 wall-buy, Quickhand machine), storage (supply cache with beacon beam, Longstride machine), yard (Switchblade machine), 4 zombie entries. Pipeline: generator → scene → `shared/maps/facility_01.json` (`docs/systems/maps.md`). |
 | Sim | `client/scripts/sim/`: authoritative rules at 20 Hz (movement, weapons, zombies, waves, economy, downed → game over). `server/src/sim/` mirrors it; `shared/tests/golden.json` pins the contract (`docs/systems/simulation.md`). |
 | Presentation | first-person rig, procedural zombie and weapon placeholders, tracers and impacts, generated SFX, map mesh batching, quality tiers (`docs/systems/presentation.md`). |
-| Input / UI | multi-touch stick, aim, fire-aim, reload, swap, use, pause; keyboard/mouse; HUD; pause; settings; game over; main menu (`docs/systems/input-and-hud.md`). |
+| Input / UI | multi-touch stick, aim, fire-aim, reload, swap, use, pause; keyboard/mouse; movable/resizable controls with an editor; HUD; pause; settings (look, volumes, quality, layout); game over; main menu with profile card (`docs/systems/input-and-hud.md`). |
 | Server | phase 2: authoritative TypeScript sim (port of the client rules), binary codec from `protocol.json`, Telegram initData HMAC, sessions with validation, rate limits and resume, zones with quick play, snapshots with interest radius, `/healthz` stats, load-test bots (`docs/systems/server.md`). |
 | Deploy | release bundle + GitHub release `edge`, `deploy/install.sh` (own pm2 apps, own nginx site, own certificate, own DB), self-updater with health-check rollback, uninstall (`docs/systems/deploy.md`). Player profiles in Postgres (games, kills, best wave) shown in the menu. |
-| Tests / CI | 37 headless client tests (incl. golden contract), online end-to-end (2 Godot bots + web build vs a real server), bot playthrough, 2-minute headless game run, browser bot and multi-touch runs, 42 server tests (sim incl. revive/respawn, power-ups, perks, energy/wind weapons, codec, auth, WebSocket flow incl. revive and scoreboard, perf, profiles incl. real Postgres), deploy rehearsal (installer on a clean runner, Telegram Mini App login through nginx, restart, update, uninstall), golden freshness check, 16-bot load test with a 2 ms tick budget, map sync check, Pages deploy and verification (`docs/systems/testing.md`). |
+| Tests / CI | 39 headless client tests (incl. golden contract), online end-to-end (2 Godot bots + web build vs a real server), bot playthrough, 2-minute headless game run, browser bot and multi-touch runs, 42 server tests (sim incl. revive/respawn, power-ups, perks, energy/wind weapons, codec, auth, WebSocket flow incl. revive and scoreboard, perf, profiles incl. real Postgres), deploy rehearsal (installer on a clean runner, Telegram Mini App login through nginx, restart, update, uninstall), golden freshness check, 16-bot load test with a 2 ms tick budget, map sync check, Pages deploy and verification (`docs/systems/testing.md`). |
 
 ## Art stage (in progress, owner request)
 

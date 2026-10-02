@@ -27,6 +27,9 @@ var _showcase_t: float = 0.0
 var _defs: Dictionary
 var _boxes := {}   ## box id -> BoxView
 var _puviews := {} ## power-up id -> PowerupView
+var _step_t: float = 0.0
+var _heart_t: float = 0.0
+var _room_t: float = 0.0
 var _machines := {} ## perk id -> PerkMachineView
 var _acc: float = 0.0
 var _paused: bool = false
@@ -53,6 +56,8 @@ func _ready() -> void:
 	add_child(_effects)
 	_sfx = Sfx.new()
 	add_child(_sfx)
+	_sfx.occlusion_check = _occluded
+	Audio.play_music("ambient")
 	_atmosphere.thunder.connect(func(delay: float):
 		get_tree().create_timer(delay).timeout.connect(func(): _sfx.play("thunder", -3.0, 0.15)))
 
@@ -75,6 +80,10 @@ func _ready() -> void:
 	_controls = TouchControls.new()
 	ui.add_child(_controls)
 	_controls.pause_requested.connect(_toggle_pause)
+	if Platform.query_param("nohud") == "1":  # clean captures (menu backdrop)
+		_hud.visible = false
+		_controls.visible = false
+		_rig.set_viewmodel_visible(false)
 
 	_defs = defs
 	Settings.changed.connect(_apply_quality)
@@ -177,6 +186,7 @@ func _process(delta: float) -> void:
 	_sync_powerup_views()
 	for v in _puviews.values():
 		v.update_view(world.time, delta)
+	_body_sounds(p, delta)
 	var opt := world.interact_option(pid)
 	var revive: bool = not opt.is_empty() and opt.action == "revive"
 	_controls.revive_available = revive
@@ -327,12 +337,15 @@ func _on_event(e: Dictionary) -> void:
 				v.on_hit()
 			if local:
 				_sfx.play("zombie_hit", -6.0)
+				_sfx.play("hit_tick", -12.0, 0.02)
 		"zombie_killed":
 			var v: ZombieView = _zviews.get(e.zid)
 			if v:
 				v.on_death(e.pos, e.yaw)
 				_zviews.erase(e.zid)
 			_sfx.play_at("zombie_death", Vector3(e.pos.x, 1.4, e.pos.y), -2.0)
+			if local and e.head:
+				_sfx.play("headshot", -8.0, 0.02)
 		"zombie_attack":
 			var v: ZombieView = _zviews.get(e.zid)
 			if v:
@@ -383,9 +396,11 @@ func _on_event(e: Dictionary) -> void:
 				_sfx.play("dry_fire", -4.0)
 		"wave_started":
 			_sfx.play("wave_start", -6.0, 0.0)
+			Audio.play_music("tension")
 			print("[game] wave %d started (%d zombies)" % [e.wave, e.count])
 		"wave_cleared":
 			_sfx.play("wave_end", -6.0, 0.0)
+			Audio.play_music("ambient")
 			print("[game] wave %d cleared, kills=%d" % [e.wave, world.players[pid].kills])
 		"box_opened":
 			_boxes[e.box].on_open(float(world.constants.supplyBox.rollSec))
@@ -403,11 +418,54 @@ func _on_event(e: Dictionary) -> void:
 			_boxes[e.box].on_close()
 		"game_over":
 			print("[game] game over at wave %d" % e.wave)
+			Audio.play_music("")
 			_controls.enabled = false
 			_controls.release_all()
 			Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 			_hud.show_game_over(int(e.wave), world.players[pid], world.scores())
 	_hud.on_event(e, pid)
+
+
+## True when a wall sits between the player's eye and `pos` (muffled sound).
+func _occluded(pos: Vector3) -> bool:
+	if world == null or not world.players.has(pid):
+		return false
+	var p: SimPlayer = world.players[pid]
+	var eye := Vector3(p.pos.x, float(world.constants.player.eyeHeight), p.pos.y)
+	var to := pos - eye
+	var d := to.length()
+	return d > 1.0 and world.map.raycast(eye, to / d, d) < d - 0.2
+
+
+## Footsteps, low-health heartbeat and room reverb for the local player.
+func _body_sounds(p: SimPlayer, delta: float) -> void:
+	if p.is_alive() and p.moving:
+		_step_t -= delta * world.player_sys.perk_mul(p, "moveSpeedMul")
+		if _step_t <= 0.0:
+			_step_t = 0.42
+			_sfx.play("step%d" % (1 + randi() % 4), -16.0, 0.12)
+	else:
+		_step_t = minf(_step_t, 0.1)
+	if p.is_alive() and p.hp < p.max_hp * 0.3:
+		_heart_t -= delta
+		if _heart_t <= 0.0:
+			_heart_t = 0.95
+			_sfx.play("heartbeat", -6.0, 0.03)
+	_room_t -= delta
+	if _room_t <= 0.0:
+		_room_t = 0.5
+		Audio.set_room(_indoors(p.pos))
+
+
+## Indoors when a ceiling-height wall is close in most directions (the yard is open).
+func _indoors(pos: Vector2) -> bool:
+	var eye := Vector3(pos.x, 1.6, pos.y)
+	var hits := 0
+	for i in 8:
+		var a := i * TAU / 8.0
+		if world.map.raycast(eye, Vector3(sin(a), 0.0, -cos(a)), 12.0) < 12.0:
+			hits += 1
+	return hits >= 5
 
 
 ## Screen positions of downed teammates for the HUD (edge-pinned when off screen).

@@ -1,5 +1,11 @@
 # Presentation
 
+## Audio (phase 9)
+`Audio` autoload (`scripts/core/audio.gd`): buses Music, SFX and UI under Master (volumes from Settings: master, music, sound effects), a reverb on the SFX bus whose room size and wetness follow the local player (indoors when walls surround them, from 8 short raycasts twice a second), looping music with crossfades (`music_menu`, `music_ambient` between waves, `music_tension` during a wave, silence at game over), and UI clicks on every button. `Sfx` plays on the SFX bus; 3D sounds behind a wall (raycast through the sim map) are low-passed and quieter. The local player gets footsteps (4 variants, faster with Longstride), a heartbeat under 30 % health, a hit tick on every hit and a chime on head kills. All sounds and music are synthesised by `tools/gen_sfx.py` (`music_*` loop; `tools/fix_audio_imports.py` sets loop and QOA compression).
+
+## Main menu (phase 9)
+A screenshot backdrop (`assets/ui/menu_bg.jpg`, an in-game capture) with a left shade, the title, the mode line, a big PLAY ONLINE button (disabled with the reason when no server is set or outside Telegram), SOLO PRACTICE, SETTINGS / CONTROLS / HOW TO PLAY, a "coming next" line, and a profile card (name, best wave, kills, games when logged in; otherwise the Telegram hint). `?screen=layout` opens the controls editor for screenshots.
+
 Phase 8 adds: `PowerupView` (spinning emissive prism, name, light, blinks before vanishing), `PerkMachineView` (procedural vending machine in the perk's colour with name and price), a green beacon beam over the supply cache (`fx_beam.gdshader`, hidden while the cache is in use), coloured energy bolts and a cone blast in `Effects`, four more viewmodels (`vm_lmg`, `vm_sniper`, `vm_arc`, `vm_gale`) and sounds (`lmg_shot`, `sniper_shot`, `arc_shot`, `gale_shot`, `powerup`).
 
 `client/scripts/view/` plus `client/scenes/game/game.gd`.

@@ -23,6 +23,9 @@ var interact_ok: bool = true
 var revive_available: bool = false
 var enabled: bool = true
 var aim_friction: float = 1.0     ## set by the game each frame: < 1 slows the look over a target
+var edit_mode: bool = false       ## layout editor: draw every control, take no input
+var layout: Dictionary = {}       ## TouchLayout (resolved on first use)
+var opacity: float = 1.0
 
 var _touches := {}  ## index -> {role, button, start, last}
 var _stick_origin := Vector2.ZERO
@@ -42,6 +45,14 @@ func _ready() -> void:
 	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_font = ThemeDB.fallback_font
+	reload_layout()
+	Settings.changed.connect(reload_layout)
+
+
+func reload_layout() -> void:
+	layout = TouchLayout.resolve(Settings.layout, size if size.x > 0 else Vector2(1280, 720))
+	opacity = Settings.hud_opacity
+	queue_redraw()
 
 
 func set_look(y: float, p: float) -> void:
@@ -86,28 +97,44 @@ func sample() -> PlayerIntent:
 
 # ------------------------------------------------------------ layout
 
+const BASE_RADIUS := {"fire": 78.0, "fire2": 64.0, "reload": 44.0, "switch": 44.0, "use": 52.0, "pause": 30.0}
+
+
 func _buttons() -> Dictionary:
+	if layout.is_empty():
+		reload_layout()
 	var s := size
-	var d := {
-		"fire": {"pos": Vector2(s.x - 155, s.y - 165), "r": 78.0, "label": "FIRE"},
-		"reload": {"pos": Vector2(s.x - 300, s.y - 85), "r": 44.0, "label": "R"},
-		"switch": {"pos": Vector2(s.x - 95, s.y - 320), "r": 44.0, "label": "SWAP"},
-		"pause": {"pos": Vector2(s.x - 46, 46), "r": 30.0, "label": "II"},
-	}
-	if interact_label != "":
-		d["interact"] = {"pos": Vector2(s.x - 300, s.y - 230), "r": 52.0, "label": "USE"}
+	var d := {}
+	var at := func(name: String) -> Vector2: return TouchLayout.position(layout, name, s)
+	var rad := func(name: String) -> float: return BASE_RADIUS[name] * TouchLayout.scale(layout, name)
+	d["fire"] = {"pos": at.call("fire"), "r": rad.call("fire"), "label": "FIRE"}
+	if layout.fire2.get("enabled", false) or edit_mode:
+		d["fire2"] = {"pos": at.call("fire2"), "r": rad.call("fire2"), "label": "FIRE"}
+	d["reload"] = {"pos": at.call("reload"), "r": rad.call("reload"), "label": "R"}
+	d["switch"] = {"pos": at.call("switch"), "r": rad.call("switch"), "label": "SWAP"}
+	d["pause"] = {"pos": at.call("pause"), "r": rad.call("pause"), "label": "II"}
 	if revive_available:
-		d["revive"] = {"pos": Vector2(s.x - 300, s.y - 230), "r": 52.0, "label": "REVIVE"}
+		d["revive"] = {"pos": at.call("use"), "r": rad.call("use"), "label": "REVIVE"}
+	elif interact_label != "" or edit_mode:
+		d["interact"] = {"pos": at.call("use"), "r": rad.call("use"), "label": "USE"}
 	return d
 
 
 func _stick_home() -> Vector2:
-	return Vector2(175, size.y - 165)
+	if layout.is_empty():
+		reload_layout()
+	return TouchLayout.position(layout, "stick", size)
+
+
+func _stick_radius() -> float:
+	return STICK_RADIUS * (TouchLayout.scale(layout, "stick") if not layout.is_empty() else 1.0)
 
 
 # ------------------------------------------------------------ input
 
 func _input(event: InputEvent) -> void:
+	if edit_mode:
+		return
 	if event is InputEventScreenTouch:
 		_on_touch(event)
 	elif event is InputEventScreenDrag:
@@ -169,7 +196,7 @@ func _on_touch(e: InputEventScreenTouch) -> void:
 			return
 		var hit := _hit_button(e.position)
 		if hit != "":
-			_touches[e.index] = {"role": Role.FIRE if hit == "fire" else Role.BUTTON, "button": hit, "last": e.position, "t": Time.get_ticks_usec()}
+			_touches[e.index] = {"role": Role.FIRE if hit.begins_with("fire") else Role.BUTTON, "button": hit, "last": e.position, "t": Time.get_ticks_usec()}
 			_press(hit)
 		elif e.position.x < size.x * 0.42:
 			_touches[e.index] = {"role": Role.STICK, "last": e.position, "t": Time.get_ticks_usec()}
@@ -207,10 +234,11 @@ func _on_drag(e: InputEventScreenDrag) -> void:
 	match t.role:
 		Role.STICK:
 			var off := e.position - _stick_origin
-			if off.length() > STICK_RADIUS * 1.6:
-				_stick_origin = e.position - off.normalized() * STICK_RADIUS * 1.6
+			var sr := _stick_radius()
+			if off.length() > sr * 1.6:
+				_stick_origin = e.position - off.normalized() * sr * 1.6
 				off = e.position - _stick_origin
-			var v := off / STICK_RADIUS
+			var v := off / sr
 			_stick_vec = Vector2(v.x, -v.y).limit_length(1.0)
 		Role.AIM, Role.FIRE:
 			# Response curve: slow drags are precise, fast swipes turn quickly.
@@ -229,7 +257,7 @@ func _aim(delta_px: Vector2) -> void:
 
 func _press(name: String) -> void:
 	match name:
-		"fire":
+		"fire", "fire2":
 			_fire_held_touch = true
 			_latched |= PlayerIntent.FIRE_PRESSED
 		"pause":
@@ -292,20 +320,22 @@ func _draw() -> void:
 	for t in _touches.values():
 		stick_active = stick_active or t.role == Role.STICK
 	var base := _stick_origin if stick_active else _stick_home()
-	draw_circle(base, STICK_RADIUS, Color(1, 1, 1, 0.07 if stick_active else 0.04))
-	draw_arc(base, STICK_RADIUS, 0, TAU, 48, Color(1, 1, 1, 0.25), 2.0, true)
-	var knob := base + Vector2(_stick_vec.x, -_stick_vec.y) * STICK_RADIUS
-	draw_circle(knob, 34, Color(1, 1, 1, 0.3 if stick_active else 0.15))
+	var sr := _stick_radius()
+	var op := opacity
+	draw_circle(base, sr, Color(1, 1, 1, (0.07 if stick_active else 0.04) * op))
+	draw_arc(base, sr, 0, TAU, 48, Color(1, 1, 1, 0.25 * op), 2.0, true)
+	var knob := base + Vector2(_stick_vec.x, -_stick_vec.y) * sr
+	draw_circle(knob, 34 * sr / STICK_RADIUS, Color(1, 1, 1, (0.3 if stick_active else 0.15) * op))
 	var bs := _buttons()
 	for name in bs:
 		var b: Dictionary = bs[name]
-		var held: bool = (name == "fire" and _fire_held_touch) or _held_buttons.has(name)
-		var col := Color(0.78, 0.19, 0.16) if name == "fire" else Color(1, 1, 1)
+		var held: bool = (name.begins_with("fire") and _fire_held_touch) or _held_buttons.has(name)
+		var col := Color(0.78, 0.19, 0.16) if name.begins_with("fire") else Color(1, 1, 1)
 		if name == "interact" and not interact_ok:
 			col = Color(0.6, 0.6, 0.6)
-		draw_circle(b.pos, b.r, Color(col.r, col.g, col.b, 0.38 if held else 0.18))
-		draw_arc(b.pos, b.r, 0, TAU, 48, Color(col.r, col.g, col.b, 0.7), 2.5, true)
+		draw_circle(b.pos, b.r, Color(col.r, col.g, col.b, (0.38 if held else 0.18) * op))
+		draw_arc(b.pos, b.r, 0, TAU, 48, Color(col.r, col.g, col.b, 0.7 * op), 2.5, true)
 		var fs := 22 if b.r > 40 else 18
 		var label: String = b.label
 		var tw := _font.get_string_size(label, HORIZONTAL_ALIGNMENT_CENTER, -1, fs).x
-		draw_string(_font, b.pos + Vector2(-tw / 2.0, fs * 0.35), label, HORIZONTAL_ALIGNMENT_LEFT, -1, fs, Color(1, 1, 1, 0.85))
+		draw_string(_font, b.pos + Vector2(-tw / 2.0, fs * 0.35), label, HORIZONTAL_ALIGNMENT_LEFT, -1, fs, Color(1, 1, 1, 0.85 * op))

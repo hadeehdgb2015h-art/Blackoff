@@ -155,6 +155,10 @@ func on_damage(amount: float) -> void:
 	_shake = clampf(_shake + amount / 40.0, 0.0, 1.0)
 
 
+func set_viewmodel_visible(on: bool) -> void:
+	_vm_root.visible = on
+
+
 func set_downed(downed: bool) -> void:
 	_down = 1.0 if downed else 0.0
 	_vm_root.visible = not downed

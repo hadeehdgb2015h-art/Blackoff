@@ -11,6 +11,7 @@
 | Load test | `cd server && npm run loadtest -- --local --bots 16 --seconds 30 --max-tick-ms 2` | 16 WebSocket bots over 4 zones, average tick under 2 ms |
 | Map sync | `tools/build_maps.sh --check` | `shared/maps` matches the committed scene |
 | Browser (cache) | `SMOKE_CACHE=1 node tools/smoke_web.cjs build/web "" "" 2` (CI); `SMOKE_CACHE_NEXT=<newer build dir>` | the service worker installs on the first visit; the second visit fetches no big file from the server, or, with a newer build, only the files whose hashed names changed |
+| Layout | `test_layout.gd` | touch layout defaults, clamping, resolution of old/partial saved data, normalised positions across aspect ratios |
 | Profiles (Postgres) | `TEST_DATABASE_URL=… npm test` (CI: postgres service) | migrations run once, profiles accumulate, best wave keeps the max, match records |
 | Deploy rehearsal | CI job `release` (see `docs/systems/deploy.md`) | the real installer on a clean machine: nginx + pm2 + Postgres, Telegram-signed play through nginx, profile survives a restart, the web build opened as a Telegram Mini App joins online, update, uninstall |
 

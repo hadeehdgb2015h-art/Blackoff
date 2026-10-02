@@ -10,7 +10,7 @@ mode="${EXPORT_MODE:-release}"
 "$root/tools/sync_shared.sh"
 # First run imports resources and generates .godot/ (needed for class cache and exports).
 "$godot" --headless --path "$root/client" --import >/dev/null 2>&1 || true
-if [ "$(python3 "$root/tools/fix_texture_imports.py")" != "0" ]; then
+if [ "$(python3 "$root/tools/fix_texture_imports.py")" != "0" ] || [ "$(python3 "$root/tools/fix_audio_imports.py")" != "0" ]; then
   "$godot" --headless --path "$root/client" --import >/dev/null 2>&1 || true
 fi
 "$godot" --headless --path "$root/client" --script res://tests/run_tests.gd

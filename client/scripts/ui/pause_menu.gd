@@ -36,3 +36,6 @@ func _open_settings() -> void:
 	add_child(center)
 	center.add_child(s)
 	s.closed.connect(center.queue_free)
+	s.open_layout.connect(func():
+		var ed := LayoutEditor.new()
+		add_child(ed))

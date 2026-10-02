@@ -65,6 +65,34 @@ static func label(text: String, size := 24, color := TEXT) -> Label:
 static func button(text: String, cb: Callable) -> Button:
 	var b := Button.new()
 	b.text = text
-	b.pressed.connect(cb)
+	b.pressed.connect(func():
+		var tree := Engine.get_main_loop() as SceneTree
+		var audio: Node = tree.root.get_node_or_null("Audio") if tree else null
+		if audio:
+			audio.ui_click()
+		cb.call())
 	b.focus_mode = Control.FOCUS_NONE
+	return b
+
+
+## A larger, accent-coloured call-to-action button.
+static func big_button(text: String, cb: Callable) -> Button:
+	var b := button(text, cb)
+	b.add_theme_font_size_override("font_size", 32)
+	var sb := StyleBoxFlat.new()
+	sb.bg_color = ACCENT
+	sb.set_corner_radius_all(6)
+	sb.set_content_margin_all(18)
+	sb.content_margin_left = 40
+	sb.content_margin_right = 40
+	b.add_theme_stylebox_override("normal", sb)
+	var hover := sb.duplicate()
+	hover.bg_color = ACCENT.lightened(0.15)
+	b.add_theme_stylebox_override("hover", hover)
+	var pressed := sb.duplicate()
+	pressed.bg_color = ACCENT.darkened(0.25)
+	b.add_theme_stylebox_override("pressed", pressed)
+	var dis := sb.duplicate()
+	dis.bg_color = Color(0.2, 0.12, 0.12)
+	b.add_theme_stylebox_override("disabled", dis)
 	return b
