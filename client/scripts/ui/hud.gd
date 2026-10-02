@@ -243,6 +243,24 @@ func _ready() -> void:
 	_revive_label = _centered(22, UiTheme.TEXT, 64)
 
 	_build_game_over()
+	_apply_safe_area()
+
+
+## Telegram's buttons and the phone's bars cover the edges: the HUD keeps clear
+## of them; the crosshair and vignette stay on the real screen centre.
+func _apply_safe_area() -> void:
+	var view := get_viewport_rect().size
+	var ins := Platform.safe_insets(view)
+	offset_left = float(ins.left)
+	offset_top = float(ins.top)
+	offset_right = -float(ins.right)
+	offset_bottom = -float(ins.bottom)
+	for full in [_cross, _vignette]:
+		full.set_anchors_preset(Control.PRESET_FULL_RECT)
+		full.offset_left = -float(ins.left)
+		full.offset_top = -float(ins.top)
+		full.offset_right = float(ins.right)
+		full.offset_bottom = float(ins.bottom)
 
 
 func update_state(p: SimPlayer, w: SimWorld, interact: Dictionary, delta: float) -> void:

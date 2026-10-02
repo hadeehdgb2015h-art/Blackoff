@@ -27,7 +27,15 @@ static var _tex_cache := {}
 ## The display font (titles, buttons); the engine's default sans for body text.
 static func display_font() -> Font:
 	if _display == null:
-		_display = load(FONT_DISPLAY) if ResourceLoader.exists(FONT_DISPLAY) else ThemeDB.fallback_font
+		if ResourceLoader.exists(FONT_DISPLAY):
+			# Cinzel has Latin only: player names in Arabic and other scripts fall
+			# back to the engine font instead of showing boxes
+			var fv := FontVariation.new()
+			fv.base_font = load(FONT_DISPLAY)
+			fv.fallbacks = [ThemeDB.fallback_font]
+			_display = fv
+		else:
+			_display = ThemeDB.fallback_font
 	return _display
 
 

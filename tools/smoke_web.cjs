@@ -120,6 +120,9 @@ function fakeMicWav() {
       window.Telegram = { WebApp: {
         initData, platform: 'smoke', version: '6.0', ready() {}, expand() {},
         isVersionAtLeast() { return false; }, HapticFeedback: { impactOccurred() {} },
+        // like a phone in Telegram's fullscreen: its buttons on top, a gesture bar on the right
+        safeAreaInset: { top: 0, right: 24, bottom: 0, left: 0 },
+        contentSafeAreaInset: { top: 56, right: 0, bottom: 0, left: 0 },
       } };
     }, process.env.SMOKE_TG_INITDATA);
   }

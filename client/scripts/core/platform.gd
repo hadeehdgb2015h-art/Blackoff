@@ -114,6 +114,24 @@ func voice_speaking() -> Array:
 	return out
 
 
+## Screen edges covered by the host (Telegram's close/menu buttons, cut-outs,
+## gesture bars), in the game's virtual pixels: {top, right, bottom, left}.
+## Zero outside Telegram. The menu, HUD and touch layout keep clear of them.
+func safe_insets(view_size: Vector2) -> Dictionary:
+	var z := {"top": 0.0, "right": 0.0, "bottom": 0.0, "left": 0.0}
+	if not is_telegram:
+		return z
+	var v: Variant = _js("JSON.stringify(window.BlackoffTG.safeArea())")
+	var d: Variant = JSON.parse_string(str(v)) if v != null else null
+	var h: Variant = _js("window.innerHeight")
+	if not (d is Dictionary) or h == null or float(h) <= 0.0:
+		return z
+	var k := view_size.y / float(h)  # CSS px -> virtual px (canvas_items stretch keeps the base height)
+	for key in z:
+		z[key] = clampf(float(d.get(key, 0.0)) * k, 0.0, view_size.y * 0.25)
+	return z
+
+
 func request_fullscreen() -> void:
 	if is_web:
 		_js("window.BlackoffTG && window.BlackoffTG.enterFullscreen()")

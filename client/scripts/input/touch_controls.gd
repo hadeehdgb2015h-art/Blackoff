@@ -58,7 +58,8 @@ func _ready() -> void:
 
 
 func reload_layout() -> void:
-	layout = TouchLayout.resolve(Settings.layout, size if size.x > 0 else Vector2(1280, 720))
+	var s := size if size.x > 0 else Vector2(1280, 720)
+	layout = TouchLayout.resolve(Settings.layout, s, Platform.safe_insets(s))
 	opacity = Settings.hud_opacity
 	queue_redraw()
 

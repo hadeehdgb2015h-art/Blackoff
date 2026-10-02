@@ -16,12 +16,22 @@ var _play: Button
 var _play_inf: Button
 var _overlay: Control
 var _board_button: Button
+var _content: Control   ## everything but the backdrop, inset from the host's buttons (Telegram)
 
 
 func _ready() -> void:
 	theme = UiTheme.get_theme()
 	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	_build_backdrop()
+	# Telegram draws its close/menu buttons over the page: keep the menu clear of them
+	_content = Control.new()
+	_content.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	var ins := Platform.safe_insets(get_viewport_rect().size)
+	_content.offset_left = float(ins.left)
+	_content.offset_top = float(ins.top)
+	_content.offset_right = -float(ins.right)
+	_content.offset_bottom = -float(ins.bottom)
+	add_child(_content)
 	_build_title()
 	_build_left_column()
 	_build_profile_card()
@@ -31,7 +41,7 @@ func _ready() -> void:
 	if not SharedData.is_valid():
 		var err := UiTheme.label("Data error: " + "; ".join(SharedData.errors), 18, UiTheme.ACCENT)
 		err.position = Vector2(90, 20)
-		add_child(err)
+		_content.add_child(err)
 	# Inside Telegram: log in right away so the player's stats show here and
 	# quick play starts faster. Listening also keeps Net from buffering.
 	Net.status_changed.connect(_on_net_status)
@@ -109,17 +119,17 @@ func _build_title() -> void:
 	glow.position = Vector2(82, 32)
 	glow.add_theme_constant_override("outline_size", 14)
 	glow.add_theme_color_override("font_outline_color", Color(0.5, 0.1, 0.06, 0.25))
-	add_child(glow)
+	_content.add_child(glow)
 	var title := UiTheme.title("BLACKOFF", 88, UiTheme.TEXT)
 	title.position = Vector2(80, 30)
 	title.add_theme_constant_override("outline_size", 6)
-	add_child(title)
+	_content.add_child(title)
 	var sub := UiTheme.title(UiTheme.spaced("dark fantasy zombie survival"), 15, UiTheme.GOLD)
 	sub.position = Vector2(86, 128)
-	add_child(sub)
+	_content.add_child(sub)
 	var r := UiTheme.rule(520)
 	r.position = Vector2(84, 154)
-	add_child(r)
+	_content.add_child(r)
 
 
 func _build_left_column() -> void:
@@ -127,7 +137,7 @@ func _build_left_column() -> void:
 	col.add_theme_constant_override("separation", 10)
 	col.position = Vector2(84, 184)
 	col.custom_minimum_size = Vector2(520, 0)
-	add_child(col)
+	_content.add_child(col)
 	_play = UiTheme.big_button("PLAY ONLINE  ·  ZOMBIES", _play_online)
 	col.add_child(_play)
 	col.add_child(_caption("Co-op survival: hold the waves with up to 5 players"))
@@ -174,7 +184,7 @@ func _build_profile_card() -> void:
 	card.offset_top = 36
 	card.offset_bottom = 36
 	card.add_theme_stylebox_override("panel", UiTheme.panel_box(18))
-	add_child(card)
+	_content.add_child(card)
 	var v := VBoxContainer.new()
 	v.add_theme_constant_override("separation", 4)
 	card.add_child(v)
@@ -198,25 +208,36 @@ func _build_footer() -> void:
 	ver.offset_right = -64
 	ver.offset_bottom = -12
 	ver.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
-	add_child(ver)
+	_content.add_child(ver)
 
 
 ## A dark curtain with a line of text while the game scene loads (the map is
 ## batched on entry, which takes a moment on phones).
 func _loading(text: String) -> void:
 	var cover := ColorRect.new()
-	cover.color = Color(0.02, 0.02, 0.03, 0.97)
+	cover.color = Color(0.02, 0.02, 0.03, 0.82)
 	cover.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	add_child(cover)
-	var l := UiTheme.title(text, 28, UiTheme.GOLD)
-	l.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
+	var box := VBoxContainer.new()
+	box.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
+	box.grow_horizontal = Control.GROW_DIRECTION_BOTH
+	box.grow_vertical = Control.GROW_DIRECTION_BOTH
+	box.alignment = BoxContainer.ALIGNMENT_CENTER
+	box.add_theme_constant_override("separation", 10)
+	cover.add_child(box)
+	var l := UiTheme.title(text, 30, UiTheme.GOLD)
 	l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	cover.add_child(l)
+	box.add_child(l)
 	var r := UiTheme.rule(360)
-	r.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
-	r.offset_top += 30
-	r.offset_bottom += 30
-	cover.add_child(r)
+	r.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	box.add_child(r)
+	var hint := UiTheme.label("LOADING THE FACILITY  ·  a few seconds on a phone", 15, UiTheme.MUTED)
+	hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	box.add_child(hint)
+	# the title breathes so nobody takes the curtain for a frozen screen
+	var tw := create_tween().set_loops()
+	tw.tween_property(l, "modulate:a", 0.45, 0.7).set_trans(Tween.TRANS_SINE)
+	tw.tween_property(l, "modulate:a", 1.0, 0.7).set_trans(Tween.TRANS_SINE)
 
 
 # ------------------------------------------------------------------ profile
@@ -284,7 +305,7 @@ func _play_infection() -> void:
 func _settings() -> void:
 	var center := CenterContainer.new()
 	center.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	add_child(center)
+	_content.add_child(center)
 	var s := SettingsPanel.new()
 	center.add_child(s)
 	s.closed.connect(center.queue_free)
@@ -302,7 +323,7 @@ func _show_leaderboard() -> void:
 		return
 	_overlay = Control.new()
 	_overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	add_child(_overlay)
+	_content.add_child(_overlay)
 	var dim := ColorRect.new()
 	dim.color = Color(0, 0, 0, 0.6)
 	dim.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
@@ -365,7 +386,7 @@ func _how_to_play() -> void:
 		return
 	_overlay = Control.new()
 	_overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	add_child(_overlay)
+	_content.add_child(_overlay)
 	var dim := ColorRect.new()
 	dim.color = Color(0, 0, 0, 0.6)
 	dim.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)

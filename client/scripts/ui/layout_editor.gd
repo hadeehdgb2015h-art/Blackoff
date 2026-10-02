@@ -39,7 +39,7 @@ func _ready() -> void:
 	_controls.edit_mode = true
 	_controls.interact_label = "USE"
 	add_child(_controls)
-	_controls.layout = TouchLayout.resolve(Settings.layout, _view_size())
+	_controls.layout = TouchLayout.resolve(Settings.layout, _view_size(), Platform.safe_insets(_view_size()))
 	_layout = _controls.layout
 	_controls.opacity = Settings.hud_opacity
 	_ring = Ring.new()
@@ -52,7 +52,9 @@ func _ready() -> void:
 	bar.anchor_right = 1.0
 	bar.offset_left = 100
 	bar.offset_right = -110
-	bar.offset_top = 8
+	bar.offset_top = 8 + float(Platform.safe_insets(_view_size()).top)
+	bar.offset_left += float(Platform.safe_insets(_view_size()).left)
+	bar.offset_right -= float(Platform.safe_insets(_view_size()).right)
 	var style := StyleBoxFlat.new()
 	style.bg_color = Color(0.05, 0.06, 0.07, 0.92)
 	style.set_content_margin_all(8)

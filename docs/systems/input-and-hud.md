@@ -24,6 +24,9 @@ The team panel draws sound waves before the name of a teammate who is talking (`
 ## Look (`scripts/ui/ui_theme.gd`, phase 14)
 Dark fantasy: near-black stone panels and buttons drawn from small generated gradient textures (9-slice) with an old-brass edge, ember red for the calls to action, bone text, Cinzel (OFL) for titles and buttons, a diamond rule as the only ornament (no stars, sigils or symbols), a radial vignette and slow embers behind the menu, spaced capitals for subtitles. The menu shows a loading curtain before the game scene loads. Helpers: `title`, `label`, `button`, `big_button`, `gold_button`, `rule`, `vignette`, `embers`, `panel_box`.
 
+### Safe area (Telegram)
+In Telegram's fullscreen the app draws its close and menu buttons over the page and phones add cut-outs and gesture bars. `BlackoffTG.safeArea()` (shell) adds `safeAreaInset` and `contentSafeAreaInset`; `Platform.safe_insets(view)` converts them to the game's virtual pixels. The menu's content container, the HUD (crosshair and vignette excepted) and the default touch layout keep clear of them (`TouchLayout.defaults(size, insets)`); the browser smoke test fakes a 56 px top bar and a 24 px right bar when `SMOKE_TG_INITDATA` is set.
+
 ## Settings (`scripts/core/settings.gd`, autoload)
 Graphics quality defaults to **auto**: phones start on the low tier and the game steps up while the frame rate holds above 56 for 12 s (never above medium on touch devices on its own) and steps down below 42 (`game.gd: _govern_quality`, 4-second windows). The frame cap (60 or 30 FPS, `Engine.max_fps`) is a setting: 30 runs cooler. The touch controls redraw only when their drawn state changes.
 Saved to `user://settings.cfg`: sensitivity, invert-Y, quality, show FPS, volume.

@@ -12,17 +12,21 @@ const MAX_SCALE := 1.7
 
 ## Default placement for a view of `size` (right-handed layout; a second
 ## fire button on the left is off by default).
-static func defaults(size: Vector2) -> Dictionary:
+static func defaults(size: Vector2, insets: Dictionary = {}) -> Dictionary:
+	var t := float(insets.get("top", 0.0))
+	var r := float(insets.get("right", 0.0))
+	var b := float(insets.get("bottom", 0.0))
+	var l := float(insets.get("left", 0.0))
 	var d := {
-		"stick": _n(size, Vector2(175, size.y - 165), 1.0),
-		"fire": _n(size, Vector2(size.x - 155, size.y - 165), 1.0),
-		"fire2": _n(size, Vector2(330, size.y - 300), 1.0),
-		"reload": _n(size, Vector2(size.x - 300, size.y - 85), 1.0),
-		"switch": _n(size, Vector2(size.x - 95, size.y - 320), 1.0),
-		"use": _n(size, Vector2(size.x - 300, size.y - 230), 1.0),
-		"pause": _n(size, Vector2(size.x - 46, 46), 1.0),
-		"mic": _n(size, Vector2(size.x - 46, 118), 1.0),
-		"speaker": _n(size, Vector2(size.x - 46, 182), 1.0),
+		"stick": _n(size, Vector2(175 + l, size.y - 165 - b), 1.0),
+		"fire": _n(size, Vector2(size.x - 155 - r, size.y - 165 - b), 1.0),
+		"fire2": _n(size, Vector2(330 + l, size.y - 300 - b), 1.0),
+		"reload": _n(size, Vector2(size.x - 300 - r, size.y - 85 - b), 1.0),
+		"switch": _n(size, Vector2(size.x - 95 - r, size.y - 320 - b), 1.0),
+		"use": _n(size, Vector2(size.x - 300 - r, size.y - 230 - b), 1.0),
+		"pause": _n(size, Vector2(size.x - 46 - r, 46 + t), 1.0),
+		"mic": _n(size, Vector2(size.x - 46 - r, 118 + t), 1.0),
+		"speaker": _n(size, Vector2(size.x - 46 - r, 182 + t), 1.0),
 	}
 	d["fire2"]["enabled"] = false
 	return d
@@ -34,8 +38,8 @@ static func _n(size: Vector2, px: Vector2, s: float) -> Dictionary:
 
 ## Layout `saved` (possibly partial or from an older version) completed with
 ## defaults and clamped to sane values.
-static func resolve(saved: Dictionary, size: Vector2) -> Dictionary:
-	var out := defaults(size)
+static func resolve(saved: Dictionary, size: Vector2, insets: Dictionary = {}) -> Dictionary:
+	var out := defaults(size, insets)
 	for name in NAMES:
 		var e: Variant = saved.get(name)
 		if e is Dictionary:
