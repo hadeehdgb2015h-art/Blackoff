@@ -1,0 +1,71 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  server:
+    runs-on: ubuntu-24.04
+    defaults:
+      run:
+        working-directory: server
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: server/package-lock.json
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm test
+      - run: npm run build
+
+  client-web:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Read pinned Godot version
+        run: cat tools/godot_version.env >> "$GITHUB_ENV"
+      - name: Cache Godot editor and web templates
+        uses: actions/cache@v4
+        with:
+          path: |
+            /opt/godot
+            ~/.local/share/godot/export_templates
+          key: godot-${{ env.GODOT_VERSION }}-${{ env.GODOT_STATUS }}-web
+      - name: Install Godot
+        run: |
+          sudo mkdir -p /opt/godot && sudo chown "$USER" /opt/godot
+          tools/setup_godot.sh
+      - name: Test and export Web build
+        env:
+          GODOT: /opt/godot/godot
+        run: tools/export_web.sh
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Browser smoke test
+        run: |
+          mkdir -p /tmp/smoke && cd /tmp/smoke && npm init -y >/dev/null
+          npm i --no-save playwright@1.56.1 >/dev/null
+          npx playwright install --with-deps chromium >/dev/null
+          cd "$GITHUB_WORKSPACE"
+          NODE_PATH=/tmp/smoke/node_modules node tools/smoke_web.cjs build/web build/smoke.png
+      - uses: actions/upload-artifact@v4
+        with:
+          name: web-build
+          path: build/web
+          retention-days: 14
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: smoke-screenshot
+          path: build/smoke.png
+          if-no-files-found: ignore

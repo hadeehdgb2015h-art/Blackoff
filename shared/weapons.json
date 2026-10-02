@@ -1,0 +1,41 @@
+{
+  "schemaVersion": 1,
+  "weapons": {
+    "pistol": {
+      "displayName": "P9 Sidearm",
+      "slot": "secondary",
+      "fireMode": "semi",
+      "damage": 28,
+      "headMultiplier": 2.5,
+      "fireRateRpm": 360,
+      "magSize": 12,
+      "reserveStart": 48,
+      "reserveMax": 96,
+      "reloadSec": 1.4,
+      "range": 40,
+      "spreadDeg": 1.2,
+      "moveSpreadDeg": 2.0,
+      "pellets": 1,
+      "price": 0,
+      "ammoPrice": 100
+    },
+    "rifle": {
+      "displayName": "AR-7 Carbine",
+      "slot": "primary",
+      "fireMode": "auto",
+      "damage": 34,
+      "headMultiplier": 2.0,
+      "fireRateRpm": 600,
+      "magSize": 30,
+      "reserveStart": 120,
+      "reserveMax": 240,
+      "reloadSec": 2.2,
+      "range": 60,
+      "spreadDeg": 1.8,
+      "moveSpreadDeg": 3.5,
+      "pellets": 1,
+      "price": 1200,
+      "ammoPrice": 600
+    }
+  }
+}

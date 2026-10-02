@@ -1,0 +1,123 @@
+[gd_scene load_steps=9 format=3]
+
+[ext_resource type="Script" path="res://scenes/boot/boot.gd" id="1"]
+
+[sub_resource type="Environment" id="env"]
+background_mode = 1
+background_color = Color(0.02, 0.025, 0.03, 1)
+ambient_light_source = 2
+ambient_light_color = Color(0.18, 0.2, 0.24, 1)
+ambient_light_energy = 0.6
+fog_enabled = true
+fog_light_color = Color(0.12, 0.13, 0.15, 1)
+fog_density = 0.04
+
+[sub_resource type="StandardMaterial3D" id="mat_floor"]
+albedo_color = Color(0.22, 0.23, 0.24, 1)
+roughness = 0.9
+
+[sub_resource type="StandardMaterial3D" id="mat_wall"]
+albedo_color = Color(0.32, 0.34, 0.33, 1)
+roughness = 0.85
+
+[sub_resource type="StandardMaterial3D" id="mat_hazard"]
+albedo_color = Color(0.85, 0.62, 0.1, 1)
+roughness = 0.6
+
+[sub_resource type="BoxMesh" id="floor_mesh"]
+size = Vector3(12, 0.2, 12)
+
+[sub_resource type="BoxMesh" id="wall_mesh"]
+size = Vector3(12, 3, 0.3)
+
+[sub_resource type="CapsuleMesh" id="capsule"]
+radius = 0.35
+height = 1.8
+
+[node name="Boot" type="Node3D"]
+script = ExtResource("1")
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+environment = SubResource("env")
+
+[node name="Camera3D" type="Camera3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 0.94, 0.34, 0, -0.34, 0.94, 0, 2.6, 5.5)
+fov = 70.0
+
+[node name="Floor" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.1, 0)
+mesh = SubResource("floor_mesh")
+surface_material_override/0 = SubResource("mat_floor")
+
+[node name="WallBack" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.5, -4)
+mesh = SubResource("wall_mesh")
+surface_material_override/0 = SubResource("mat_wall")
+
+[node name="WallLeft" type="MeshInstance3D" parent="."]
+transform = Transform3D(0, 0, 1, 0, 1, 0, -1, 0, 0, -4, 1.5, 0)
+mesh = SubResource("wall_mesh")
+surface_material_override/0 = SubResource("mat_wall")
+
+[node name="Spinner" type="MeshInstance3D" parent="."]
+unique_name_in_owner = true
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.9, 0)
+mesh = SubResource("capsule")
+surface_material_override/0 = SubResource("mat_hazard")
+
+[node name="AlarmLight" type="OmniLight3D" parent="."]
+unique_name_in_owner = true
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.5, 2.6, -3)
+light_color = Color(1, 0.18, 0.12, 1)
+light_energy = 1.5
+omni_range = 9.0
+
+[node name="FillLight" type="OmniLight3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.5, 2.8, 1.5)
+light_color = Color(0.75, 0.85, 1, 1)
+light_energy = 0.7
+omni_range = 10.0
+
+[node name="UI" type="CanvasLayer" parent="."]
+
+[node name="Info" type="Label" parent="UI"]
+unique_name_in_owner = true
+offset_left = 24.0
+offset_top = 20.0
+offset_right = 900.0
+offset_bottom = 220.0
+theme_override_colors/font_color = Color(0.9, 0.92, 0.9, 1)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 6
+theme_override_font_sizes/font_size = 22
+text = "..."
+
+[node name="Fps" type="Label" parent="UI"]
+unique_name_in_owner = true
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -180.0
+offset_top = 20.0
+offset_right = -24.0
+offset_bottom = 60.0
+grow_horizontal = 0
+horizontal_alignment = 2
+theme_override_font_sizes/font_size = 26
+text = "-- FPS"
+
+[node name="FullscreenButton" type="Button" parent="UI"]
+unique_name_in_owner = true
+anchors_preset = 3
+anchor_left = 1.0
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -260.0
+offset_top = -110.0
+offset_right = -24.0
+offset_bottom = -24.0
+grow_horizontal = 0
+grow_vertical = 0
+theme_override_font_sizes/font_size = 26
+text = "Fullscreen"

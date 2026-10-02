@@ -1,0 +1,62 @@
+{
+  "schemaVersion": 1,
+  "protocolVersion": 1,
+  "endianness": "little",
+  "frame": "u8 messageId followed by fields in declared order; one message per WebSocket binary frame",
+  "primitives": {
+    "u8": "unsigned 8-bit",
+    "u16": "unsigned 16-bit",
+    "u32": "unsigned 32-bit",
+    "i8": "signed 8-bit",
+    "i16": "signed 16-bit",
+    "f32": "IEEE754 32-bit float",
+    "varuint": "LEB128 unsigned, max 5 bytes",
+    "str8": "u8 byte length + UTF-8 bytes (max 255)",
+    "str16": "u16 byte length + UTF-8 bytes",
+    "pos": "i16 quantized metres, value = raw / posScale",
+    "angle": "u16 quantized radians, value = raw / 65536 * 2PI",
+    "pitch": "i16 quantized radians, value = raw / 32767 * PI/2",
+    "bool": "u8 0/1",
+    "array8": "u8 count + items",
+    "array16": "u16 count + items"
+  },
+  "quantization": {
+    "posScale": 64
+  },
+  "enums": {
+    "entityKind": { "player": 0, "zombie": 1 },
+    "playerState": { "alive": 0, "downed": 1, "dead": 2, "spectating": 3 },
+    "zoneState": { "lobby": 0, "intermission": 1, "wave": 2, "gameOver": 3 },
+    "errorCode": { "badVersion": 1, "authFailed": 2, "zoneFull": 3, "rateLimited": 4, "badMessage": 5, "serverShutdown": 6 },
+    "eventKind": {
+      "hit": 0, "kill": 1, "playerDowned": 2, "playerRevived": 3, "playerDied": 4,
+      "waveStart": 5, "waveEnd": 6, "purchase": 7, "reloadDone": 8, "playerJoined": 9, "playerLeft": 10
+    }
+  },
+  "types": {
+    "inputButtons": "u8 bitmask: 1=fire 2=reload 4=interact 8=revive 16=switchWeapon",
+    "entityState": [
+      ["id", "u16"], ["kind", "u8"], ["x", "pos"], ["y", "pos"], ["floor", "u8"],
+      ["yaw", "angle"], ["hp", "u8"], ["flags", "u8"]
+    ]
+  },
+  "messages": {
+    "C2S": {
+      "hello":       { "id": 1,  "fields": [["protocolVersion", "u16"], ["initData", "str16"], ["resumeToken", "str8"]] },
+      "quickPlay":   { "id": 2,  "fields": [] },
+      "input":       { "id": 3,  "fields": [["seq", "u16"], ["moveX", "i8"], ["moveY", "i8"], ["yaw", "angle"], ["pitch", "pitch"], ["buttons", "u8"]] },
+      "buy":         { "id": 4,  "fields": [["itemId", "str8"]] },
+      "ping":        { "id": 5,  "fields": [["clientTime", "u32"]] },
+      "leave":       { "id": 6,  "fields": [] }
+    },
+    "S2C": {
+      "welcome":     { "id": 64, "fields": [["playerId", "u32"], ["displayName", "str8"], ["resumeToken", "str8"], ["tickRate", "u8"]] },
+      "zoneJoined":  { "id": 65, "fields": [["zoneId", "u32"], ["mapId", "str8"], ["entityId", "u16"]] },
+      "snapshot":    { "id": 66, "fields": [["tick", "u32"], ["ackSeq", "u16"], ["zoneState", "u8"], ["wave", "u16"], ["entities", "array8:entityState"], ["removed", "array8:u16"]] },
+      "selfState":   { "id": 67, "fields": [["hp", "u8"], ["state", "u8"], ["currency", "u32"], ["weaponId", "str8"], ["mag", "u8"], ["reserve", "u16"]] },
+      "event":       { "id": 68, "fields": [["kind", "u8"], ["a", "u16"], ["b", "u16"], ["value", "i16"]] },
+      "pong":        { "id": 69, "fields": [["clientTime", "u32"], ["serverTick", "u32"]] },
+      "error":       { "id": 70, "fields": [["code", "u8"], ["message", "str8"]] }
+    }
+  }
+}

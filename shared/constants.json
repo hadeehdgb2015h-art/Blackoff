@@ -1,0 +1,62 @@
+{
+  "schemaVersion": 1,
+  "sim": {
+    "tickRate": 20,
+    "snapshotRate": 15,
+    "floorHeight": 3.0,
+    "gravity": 0
+  },
+  "zone": {
+    "maxPlayers": 4,
+    "maxPlayersHardCap": 8,
+    "maxAliveZombies": 24,
+    "emptyZoneTtlSec": 60,
+    "quickPlayJoinableUntilWave": 0
+  },
+  "player": {
+    "maxHealth": 100,
+    "radius": 0.35,
+    "height": 1.8,
+    "eyeHeight": 1.6,
+    "headCenterHeight": 1.65,
+    "headRadius": 0.15,
+    "moveSpeed": 4.5,
+    "healthRegenDelaySec": 4,
+    "healthRegenPerSec": 20,
+    "downedBleedoutSec": 30,
+    "reviveTimeSec": 4,
+    "reviveRange": 1.6,
+    "interactRange": 1.8,
+    "startCurrency": 500,
+    "startWeapon": "pistol",
+    "maxWeaponSlots": 2
+  },
+  "economy": {
+    "hitReward": 10,
+    "killReward": 60,
+    "headshotKillBonus": 40,
+    "reviveReward": 100
+  },
+  "progression": {
+    "xpPerKill": 10,
+    "xpPerHeadshot": 5,
+    "xpPerWaveReached": 50,
+    "levelXpBase": 500,
+    "levelXpGrowth": 1.15,
+    "maxLevel": 100
+  },
+  "net": {
+    "protocolVersion": 1,
+    "maxMessageBytes": 4096,
+    "interestRadius": 45,
+    "reconnectGraceSec": 30,
+    "clientInterpDelayMs": 100,
+    "inputRate": 20,
+    "maxInputsPerSecond": 40
+  },
+  "anticheat": {
+    "speedToleranceFactor": 1.25,
+    "fireRateToleranceMs": 15,
+    "logOnly": true
+  }
+}

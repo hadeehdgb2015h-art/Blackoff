@@ -1,0 +1,39 @@
+{
+  "schemaVersion": 1,
+  "zombies": {
+    "walker": {
+      "displayName": "Walker",
+      "baseHealth": 100,
+      "healthPerWave": 30,
+      "moveSpeed": 1.6,
+      "moveSpeedPerWave": 0.03,
+      "maxMoveSpeed": 2.6,
+      "attackDamage": 25,
+      "attackRange": 1.1,
+      "attackCooldownSec": 1.2,
+      "radius": 0.35,
+      "height": 1.8,
+      "headCenterHeight": 1.62,
+      "headRadius": 0.16,
+      "killReward": 60,
+      "xp": 10
+    },
+    "runner": {
+      "displayName": "Runner",
+      "baseHealth": 70,
+      "healthPerWave": 20,
+      "moveSpeed": 3.8,
+      "moveSpeedPerWave": 0.04,
+      "maxMoveSpeed": 4.8,
+      "attackDamage": 15,
+      "attackRange": 1.0,
+      "attackCooldownSec": 0.8,
+      "radius": 0.3,
+      "height": 1.7,
+      "headCenterHeight": 1.53,
+      "headRadius": 0.15,
+      "killReward": 80,
+      "xp": 15
+    }
+  }
+}

@@ -1,0 +1,107 @@
+# Technical architecture
+
+Status: decided in phase 0. Changes to anything here need a note in the decision log at the end.
+
+## 1. Repository layout
+
+```
+client/            Godot 4.7 project (GDScript)
+  scenes/          one folder per screen/feature (boot, menu, game, hud …)
+  scripts/core/    autoloads: SharedData, Platform (later: Net, Settings, Profile)
+  scripts/<system>/ gameplay systems, one folder each with a short README
+  web/shell.html   custom HTML shell (Telegram bridge, loader, rotate overlay)
+  tests/           headless GDScript tests (run_tests.gd)
+  shared/          GENERATED copy of /shared (gitignored, tools/sync_shared.sh)
+server/            Node 22 + TypeScript, ESM
+  src/config/      env parsing (zod), all settings from environment
+  src/shared/      shared JSON loader + schemas + cross-file checks
+  src/net/         WebSocket transport + binary codec (phase 2)
+  src/sim/         zone simulation (phase 2)
+  test/            vitest
+shared/            JSON source of truth for both sides (see shared/README.md)
+tools/             setup_godot.sh, sync_shared.sh, export_web.sh, smoke_web.cjs
+deploy/            .env.example, nginx/pm2 snippets (phase 4)
+assets/incoming/   owner uploads waiting for licence review
+docs/              this file, status, TODO, asset licences, docs/systems/*.md
+```
+
+## 2. Engine and client
+
+| Decision | Choice | Why |
+|---|---|---|
+| Engine | Godot 4.7.2 stable (pinned in `tools/godot_version.env`) | latest stable at phase 0 |
+| Renderer | Compatibility (WebGL 2) | the only renderer available on the Web |
+| Web export | single-threaded (`variant/thread_support=false`), no GDExtension | runs without COOP/COEP headers, which Telegram's in-app browsers and shared hosts do not reliably send |
+| Download size | engine wasm 38 MB raw, about 10 MB gzip; pck must stay under 12 MB compressed | target is under 25 MB initial download, so the server **must** serve gzip or brotli |
+| Orientation | landscape (`window/handheld/orientation`), CSS rotate overlay in portrait, Telegram `requestFullscreen` + `lockOrientation` (Bot API 8.0+), browser Fullscreen API as fallback | |
+| Language | GDScript, typed | |
+
+Client structure rules:
+- **Autoloads stay thin.** `SharedData` loads JSON; `Platform` is the only place that talks to JavaScript or Telegram. Later: `Net` (socket + codec), `Settings` (quality and sensitivity, saved in `user://`), `Session` (identity and profile from the server).
+- **Data-driven.** Weapon, zombie and wave stats are never hard-coded; scenes take a definition id and read `SharedData`.
+- **Presentation only in online mode.** In online play the client renders server state: interpolated remote entities, a predicted local player, and cosmetic effects. Damage, ammo, currency, kills, waves and position are decided by the server. The phase 1 offline mode runs the same gameplay rules locally so we can tune the feel before networking exists. The rules are written so they can be mirrored on the server from the same JSON.
+- **Quality tiers** (phase 6): low, medium and high change resolution scale, shadows, fog, light count and draw distance. The first launch suggests a tier from GPU name and a short frame-time probe.
+
+## 3. Server
+
+- Node 22, TypeScript (strict), `ws` for WebSocket, `zod` for validation, `vitest` for tests, `pg` for Postgres (phase 4).
+- One process hosts many **zones**. A zone holds up to `zone.maxPlayers` players (4, configurable up to `maxPlayersHardCap` 8) and at most `maxAliveZombies` (24) live zombies.
+- Fixed tick of 20 Hz per zone, driven by one shared scheduler with drift correction. Snapshots go out at 15 Hz.
+- **Simulation space**: a flat 2D plane (x, y) per floor, plus an integer floor index. World height is `floor * sim.floorHeight`. Stairs and ramps are portals between floors defined in the map data.
+- **Map data**: a Godot editor/headless tool script exports each map to `shared/maps/<mapId>.json`. The file holds wall segments, walkable navigation polygons (from Godot's baked NavigationMesh, flattened per floor), spawn points, zombie entries, buy and ammo points, and the safe area. The server builds its navigation graph from this file, so both sides always share one geometry.
+- **Pathing**: A* over the navigation polygons plus a funnel pass, cached per target cell, and re-planned at most every 0.5 s per zombie. Local separation steering keeps zombies from stacking.
+- **Hits**: hitscan from the player's eye along the server-known aim (yaw and pitch from the input), checked against each target's vertical body capsule and a head sphere (radius and heights from `zombies.json` and `constants.player`). Damage multiplies by `headMultiplier` on a head hit. Light lag compensation rewinds targets to the client's interpolation time, capped at 200 ms.
+- **Authority**: the client sends only intents (`input`: move vector, aim, buttons; `buy`: item id). The server owns damage, health, ammo, currency, kills, waves, position and fire rate. Inputs are rate-limited (`net.maxInputsPerSecond`) and every field is range-checked.
+- **Anti-cheat** (phase 6): logs impossible speed, fire rate beyond `fireRateRpm` plus tolerance, ammo use with an empty magazine, and buys without funds. These are logged with player id and counters, and nobody is banned automatically (`anticheat.logOnly`).
+
+## 4. Network protocol
+
+- Binary WebSocket frames, little-endian, one message per frame: `u8 messageId` then the fields in the order declared in `shared/protocol.json`.
+- Positions are quantized `i16` at 1/64 m (±512 m range). Yaw is `u16`, pitch is `i16`, health is `u8` as a percentage.
+- Codecs are generated or interpreted from `protocol.json` on both sides (TypeScript and GDScript). A round-trip test in CI encodes every message on one side and decodes it on the other.
+- **Snapshots**: delta against the last snapshot the client acknowledged (`ackSeq`), carrying only changed entities and a removed-ids list. A full snapshot is sent on join and resume.
+- **Interest management**: entities beyond `net.interestRadius` or on non-adjacent floors are dropped from a client's snapshots. The player's own state always goes in `selfState`.
+- **Client sync**: remote entities render about 100 ms behind (`clientInterpDelayMs`) with interpolation. The local player is predicted from its own inputs and reconciled against the server position for the matching `ackSeq`.
+- **Reconnect**: `welcome` carries a `resumeToken`. Within `reconnectGraceSec` the player gets the same slot and state back.
+- The protocol version is checked in `hello`. A mismatch returns `error.badVersion` and the client asks the user to reload.
+
+## 5. Identity and data
+
+- The client sends `Telegram.WebApp.initData` unchanged in `hello`. The server validates it with HMAC-SHA256: secret = HMAC_SHA256(key "WebAppData", bot token), then compares the hash over the sorted data-check-string and checks `auth_date` age. The client never decides identity.
+- Outside Telegram (browser testing), identity is refused unless `ALLOW_DEV_AUTH=1`, which is blocked in production.
+- Postgres tables (phase 4): `players` (telegram_id PK, display_name, level, xp, total_kills, best_wave, created_at, last_seen_at), `matches` (id, map_id, started_at, ended_at, best_wave), `match_players` (match_id, player_id, kills, downs, revives, waves). Plain SQL migrations live in `server/migrations`, run by a small migration runner at deploy time.
+- Profile writes happen at match end and on disconnect, never every tick.
+
+## 6. Deployment (phase 4)
+
+- A GitHub Actions workflow builds the client and server and tests both on every push. On pushes to the deploy branch it uploads the release over SSH (`rsync`) to a dedicated directory, runs migrations and reloads **only** the pm2 app `blackoff`.
+- nginx: a separate include file for one `location` (static client with gzip or brotli, `application/wasm` MIME, long cache for hashed files) and one `location` for the WebSocket upgrade to `127.0.0.1:$PORT`. It never touches other sites. The workflow runs `nginx -t` before any reload and aborts on failure.
+- Every host-specific value (domain, path prefix, port, database URL, bot token, SSH target) comes from GitHub secrets or variables and the server `.env`. Nothing is hard-coded.
+- `tools/deploy_manual.sh` mirrors the workflow for manual fallback.
+
+## 7. Extensibility hooks (later expansions, not built now)
+
+| Expansion | Where it plugs in |
+|---|---|
+| More weapons, melee | new entries in `weapons.json`; `fireMode` gains `melee`; hit resolver is pluggable by mode |
+| Brute, spitter and boss zombies | `zombies.json` gains a `behavior` key mapped to server AI behaviour modules; projectile entity kind in `protocol.enums.entityKind` |
+| Loot, power-ups | new entity kind plus `event` kinds; zone `pickups` system |
+| Private rooms, invites | zone gets `visibility` and `code`; `quickPlay` becomes one of several join messages; Telegram `startapp` param carries the code |
+| Admin panel | separate HTTP routes behind an admin token, reading the same DB |
+| Extra maps | additional `shared/maps/*.json` plus client scenes; zones carry `mapId` |
+| Achievements, cosmetics, Stars payments | DB tables + bot webhook; server-side purchase verification only |
+| Multiple servers | zones are self-contained and the process is stateless apart from live zones, so a lobby or router can assign zone ids to servers later |
+
+## 8. Performance budgets
+
+- 60 FPS on strong phones, 30 FPS minimum. At most about 150 draw calls and about 150k visible triangles. Lighting is baked into lightmaps or vertex colours, with at most 4 dynamic lights visible. Shadows: one blob or decal per character, no real-time shadow maps on low.
+- Server: one 20 Hz tick for a full zone (4 players, 24 zombies) should take under 2 ms on one core.
+
+## Decision log
+
+| Date | Decision |
+|---|---|
+| 2026-10-02 | Godot 4.7.2, Compatibility renderer, single-threaded Web export. |
+| 2026-10-02 | Shared JSON copied into the client at build time instead of a symlink, which is not portable and is fragile in the Godot importer. |
+| 2026-10-02 | zod validates the shared data and env on the server; the server refuses to start on invalid data. |
+| 2026-10-02 | The claude.ai artifact host cannot be used for previews: its per-file limit is 15 MB and the engine wasm is 38 MB, so we did not work around it. Preview hosting is the owner's choice (see status). |

@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, height=device-height, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#08090a">
+<title>$GODOT_PROJECT_NAME</title>
+<style>
+html, body, #canvas { margin: 0; padding: 0; border: 0; }
+html, body { width: 100%; height: 100%; background: #08090a; }
+body { color: #e6e6e6; overflow: hidden; touch-action: none; user-select: none; -webkit-user-select: none;
+  -webkit-touch-callout: none; overscroll-behavior: none; font-family: system-ui, -apple-system, 'Segoe UI', Roboto, 'Noto Sans Arabic', sans-serif; }
+#canvas { display: block; width: 100vw; height: 100vh; height: 100dvh; }
+#canvas:focus { outline: none; }
+#status { position: fixed; inset: 0; background: #08090a; display: flex; flex-direction: column;
+  justify-content: center; align-items: center; gap: 18px; z-index: 2; }
+#status .title { font-size: 28px; letter-spacing: 6px; font-weight: 700; color: #c8302a; }
+#status-bar { width: min(60vw, 420px); height: 6px; background: #22262a; border-radius: 3px; overflow: hidden; }
+#status-fill { width: 0%; height: 100%; background: #c8302a; transition: width .15s; }
+#status-text { font-size: 13px; color: #8a9097; min-height: 1em; text-align: center; padding: 0 16px; }
+#rotate { position: fixed; inset: 0; display: none; z-index: 3; background: #08090a; color: #e6e6e6;
+  flex-direction: column; justify-content: center; align-items: center; gap: 12px; text-align: center; padding: 16px; }
+#rotate .icon { font-size: 52px; }
+@media (orientation: portrait) and (pointer: coarse) { #rotate { display: flex; } }
+</style>
+$GODOT_HEAD_INCLUDE
+</head>
+<body>
+<canvas id="canvas">Your browser does not support the canvas tag.</canvas>
+<noscript>JavaScript is required.</noscript>
+<div id="status">
+  <div class="title">BLACKOFF</div>
+  <div id="status-bar"><div id="status-fill"></div></div>
+  <div id="status-text">Loading…</div>
+</div>
+<div id="rotate"><div class="icon">⟳</div><div dir="rtl">أدر الهاتف إلى الوضع الأفقي</div><div>Rotate your phone to landscape</div></div>
+
+<script>
+// ---- Telegram Mini App bridge (read by res://scripts/core/platform.gd) ----
+window.BlackoffTG = (function () {
+  function wa() { return (window.Telegram && window.Telegram.WebApp) || null; }
+  function atLeast(v) { const w = wa(); return !!(w && w.isVersionAtLeast && w.isVersionAtLeast(v)); }
+  return {
+    isTelegram: function () { const w = wa(); return !!(w && w.initData); },
+    init: function () {
+      const w = wa();
+      if (!w || !w.initData) return;
+      try {
+        w.ready();
+        w.expand();
+        if (atLeast('7.7')) w.disableVerticalSwipes();
+        if (atLeast('6.1')) { w.setHeaderColor('#08090a'); w.setBackgroundColor('#08090a'); }
+        if (atLeast('6.2')) w.enableClosingConfirmation();
+        if (atLeast('8.0')) { w.requestFullscreen(); }
+      } catch (e) { console.warn('Telegram init', e); }
+    },
+    enterFullscreen: function () {
+      const w = wa();
+      try {
+        if (w && w.initData && atLeast('8.0')) { w.requestFullscreen(); if (w.lockOrientation) w.lockOrientation(); return; }
+        const el = document.documentElement;
+        const req = el.requestFullscreen || el.webkitRequestFullscreen;
+        if (req) {
+          Promise.resolve(req.call(el)).then(function () {
+            if (screen.orientation && screen.orientation.lock) screen.orientation.lock('landscape').catch(function () {});
+          }).catch(function () {});
+        }
+      } catch (e) { console.warn('fullscreen', e); }
+    },
+    haptic: function (kind) {
+      const w = wa();
+      try { if (w && atLeast('6.1')) w.HapticFeedback.impactOccurred(kind || 'light'); } catch (e) {}
+    },
+  };
+})();
+</script>
+<script src="$GODOT_URL"></script>
+<script>
+const GODOT_CONFIG = $GODOT_CONFIG;
+const GODOT_THREADS_ENABLED = $GODOT_THREADS_ENABLED;
+const engine = new Engine(GODOT_CONFIG);
+
+(function () {
+  const status = document.getElementById('status');
+  const fill = document.getElementById('status-fill');
+  const text = document.getElementById('status-text');
+  function fail(err) {
+    console.error(err);
+    text.textContent = (err && err.message) ? err.message : String(err);
+    text.style.color = '#e06c64';
+  }
+  // Load the Telegram SDK without blocking: if telegram.org is slow or blocked
+  // the game still starts after a short timeout (Platform then reports no Telegram).
+  function loadTelegram() {
+    return new Promise(function (resolve) {
+      const s = document.createElement('script');
+      s.src = 'https://telegram.org/js/telegram-web-app.js';
+      s.onload = resolve; s.onerror = resolve;
+      setTimeout(resolve, 2500);
+      document.head.appendChild(s);
+    });
+  }
+  const missing = Engine.getMissingFeatures({ threads: GODOT_THREADS_ENABLED });
+  if (missing.length !== 0) {
+    fail(new Error('Missing browser features:\n' + missing.join('\n')));
+    return;
+  }
+  loadTelegram().then(function () {
+    window.BlackoffTG.init();
+    return engine.startGame({
+      onProgress: function (current, total) {
+        if (current > 0 && total > 0) {
+          fill.style.width = Math.min(100, (current / total) * 100).toFixed(1) + '%';
+          text.textContent = (current / 1048576).toFixed(1) + ' / ' + (total / 1048576).toFixed(1) + ' MB';
+        }
+      },
+    });
+  }).then(function () { status.remove(); }, fail);
+})();
+</script>
+</body>
+</html>
