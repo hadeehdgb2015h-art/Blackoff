@@ -16,6 +16,7 @@ var online_requested: bool = false  ## set by the menu; the game scene plays onl
 var url: String = ""
 var player_id: int = 0
 var display_name: String = ""
+var profile: Dictionary = {}  ## lifetime stats from the server: games, kills, bestWave
 var tick_rate: int = 20
 var rtt_ms: float = 0.0
 var last_error: String = ""
@@ -41,6 +42,9 @@ func configured_url() -> String:
 	var q := Platform.query_param("server")
 	if q != "":
 		return q
+	var site := Platform.web_config("server")
+	if site != "":
+		return site
 	var f := FileAccess.get_file_as_string("res://data/net.json")
 	var d: Variant = JSON.parse_string(f) if f != "" else null
 	return str(d.get("server", "")) if d is Dictionary else ""
@@ -146,6 +150,8 @@ func _on_packet(data: PackedByteArray) -> void:
 			player_id = int(msg.playerId)
 			display_name = str(msg.displayName)
 			tick_rate = int(msg.tickRate)
+			profile = {"games": int(msg.games), "kills": int(msg.kills), "bestWave": int(msg.bestWave)}
+			print("[net] logged in as %s (games %d, best wave %d)" % [display_name, profile.games, profile.bestWave])
 			var resumed := _resume_token != "" and _resume_token == str(msg.resumeToken)
 			_resume_token = str(msg.resumeToken)
 			_retry_until = 0.0
@@ -154,6 +160,8 @@ func _on_packet(data: PackedByteArray) -> void:
 				send("quickPlay", {})
 		"zoneJoined":
 			_set_status("in_zone")
+		"profile":
+			profile = {"games": int(msg.games), "kills": int(msg.kills), "bestWave": int(msg.bestWave)}
 		"pong":
 			rtt_ms = lerpf(rtt_ms if rtt_ms > 0.0 else 100.0, float((int(_clock * 1000.0) - int(msg.clientTime)) & 0xffffffff), 0.3)
 		"error":

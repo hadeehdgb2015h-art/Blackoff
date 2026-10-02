@@ -2,27 +2,34 @@ import { loadEnv } from "./config/env.js";
 import { loadShared } from "./shared/loadShared.js";
 import { createApp } from "./app.js";
 import { log, setLogLevel } from "./log.js";
+import { MemoryProfileStore, type ProfileStore } from "./db/profileStore.js";
+import { PgProfileStore } from "./db/pgStore.js";
 
-function main(): void {
+async function main(): Promise<void> {
   const env = loadEnv();
   setLogLevel(env.LOG_LEVEL);
   const shared = loadShared(env.SHARED_DIR);
-  const app = createApp(env, shared);
+  let store: ProfileStore;
+  if (env.DATABASE_URL) {
+    store = await PgProfileStore.open(env.DATABASE_URL); // runs pending migrations
+  } else {
+    if (env.NODE_ENV === "production") log.warn("DATABASE_URL not set: profiles are kept in memory only");
+    store = new MemoryProfileStore();
+  }
+  const app = createApp(env, shared, store);
   app.server.listen(env.PORT, env.HOST, () => {
-    log.info("server listening", { host: env.HOST, port: env.PORT, ws: env.WS_PATH });
+    log.info("server listening", { host: env.HOST, port: env.PORT, ws: env.WS_PATH, store: store.kind });
   });
   const shutdown = (signal: string) => {
     log.info("shutting down", { signal });
-    app.close().then(() => process.exit(0));
+    app.close().then(() => store.close()).then(() => process.exit(0));
     setTimeout(() => process.exit(1), 5000).unref();
   };
   process.on("SIGINT", () => shutdown("SIGINT"));
   process.on("SIGTERM", () => shutdown("SIGTERM"));
 }
 
-try {
-  main();
-} catch (err) {
-  log.error("fatal startup error", { error: (err as Error).message });
+main().catch((err: Error) => {
+  log.error("fatal startup error", { error: err.message });
   process.exit(1);
-}
+});

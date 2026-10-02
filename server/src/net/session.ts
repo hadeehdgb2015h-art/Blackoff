@@ -13,22 +13,49 @@ import { clamp, limitLength } from "../sim/math.js";
 import { log } from "../log.js";
 import type { Zone, ZoneClient } from "../zone/zone.js";
 import { ZoneState } from "../sim/simWorld.js";
-import type { ZoneManager } from "../zone/zoneManager.js";
 import { CodecError, type Codec, type Msg } from "./codec.js";
 import { cleanName, validateInitData } from "./telegramAuth.js";
+import { emptyProfile, type MatchResult, type MatchSummary, type Profile, type ProfileStore } from "../db/profileStore.js";
+import type { ZoneManager, ZoneSink } from "../zone/zoneManager.js";
 
-export interface Account { id: string; name: string; playerId: number }
+export interface Account { id: string; name: string; playerId: number; profile: Profile }
 
 interface ResumeEntry { account: Account; zoneId: number; entityId: number; expiresAt: number }
 
-/** Server-wide session state: resume tokens and one live session per account. */
-export class SessionHub {
+/** Server-wide session state: resume tokens, one live session per account, and
+ *  the profile store (match results are written asynchronously). */
+export class SessionHub implements ZoneSink {
   readonly resume = new Map<string, ResumeEntry>();
   readonly byAccount = new Map<string, Session>();
   private readonly playerIds = new Map<string, number>();
   private nextPlayerId = 1;
 
-  constructor(readonly env: Env, readonly shared: SharedData, readonly codec: Codec, readonly zones: ZoneManager) {}
+  private readonly pending = new Set<Promise<unknown>>();
+
+  constructor(readonly env: Env, readonly shared: SharedData, readonly codec: Codec, readonly zones: ZoneManager, readonly store: ProfileStore) {
+    zones.sink = this;
+  }
+
+  onResult(r: MatchResult): void {
+    this.track(this.store.record(r).then(
+      (profile) => this.byAccount.get(r.accountId)?.onProfile(profile),
+      (err: Error) => log.warn("profile write failed", { account: r.accountId, error: err.message }),
+    ));
+  }
+
+  onMatch(m: MatchSummary): void {
+    this.track(this.store.recordMatch(m).catch((err: Error) => log.warn("match write failed", { error: err.message })));
+  }
+
+  /** Waits for every queued database write (shutdown, tests). */
+  async flush(): Promise<void> {
+    while (this.pending.size) await Promise.allSettled([...this.pending]);
+  }
+
+  private track(p: Promise<unknown>): void {
+    this.pending.add(p);
+    void p.finally(() => this.pending.delete(p));
+  }
 
   playerIdFor(accountId: string): number {
     let id = this.playerIds.get(accountId);
@@ -71,6 +98,7 @@ export class Session implements ZoneClient {
   entityId = 0;
   resumeToken = "";
   private strikes = 0;
+  private helloPending = false;
   private dropped = 0;
   private readonly inputs: Bucket;
   private readonly other = new Bucket(10, 20);
@@ -117,7 +145,7 @@ export class Session implements ZoneClient {
     }
     if (!this.account && name !== "hello") return this.strike("hello required first");
     switch (name) {
-      case "hello": return this.onHello(msg);
+      case "hello": return void this.onHello(msg);
       case "quickPlay": return this.onQuickPlay();
       case "input": return this.onInput(msg);
       case "buy": return this.onBuy(msg);
@@ -127,8 +155,8 @@ export class Session implements ZoneClient {
     }
   }
 
-  private onHello(msg: Msg): void {
-    if (this.account) return this.strike("duplicate hello");
+  private async onHello(msg: Msg): Promise<void> {
+    if (this.account || this.helloPending) return this.strike("duplicate hello");
     const { env, shared } = this.hub;
     if (msg.protocolVersion !== shared.protocol.protocolVersion) return this.fail("badVersion", `server speaks protocol ${shared.protocol.protocolVersion}`);
     if (this.helloTimer) clearTimeout(this.helloTimer);
@@ -158,7 +186,22 @@ export class Session implements ZoneClient {
     } else {
       return this.fail("authFailed", "telegram identity required");
     }
-    this.adopt({ id, name, playerId: this.hub.playerIdFor(id) }, crypto.randomBytes(18).toString("base64url"));
+    this.helloPending = true;
+    let profile = emptyProfile();
+    try {
+      profile = await this.hub.store.load(id, name);
+    } catch (err) {
+      log.warn("profile load failed", { account: id, error: (err as Error).message });
+    }
+    this.helloPending = false;
+    if (this.ws.readyState !== this.ws.OPEN) return; // left while we waited
+    this.adopt({ id, name, playerId: this.hub.playerIdFor(id), profile }, crypto.randomBytes(18).toString("base64url"));
+  }
+
+  onProfile(profile: Profile): void {
+    if (!this.account) return;
+    this.account.profile = profile;
+    this.send("profile", profileMsg(profile));
   }
 
   /** Becomes the single live session of this account. An older connection of the
@@ -170,7 +213,10 @@ export class Session implements ZoneClient {
     this.account = account;
     this.displayName = account.name;
     this.resumeToken = token;
-    this.send("welcome", { playerId: account.playerId, displayName: account.name, resumeToken: token, tickRate: this.hub.shared.constants.sim.tickRate });
+    this.send("welcome", {
+      playerId: account.playerId, displayName: account.name, resumeToken: token,
+      tickRate: this.hub.shared.constants.sim.tickRate, ...profileMsg(account.profile),
+    });
     const zone = slot ? this.hub.zones.zones.get(slot.zoneId) : undefined;
     if (zone && slot && zone.attach(slot.entityId, this)) {
       this.zone = zone;
@@ -252,3 +298,7 @@ export class Session implements ZoneClient {
     this.ws.close(4001, code);
   }
 }
+
+const profileMsg = (p: Profile) => ({
+  games: Math.min(p.games, 0xffffffff), kills: Math.min(p.kills, 0xffffffff), bestWave: Math.min(p.bestWave, 0xffff),
+});

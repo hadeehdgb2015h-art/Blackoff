@@ -9,6 +9,7 @@ import type { SharedData } from "../shared/loadShared.js";
 import { BTN_MASK, Btn, PlayerState, ZombieState, emptyIntent, type PlayerIntent, type SimEvent } from "../sim/entities.js";
 import { SimWorld, ZoneState } from "../sim/simWorld.js";
 import { Phase } from "../sim/waveDirector.js";
+import type { MatchResult } from "../db/profileStore.js";
 
 /** What a zone needs from a connection (implemented by Session). */
 export interface ZoneClient {
@@ -26,6 +27,7 @@ export interface Member {
   latest: PlayerIntent;
   queue: PlayerIntent[];
   latched: number;
+  joinedAt: number;
   lastSeq: number;
   appliedSeq: number;
   known: Set<number>;
@@ -42,8 +44,13 @@ export class Zone {
   readonly world: SimWorld;
   readonly members = new Map<number, Member>();
   readonly createdAt: number;
+  readonly startedAtDate = new Date();
   emptySince: number | null;
   gameOverAt: number | null = null;
+  /** Most members held at once (for the match record). */
+  peakPlayers = 0;
+  /** Called once per member when it leaves the zone or the zone closes. */
+  onResult: ((r: MatchResult) => void) | null = null;
   private readonly weaponIdx = new Map<string, number>();
   private readonly zombieIdx = new Map<string, number>();
   private readonly boxIdx = new Map<string, number>();
@@ -67,13 +74,14 @@ export class Zone {
   /** Members holding a slot (connected or within the reconnect grace). */
   get size(): number { return this.members.size; }
 
-  join(client: ZoneClient, accountId: string): Member {
+  join(client: ZoneClient, accountId: string, now = performance.now()): Member {
     const entityId = this.world.addPlayer(client.displayName);
     const m: Member = {
       entityId, name: client.displayName, accountId, client, disconnectedAt: 0,
-      latest: { ...emptyIntent(), yaw: this.world.players.get(entityId)!.yaw }, queue: [], latched: 0, lastSeq: 0, appliedSeq: 0, known: new Set(),
+      latest: { ...emptyIntent(), yaw: this.world.players.get(entityId)!.yaw }, queue: [], latched: 0, joinedAt: now, lastSeq: 0, appliedSeq: 0, known: new Set(),
     };
     this.members.set(entityId, m);
+    this.peakPlayers = Math.max(this.peakPlayers, this.members.size);
     this.emptySince = null;
     this.welcomeMember(m);
     return m;
@@ -105,6 +113,7 @@ export class Zone {
   remove(entityId: number, now: number): void {
     const m = this.members.get(entityId);
     if (!m) return;
+    this.finish(m, now);
     this.members.delete(entityId);
     this.world.removePlayer(entityId);
     if (this.members.size === 0) this.emptySince = now;
@@ -152,9 +161,21 @@ export class Zone {
     }
   }
 
-  close(): void {
-    for (const m of this.members.values()) m.client?.onZoneClosed(this);
+  close(now = performance.now()): void {
+    for (const m of this.members.values()) {
+      this.finish(m, now);
+      m.client?.onZoneClosed(this);
+    }
     this.members.clear();
+  }
+
+  private finish(m: Member, now: number): void {
+    const p = this.world.players.get(m.entityId);
+    this.onResult?.({
+      accountId: m.accountId, name: m.name, kills: p?.kills ?? 0, headshots: p?.headshots ?? 0,
+      // a dropped player's time ends when the connection did, not after the grace period
+      wave: this.world.director.wave, seconds: Math.max(0, (m.client ? now : m.disconnectedAt) - m.joinedAt) / 1000,
+    });
   }
 
   // ------------------------------------------------------------------ output

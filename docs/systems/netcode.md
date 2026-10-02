@@ -18,7 +18,8 @@ The client plays online through the same game scene as offline practice. Only th
   - Model: the operator `soldier.glb` with `idle_<hold>` / `run_<hold>` / `downed`, where the hold is long, smg or pistol depending on the weapon. The run speed follows the measured speed.
   - The held weapon is the first-person model placed per hold class (`visuals.json` → `players.soldier.holds`), and the arms are solved onto it at build time.
   - A name tag shows above the head.
-- Server URL: `client/data/net.json` → `server` (set at deploy time). `?server=ws://…` overrides it, and `?name=` sets the dev name. The menu's QUICK PLAY ONLINE button is enabled only when a server is set.
+- Server URL: `?server=ws://…` first, then `window.BLACKOFF_CONFIG.server` from the site's optional `config.js` (written by the deploy updater), then `client/data/net.json`. `?name=` sets the dev name. The menu's QUICK PLAY ONLINE button is enabled only when a server is set, and outside Telegram (live server) it reads "open in Telegram".
+- Inside Telegram the menu logs in at once and shows the player's stats (`welcome` carries games, kills, best wave; a `profile` message refreshes them after each match). Protocol version 2.
 
 ## Local player: prediction and reconciliation
 1. Every local tick (20 Hz) the input is quantized exactly like the wire format (move i8/127, yaw u16, pitch i16) and sent with a wrapping `seq`.

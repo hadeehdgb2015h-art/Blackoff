@@ -41,7 +41,7 @@ describe("server", () => {
     const res = await fetch(url.replace("ws://", "http://").replace("/ws", "/healthz"));
     const body = (await res.json()) as Record<string, unknown>;
     expect(body.ok).toBe(true);
-    expect(body.protocolVersion).toBe(1);
+    expect(body.protocolVersion).toBe(2);
     expect(body).toHaveProperty("zones");
   });
 

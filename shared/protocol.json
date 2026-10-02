@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "protocolVersion": 1,
+  "protocolVersion": 2,
   "endianness": "little",
   "frame": "u8 messageId followed by fields in declared order; one message per WebSocket binary frame. Decoders reject unknown ids, short frames and trailing bytes.",
   "primitives": {
@@ -249,6 +249,18 @@
           [
             "tickRate",
             "u8"
+          ],
+          [
+            "games",
+            "u32"
+          ],
+          [
+            "kills",
+            "u32"
+          ],
+          [
+            "bestWave",
+            "u16"
           ]
         ]
       },
@@ -421,6 +433,23 @@
           [
             "players",
             "array8:rosterEntry"
+          ]
+        ]
+      },
+      "profile": {
+        "id": 73,
+        "fields": [
+          [
+            "games",
+            "u32"
+          ],
+          [
+            "kills",
+            "u32"
+          ],
+          [
+            "bestWave",
+            "u16"
           ]
         ]
       }

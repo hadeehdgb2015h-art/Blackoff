@@ -11,7 +11,9 @@
 | `net/session.ts` | one WebSocket connection: hello → welcome → quickPlay → zoneJoined, then `input` / `buy` / `ping` / `leave` |
 | `zone/zone.ts` | one zone: SimWorld + members, input merging, event → message translation, snapshots |
 | `zone/zoneManager.ts` | quick-play matchmaking, the fixed-rate tick loop, zone lifecycle, tick stats |
-| `app.ts` | HTTP `/healthz` (uptime, connections, zones, players, zombies, tick ms) and the `/ws` endpoint |
+| `app.ts` | HTTP `/healthz` (uptime, connections, store, zones, players, zombies, tick ms) and the `/ws` endpoint |
+| `db/profileStore.ts`, `db/pgStore.ts` | player profiles: memory store, or Postgres with in-code migrations. Each player's match result (kills, headshots, wave, seconds) is written when they leave a zone; the session then gets a `profile` message. `welcome` carries games, kills and best wave |
+| `tools/bundle.mjs` | one-file deploy bundle (`npm run bundle` → `dist-bundle/server.mjs`); see `docs/systems/deploy.md` |
 
 ## Connection flow
 1. `hello {protocolVersion, initData, resumeToken}`. A wrong version gets `error.badVersion` and the socket closes.
@@ -64,6 +66,7 @@
 cd server && npm ci
 ALLOW_DEV_AUTH=1 npm run dev                     # ws://127.0.0.1:8787/ws, /healthz
 npm run loadtest -- --bots 8 --seconds 20        # against the running server
-npm test                                          # sim, codec, golden contract, auth, sessions, perf
+npm test                                          # sim, codec, golden contract, auth, sessions, perf, profiles
+TEST_DATABASE_URL=postgres://u:p@127.0.0.1/db npm test   # also the Postgres store (CI does this)
 npm run gen:golden                                # after an intended rule change, then fix the client
 ```

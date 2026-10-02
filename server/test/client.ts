@@ -31,7 +31,7 @@ export class TestClient {
     this.ws.send(this.codec.encode("C2S", name, msg));
   }
 
-  hello(initData: string, resumeToken = "", protocolVersion = 1): void {
+  hello(initData: string, resumeToken = "", protocolVersion = 2): void {
     this.send("hello", { protocolVersion, initData, resumeToken });
   }
 

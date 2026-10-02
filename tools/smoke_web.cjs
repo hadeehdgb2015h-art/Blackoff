@@ -1,6 +1,8 @@
 // Headless browser smoke test for a web build.
 //   node tools/smoke_web.cjs <dir> [screenshot.png] [query] [seconds]
 // e.g. query "?autostart=1&bot=1" plays solo practice with the test bot.
+// SMOKE_URL=http://host/ tests a deployed site instead of serving <dir>;
+// SMOKE_TG_INITDATA=<signed initData> makes the page look like a Telegram Mini App.
 // Serves <dir> on a random port, opens it in Chromium (landscape phone viewport,
 // touch enabled), waits for the engine to start and fails on page errors.
 const http = require('http');
@@ -64,10 +66,12 @@ async function touchScenario(page) {
 
 (async () => {
   await new Promise((r) => server.listen(0, '127.0.0.1', r));
-  const url = `http://127.0.0.1:${server.address().port}/`;
+  const url = process.env.SMOKE_URL || `http://127.0.0.1:${server.address().port}/`;
   const browser = await chromium.launch({
     executablePath: process.env.CHROMIUM_PATH || undefined,
-    args: ['--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist'],
+    args: ['--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist',
+      // a plain-HTTP rehearsal site must count as a secure context, as HTTPS would
+      ...(process.env.SMOKE_URL ? ['--unsafely-treat-insecure-origin-as-secure=' + new URL(process.env.SMOKE_URL).origin] : [])],
   });
   const scale = Number(process.env.SMOKE_DPR || 2);
   const page = await browser.newPage({ viewport: { width: 844, height: 390 }, hasTouch: true, isMobile: true, deviceScaleFactor: scale });
@@ -77,6 +81,14 @@ async function touchScenario(page) {
   page.on('console', (m) => { logs.push(`[${m.type()}] ${m.text()}`); if (m.type() === 'error') errors.push(m.text()); });
   // Telegram SDK is irrelevant here; abort it so the test does not depend on telegram.org.
   await page.route('https://telegram.org/**', (r) => r.abort());
+  if (process.env.SMOKE_TG_INITDATA) {
+    await page.addInitScript((initData) => {
+      window.Telegram = { WebApp: {
+        initData, platform: 'smoke', version: '6.0', ready() {}, expand() {},
+        isVersionAtLeast() { return false; }, HapticFeedback: { impactOccurred() {} },
+      } };
+    }, process.env.SMOKE_TG_INITDATA);
+  }
   await page.goto(url + query);
   try {
     await page.waitForFunction(() => !document.getElementById('status'), null, { timeout: 90000 });

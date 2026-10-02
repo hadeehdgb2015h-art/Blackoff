@@ -69,15 +69,14 @@ Client structure rules:
 
 - The client sends `Telegram.WebApp.initData` unchanged in `hello`. The server validates it with HMAC-SHA256: secret = HMAC_SHA256(key "WebAppData", bot token), then compares the hash over the sorted data-check-string and checks `auth_date` age. The client never decides identity.
 - Outside Telegram (browser testing), identity is refused unless `ALLOW_DEV_AUTH=1`, which is blocked in production.
-- Postgres tables (phase 4): `players` (telegram_id PK, display_name, level, xp, total_kills, best_wave, created_at, last_seen_at), `matches` (id, map_id, started_at, ended_at, best_wave), `match_players` (match_id, player_id, kills, downs, revives, waves). Plain SQL migrations live in `server/migrations`, run by a small migration runner at deploy time.
-- Profile writes happen at match end and on disconnect, never every tick.
+- Postgres tables (phase 4): `players` (account_id PK `tg:<id>`, name, games, kills, headshots, best_wave, play_seconds, created_at, last_seen) and `matches` (id, map, started_at, ended_at, wave, players, reason). Migrations are SQL in code (`server/src/db/pgStore.ts`), applied once each at server start under an advisory lock.
+- Profile writes happen when a player leaves a zone (leave, reconnect grace expired, zone closed), never every tick. Without `DATABASE_URL` profiles live in memory.
 
 ## 6. Deployment (phase 4)
 
-- A GitHub Actions workflow builds the client and server and tests both on every push. On pushes to the deploy branch it uploads the release over SSH (`rsync`) to a dedicated directory, runs migrations and reloads **only** the pm2 app `blackoff`.
-- nginx: a separate include file for one `location` (static client with gzip or brotli, `application/wasm` MIME, long cache for hashed files) and one `location` for the WebSocket upgrade to `127.0.0.1:$PORT`. It never touches other sites. The workflow runs `nginx -t` before any reload and aborts on failure.
-- Every host-specific value (domain, path prefix, port, database URL, bot token, SSH target) comes from GitHub secrets or variables and the server `.env`. Nothing is hard-coded.
-- `tools/deploy_manual.sh` mirrors the workflow for manual fallback.
+- Pull-based: CI publishes a tested release to the GitHub release `edge`; a pm2 app on the server (`blackoff-updater`) installs new versions, restarts **only** `blackoff` and rolls back on a failed health check. No SSH keys or server secrets live in GitHub.
+- nginx: our own site file for our own subdomain (static client pre-gzipped, `application/wasm`, WebSocket proxy to `127.0.0.1:$PORT`). `nginx -t` runs before every reload; a rejected file is removed again.
+- Domain, port, database URL and bot token live in `/opt/blackoff/.env` on the server. Nothing is hard-coded. Details: `docs/systems/deploy.md`.
 
 ## 7. Extensibility hooks (later expansions, not built now)
 
@@ -117,3 +116,5 @@ Client structure rules:
 | 2026-10-02 | Phase 3: the server applies one buffered input per tick (max 4 queued) instead of the latest one, so client prediction (one movement step per input) replays exactly. Momentary buttons from dropped inputs are kept. |
 | 2026-10-02 | Online mode subclasses SimWorld (`NetWorld`) instead of introducing an interface, so every view, the HUD and the test bot run unchanged online. |
 | 2026-10-02 | Remote players hold the first-person weapon model hung at eye height; the soldier's arms are solved onto it with a two-bone IK at build time (no runtime IK on phones). |
+| 2026-10-02 | Phase 4: deploy is pull-based (GitHub release `edge` + updater app under pm2) instead of push over SSH: no server credentials in GitHub, and the owner runs exactly one command. The server ships as one esbuild bundle (Node 20 target), so the host needs no `npm install`. |
+| 2026-10-02 | Phase 4: default address `blackoff.<ip>.sslip.io` so the owner needs no DNS change; their own subdomain is an installer option. Protocol v2 adds profile stats to `welcome` and a `profile` message after each match. |

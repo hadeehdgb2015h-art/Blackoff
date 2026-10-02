@@ -22,7 +22,7 @@ if has nginx || [ -x /usr/sbin/nginx ]; then
   for d in /etc/nginx/sites-enabled /etc/nginx/conf.d; do
     [ -d "$d" ] && say "  $d: $(ls "$d" 2>/dev/null | tr '\n' ' ')"
   done
-  names=$(grep -rhoE '^\s*server_name\s+[^;]+' /etc/nginx/sites-enabled /etc/nginx/conf.d 2>/dev/null | sed -E 's/^\s*server_name\s+//' | tr ' ' '\n' | grep -v '^_$' | sort -u | tr '\n' ' ')
+  names=$(grep -RhoE '^\s*server_name\s+[^;]+' /etc/nginx/sites-enabled /etc/nginx/conf.d 2>/dev/null | sed -E 's/^\s*server_name\s+//' | tr ' ' '\n' | grep -v '^_$' | sort -u | tr '\n' ' ')
   say "  domains served: ${names:-none found (or no permission)}"
 else
   say "nginx: missing"

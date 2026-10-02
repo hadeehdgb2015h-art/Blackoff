@@ -13,5 +13,6 @@ One short document per major system: purpose, data, main scripts, tests.
 | Supply cache (random weapon box) | [simulation.md](simulation.md#supply-cache) |
 | Authoritative server (sessions, zones, protocol, auth, load tests) | [server.md](server.md) |
 | Online client (prediction, interpolation, remote players) | [netcode.md](netcode.md) |
+| Deployment (release, installer, updater, profiles DB) | [deploy.md](deploy.md) |
 
-Planned: `deploy.md` (phase 4), `revive.md` (phase 5), `anticheat.md` (phase 6).
+Planned: `revive.md` (phase 5), `anticheat.md` (phase 6).

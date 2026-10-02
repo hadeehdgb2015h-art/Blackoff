@@ -45,6 +45,15 @@ func build_id() -> String:
 	return str(v) if v != null else ""
 
 
+## Value from the optional config.js next to index.html (written by the
+## server installer, e.g. the game server URL). Empty when absent.
+func web_config(key: String) -> String:
+	if not is_web:
+		return ""
+	var v: Variant = _js("(window.BLACKOFF_CONFIG && window.BLACKOFF_CONFIG['%s']) || ''" % key.replace("'", ""))
+	return str(v) if v != null else ""
+
+
 func request_fullscreen() -> void:
 	if is_web:
 		_js("window.BlackoffTG && window.BlackoffTG.enterFullscreen()")

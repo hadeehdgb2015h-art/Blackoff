@@ -15,6 +15,17 @@ jobs:
     defaults:
       run:
         working-directory: server
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: blackoff_test
+          POSTGRES_PASSWORD: test
+          POSTGRES_DB: blackoff_test
+        ports: ["5432:5432"]
+        options: --health-cmd "pg_isready -U blackoff_test" --health-interval 2s --health-timeout 5s --health-retries 30
+    env:
+      TEST_DATABASE_URL: postgres://blackoff_test:test@127.0.0.1:5432/blackoff_test
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -26,6 +37,13 @@ jobs:
       - run: npm run typecheck
       - run: npm test
       - run: npm run build
+      - name: Deploy bundle builds (single file, Node 20 target)
+        run: npm run bundle
+      - name: Deploy scripts are valid shell
+        working-directory: .
+        run: |
+          for f in deploy/*.sh tools/make_release.sh; do bash -n "$f"; done
+          shellcheck -S error deploy/*.sh tools/make_release.sh
       - name: Golden contract file is up to date (server ↔ client)
         run: npm run gen:golden && git diff --exit-code -- ../shared/tests
       - name: Load test (16 bots, in-process server, tick budget 2 ms)
@@ -107,6 +125,89 @@ jobs:
           name: smoke-screenshots
           path: build/*.png
           if-no-files-found: ignore
+
+  # Builds the deployable release, rehearses the real installer on a clean
+  # runner (pm2 + nginx + Postgres, Node 20 like the production server), then
+  # publishes it as the "edge" release that installed servers update from.
+  release:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/claude/hopeful-cerf-elsmwp'
+    needs: [server, client-web]
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: server/package-lock.json
+      - name: Bundle server
+        run: cd server && npm ci && npm run bundle
+      - uses: actions/download-artifact@v4
+        with:
+          name: web-build
+          path: build/web
+      - name: Pack release
+        run: tools/make_release.sh build/web build/release "$(date -u +%Y%m%d%H%M)-${GITHUB_SHA::7}"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Deploy rehearsal (install, play, restart, update, uninstall)
+        run: |
+          command -v nginx >/dev/null || { sudo apt-get update -q && sudo apt-get install -yq nginx; }
+          sudo systemctl start postgresql nginx
+          npm i -g pm2@7.0.1 >/dev/null
+          # *.localhost counts as a secure context in Chromium, like the real HTTPS site
+          echo "127.0.0.1 blackoff.localhost" | sudo tee -a /etc/hosts
+          SUDO="sudo env PATH=$PATH"
+          $SUDO TELEGRAM_BOT_TOKEN=123456:CI-token bash deploy/install.sh --no-tls --domain blackoff.localhost --release build/release/blackoff.tar.gz --yes
+          curl -fsS http://blackoff.localhost/healthz | tee /tmp/h.json && echo
+          grep -q '"store":"postgres"' /tmp/h.json
+          curl -fsSI -H 'Accept-Encoding: gzip' http://blackoff.localhost/index.wasm | tee /tmp/wasm.h
+          grep -qi '^content-encoding: gzip' /tmp/wasm.h && grep -qi '^content-type: application/wasm' /tmp/wasm.h
+          curl -fsS http://blackoff.localhost/config.js | grep -q 'ws://blackoff.localhost/ws'
+          cd server
+          SMOKE_BOT_TOKEN=123456:CI-token npx tsx tools/smokeDeploy.ts ws://blackoff.localhost/ws 1
+          $SUDO pm2 restart blackoff
+          for i in $(seq 1 30); do curl -fsS http://blackoff.localhost/healthz >/dev/null 2>&1 && break; sleep 1; done
+          SMOKE_BOT_TOKEN=123456:CI-token npx tsx tools/smokeDeploy.ts ws://blackoff.localhost/ws 1 | tee /tmp/s2.json
+          grep -q '"gamesBefore":1' /tmp/s2.json   # profile survived the restart (Postgres)
+          # the web build as a Telegram Mini App: config.js -> /ws through nginx -> signed login
+          INIT=$(npx tsx -e 'import {signInitData} from "./src/net/telegramAuth.ts"; console.log(signInitData({auth_date: String(Math.floor(Date.now()/1000)), user: JSON.stringify({id: 2, first_name: "Mini"})}, "123456:CI-token"))')
+          cd ..
+          mkdir -p /tmp/smoke && (cd /tmp/smoke && npm init -y >/dev/null && npm i --no-save playwright@1.56.1 >/dev/null && npx playwright install --with-deps chromium >/dev/null)
+          NODE_PATH=/tmp/smoke/node_modules SMOKE_DPR=0.5 SMOKE_URL=http://blackoff.localhost/ SMOKE_TG_INITDATA="$INIT" \
+            SMOKE_EXPECT="[game] online: joined" node tools/smoke_web.cjs build/web build/telegram.png "?autostart=1&online=1&bot=1" 15
+          # updater: a newer release is picked up from the release URL
+          mkdir -p /tmp/next && tar -xzf build/release/blackoff.tar.gz -C /tmp/next
+          echo ci-next > /tmp/next/blackoff/VERSION && tar -C /tmp/next -czf /tmp/next/blackoff.tar.gz blackoff
+          (cd /tmp/next && sha256sum blackoff.tar.gz > blackoff.tar.gz.sha256 && echo ci-next > version.txt)
+          sudo sed -i 's#^BLACKOFF_RELEASE_URL=.*#BLACKOFF_RELEASE_URL=file:///tmp/next#' /opt/blackoff/.env
+          $SUDO bash /opt/blackoff/bin/update.sh --once
+          test "$(cat /opt/blackoff/current/VERSION)" = ci-next
+          curl -fsS http://blackoff.localhost/healthz >/dev/null
+          $SUDO bash /opt/blackoff/bin/uninstall.sh --yes --drop-db
+          test ! -e /opt/blackoff && test ! -e /etc/nginx/sites-enabled/blackoff
+          sudo nginx -t
+      - name: Show logs on failure
+        if: failure()
+        run: sudo tail -n 60 /opt/blackoff/logs/*.log 2>/dev/null || true
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: release-rehearsal
+          path: build/telegram.png
+          if-no-files-found: ignore
+      - name: Publish release "edge"
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release view edge >/dev/null 2>&1 || gh release create edge --prerelease --target "$GITHUB_SHA" \
+            --title "edge (latest build)" --notes "Built automatically. Servers installed with deploy/install.sh update from this release."
+          gh release upload edge build/release/blackoff.tar.gz build/release/blackoff.tar.gz.sha256 --clobber
+          gh release upload edge build/release/version.txt --clobber   # last: updaters switch only when all files are there
+          echo "published $(cat build/release/version.txt)"
 
   # Phone-testable preview on GitHub Pages (needs a public repo with
   # Settings > Pages > Source = GitHub Actions). Non-blocking until enabled.

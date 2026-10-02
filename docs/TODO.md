@@ -27,10 +27,12 @@
 - [ ] Soldier character model for other players (art stage 4)
 
 ## Phase 4: Telegram, DB, deploy
-- [ ] initData HMAC validation, Postgres profiles + migrations, pm2 + nginx deploy via Actions, manual deploy script
+- [x] initData HMAC validation (phase 2), Postgres profiles + migrations, stats in the menu
+- [x] Release bundle + `edge` release from CI, `deploy/install.sh` / `update.sh` / `uninstall.sh`, rehearsed in CI
+- [ ] Owner runs the installer on their server and opens the game from their bot
 
 ## Phase 5: revive, buy, final HUD
 ## Phase 6: performance tiers + anti-cheat logging
 
 ## Open questions for the owner
-- Hosting choice for preview links before phase 4 (see DEVELOPMENT_STATUS.md)
+- Own subdomain or the free sslip.io address (installer default)

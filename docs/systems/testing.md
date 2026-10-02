@@ -10,5 +10,7 @@
 | Golden contract | `npm run gen:golden && git diff --exit-code shared/tests`, plus `client/tests/test_golden.gd` | the server and the client sim agree on codec bytes, wave formulas, hit shapes, movement and raycasts |
 | Load test | `cd server && npm run loadtest -- --local --bots 16 --seconds 30 --max-tick-ms 2` | 16 WebSocket bots over 4 zones, average tick under 2 ms |
 | Map sync | `tools/build_maps.sh --check` | `shared/maps` matches the committed scene |
+| Profiles (Postgres) | `TEST_DATABASE_URL=… npm test` (CI: postgres service) | migrations run once, profiles accumulate, best wave keeps the max, match records |
+| Deploy rehearsal | CI job `release` (see `docs/systems/deploy.md`) | the real installer on a clean machine: nginx + pm2 + Postgres, Telegram-signed play through nginx, profile survives a restart, the web build opened as a Telegram Mini App joins online, update, uninstall |
 
 URL flags (web): `?autostart=1` skips the menu, `?bot=1` lets the test bot play, `?debug=1` publishes `window.__blackoff` state. Outside the browser, use the env vars `BLACKOFF_AUTOSTART`, `BLACKOFF_BOT`.

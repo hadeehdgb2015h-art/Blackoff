@@ -13,15 +13,19 @@
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "vitest run",
     "gen:golden": "tsx tools/genGolden.ts",
-    "loadtest": "tsx tools/loadtest.ts"
+    "loadtest": "tsx tools/loadtest.ts",
+    "bundle": "node tools/bundle.mjs"
   },
   "dependencies": {
+    "pg": "^8.23.1",
     "ws": "^8.22.0",
     "zod": "^4.6.5"
   },
   "devDependencies": {
     "@types/node": "^22.20.5",
+    "@types/pg": "^8.23.1",
     "@types/ws": "^8.18.2",
+    "esbuild": "^0.28.2",
     "tsx": "^4.23.15",
     "typescript": "^7.0.2",
     "vitest": "^5.0.3"

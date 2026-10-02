@@ -7,6 +7,7 @@ import type { Codec } from "../net/codec.js";
 import type { SharedData } from "../shared/loadShared.js";
 import { ZoneState } from "../sim/simWorld.js";
 import { log } from "../log.js";
+import type { MatchResult, MatchSummary } from "../db/profileStore.js";
 import { Zone, type Member, type ZoneClient } from "./zone.js";
 
 export const GAME_OVER_LINGER_MS = 10_000;
@@ -19,7 +20,14 @@ export interface ZoneStats {
   tickMsMax: number;
 }
 
+/** Receives finished player results and match records (the SessionHub). */
+export interface ZoneSink {
+  onResult(r: MatchResult): void;
+  onMatch(s: MatchSummary): void;
+}
+
 export class ZoneManager {
+  sink: ZoneSink | null = null;
   readonly zones = new Map<number, Zone>();
   private nextZoneId = 1;
   private timer: NodeJS.Timeout | null = null;
@@ -47,10 +55,11 @@ export class ZoneManager {
       const id = this.nextZoneId;
       this.nextZoneId = (this.nextZoneId % 0xffffffff) + 1;
       best = new Zone(id, this.shared, this.codec, this.shared.constants.maps.default, (Math.random() * 0xffffffff) >>> 0, this.now());
+      best.onResult = (r) => this.sink?.onResult(r);
       this.zones.set(id, best);
       log.info("zone created", { zone: id, map: best.mapId });
     }
-    return { zone: best, member: best.join(client, accountId) };
+    return { zone: best, member: best.join(client, accountId, this.now()) };
   }
 
   start(): void {
@@ -63,7 +72,8 @@ export class ZoneManager {
   stop(): void {
     if (this.timer) clearTimeout(this.timer);
     this.timer = null;
-    for (const z of this.zones.values()) z.close();
+    const now = this.now();
+    for (const z of this.zones.values()) this.closeZone(z, now, "shutdown");
     this.zones.clear();
   }
 
@@ -83,10 +93,20 @@ export class ZoneManager {
       const finished = z.gameOverAt !== null && now - z.gameOverAt >= GAME_OVER_LINGER_MS;
       const abandoned = z.size === 0 && z.emptySince !== null && now - z.emptySince >= ttl;
       if (finished || abandoned) {
-        z.close();
+        this.closeZone(z, now, finished ? "game over" : "empty");
         this.zones.delete(id);
-        log.info("zone closed", { zone: id, reason: finished ? "game over" : "empty", wave: z.world.director.wave });
       }
+    }
+  }
+
+  private closeZone(z: Zone, now: number, reason: MatchSummary["reason"]): void {
+    z.close(now);
+    log.info("zone closed", { zone: z.id, reason, wave: z.world.director.wave });
+    if (z.peakPlayers > 0) {
+      this.sink?.onMatch({
+        mapId: z.mapId, startedAt: z.startedAtDate, endedAt: new Date(),
+        wave: z.world.director.wave, players: z.peakPlayers, reason,
+      });
     }
   }
 

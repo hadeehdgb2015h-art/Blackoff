@@ -86,8 +86,8 @@ func _ready() -> void:
 		_hud.show_status("Connecting...")
 		Net.failed.connect(_on_net_failed)
 		if Net.status != "in_zone":
-			if Net.status == "ready":
-				Net.quick_play()
+			if Net.status in ["ready", "connecting", "handshake"]:
+				Net.quick_play()  # joins as soon as the login (started by the menu) completes
 			else:
 				Net.connect_to_server(true)
 		return

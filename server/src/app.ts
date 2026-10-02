@@ -6,6 +6,7 @@ import { Codec } from "./net/codec.js";
 import { Session, SessionHub } from "./net/session.js";
 import { ZoneManager } from "./zone/zoneManager.js";
 import { log } from "./log.js";
+import { MemoryProfileStore, type ProfileStore } from "./db/profileStore.js";
 
 export interface App {
   server: http.Server;
@@ -19,11 +20,11 @@ export interface App {
  * HTTP health endpoint plus the game WebSocket endpoint. Each connection is a
  * Session; zones tick on one shared fixed-rate scheduler (ZoneManager).
  */
-export function createApp(env: Env, shared: SharedData): App {
+export function createApp(env: Env, shared: SharedData, store: ProfileStore = new MemoryProfileStore()): App {
   const startedAt = Date.now();
   const codec = new Codec(shared.protocol);
   const zones = new ZoneManager(shared, codec);
-  const hub = new SessionHub(env, shared, codec, zones);
+  const hub = new SessionHub(env, shared, codec, zones, store);
 
   const server = http.createServer((req, res) => {
     const url = new URL(req.url ?? "/", "http://local");
@@ -34,6 +35,7 @@ export function createApp(env: Env, shared: SharedData): App {
         protocolVersion: shared.protocol.protocolVersion,
         uptimeSec: Math.round((Date.now() - startedAt) / 1000),
         connections: wss.clients.size,
+        store: store.kind,
         ...zones.stats(),
       }));
       return;
@@ -71,7 +73,7 @@ export function createApp(env: Env, shared: SharedData): App {
         clearInterval(sweeper);
         zones.stop();
         for (const c of wss.clients) c.terminate();
-        wss.close(() => server.close(() => resolve()));
+        wss.close(() => server.close(() => void hub.flush().then(resolve)));
       }),
   };
 }

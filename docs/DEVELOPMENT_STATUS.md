@@ -4,7 +4,7 @@ Read this first in a new session. Then read `docs/TECHNICAL_ARCHITECTURE.md`, `d
 
 ## Current phase
 
-**Phase 3 (client sync): done.** Online play works end to end (Godot and web clients against the real server, in CI). Next is phase 4, deploying to the owner's server. The owner has a Linux server and domain that already host many games and bots (pm2 + nginx), and does not know how to set it up, so we guide them step by step. First step: they run the read-only `deploy/check.sh` and send the output.
+**Phase 4 (Telegram, DB, deploy): built and rehearsed in CI; waiting for the owner to run the installer.** The owner's server (from `deploy/check.sh`): Ubuntu 22.04, 2 CPUs, 3.9 GB RAM (1.5 GB free), 3.4 GB disk free, Node 20.20, pm2 7.0.1 with ~25 apps, nginx 1.18 with 8 sites, certbot 1.21, Postgres on 5432, public IP 93.115.22.64, free port 8787. They run one command (`deploy/install.sh`, see `docs/systems/deploy.md`); the default address `blackoff.93-115-22-64.sslip.io` needs no DNS work. Then they create a bot with @BotFather and paste the token when asked.
 
 | Phase | State |
 |---|---|
@@ -12,7 +12,7 @@ Read this first in a new session. Then read `docs/TECHNICAL_ARCHITECTURE.md`, `d
 | 1 Local client | done (owner tested: 60–70 FPS) |
 | 2 Authoritative server | done (`docs/systems/server.md`) |
 | 3 Sync | done (`docs/systems/netcode.md`) |
-| 4 Telegram, DB, deploy | next: waiting for the owner's `deploy/check.sh` output |
+| 4 Telegram, DB, deploy | built (`docs/systems/deploy.md`); owner runs the installer |
 
 ## Live preview
 
@@ -28,7 +28,8 @@ URL flags: `?autostart=1` (skip menu), `?bot=1` (test bot plays), `?debug=1` (ex
 | Presentation | first-person rig, procedural zombie and weapon placeholders, tracers and impacts, generated SFX, map mesh batching, quality tiers (`docs/systems/presentation.md`). |
 | Input / UI | multi-touch stick, aim, fire-aim, reload, swap, use, pause; keyboard/mouse; HUD; pause; settings; game over; main menu (`docs/systems/input-and-hud.md`). |
 | Server | phase 2: authoritative TypeScript sim (port of the client rules), binary codec from `protocol.json`, Telegram initData HMAC, sessions with validation, rate limits and resume, zones with quick play, snapshots with interest radius, `/healthz` stats, load-test bots (`docs/systems/server.md`). |
-| Tests / CI | 30 headless client tests (incl. golden contract), online end-to-end (2 Godot bots + web build vs a real server), bot playthrough, 2-minute headless game run, browser bot and multi-touch runs, 31 server tests (sim, codec, auth, WebSocket flow, perf), golden freshness check, 16-bot load test with a 2 ms tick budget, map sync check, Pages deploy and verification (`docs/systems/testing.md`). |
+| Deploy | release bundle + GitHub release `edge`, `deploy/install.sh` (own pm2 apps, own nginx site, own certificate, own DB), self-updater with health-check rollback, uninstall (`docs/systems/deploy.md`). Player profiles in Postgres (games, kills, best wave) shown in the menu. |
+| Tests / CI | 30 headless client tests (incl. golden contract), online end-to-end (2 Godot bots + web build vs a real server), bot playthrough, 2-minute headless game run, browser bot and multi-touch runs, 34 server tests (sim, codec, auth, WebSocket flow, perf, profiles incl. real Postgres), deploy rehearsal (installer on a clean runner, Telegram Mini App login through nginx, restart, update, uninstall), golden freshness check, 16-bot load test with a 2 ms tick budget, map sync check, Pages deploy and verification (`docs/systems/testing.md`). |
 
 ## Art stage (in progress, owner request)
 
