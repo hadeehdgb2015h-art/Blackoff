@@ -327,7 +327,10 @@ emission_energy_multiplier = 1.4
 [sub_resource type="BoxMesh" id="BoxMesh_7xno6"]
 size = Vector3(0.07999992, 0.9, 1.5999999)
 
-[sub_resource type="Environment" id="Environment_0mphj"]
+[sub_resource type="BoxMesh" id="BoxMesh_0mphj"]
+size = Vector3(1.4000006, 0.8, 0.70000005)
+
+[sub_resource type="Environment" id="Environment_18b4q"]
 background_mode = 1
 background_color = Color(0.015, 0.02, 0.03, 1)
 ambient_light_source = 2
@@ -338,392 +341,392 @@ fog_enabled = true
 fog_light_color = Color(0.09, 0.1, 0.13, 1)
 fog_density = 0.035
 
-[node name="Facility01" type="Node3D" unique_id=710789007]
+[node name="Facility01" type="Node3D" unique_id=1472817309]
 metadata/map_id = "facility_01"
 
-[node name="Geometry" type="Node3D" parent="." unique_id=1392505860]
+[node name="Geometry" type="Node3D" parent="." unique_id=1333795280]
 
-[node name="Floor_SafeRoom" type="MeshInstance3D" parent="Geometry" unique_id=1940055942 groups=["map_floor"]]
+[node name="Floor_SafeRoom" type="MeshInstance3D" parent="Geometry" unique_id=556752140 groups=["map_floor"]]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.1, 14)
 material_override = SubResource("StandardMaterial3D_u526d")
 mesh = SubResource("BoxMesh_4w45l")
 
-[node name="Ceiling_SafeRoom" type="MeshInstance3D" parent="Geometry" unique_id=711032211 groups=["map_visual"]]
+[node name="Ceiling_SafeRoom" type="MeshInstance3D" parent="Geometry" unique_id=1611751961 groups=["map_visual"]]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 3.1, 14)
 material_override = SubResource("StandardMaterial3D_e8phm")
 mesh = SubResource("BoxMesh_rxq7b")
 
-[node name="Floor_RoomA_Lab" type="MeshInstance3D" parent="Geometry" unique_id=1052415698 groups=["map_floor"]]
+[node name="Floor_RoomA_Lab" type="MeshInstance3D" parent="Geometry" unique_id=1140787009 groups=["map_floor"]]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -13, -0.1, -2)
 material_override = SubResource("StandardMaterial3D_u526d")
 mesh = SubResource("BoxMesh_k0x16")
 
-[node name="Ceiling_RoomA_Lab" type="MeshInstance3D" parent="Geometry" unique_id=1315579898 groups=["map_visual"]]
+[node name="Ceiling_RoomA_Lab" type="MeshInstance3D" parent="Geometry" unique_id=1422313948 groups=["map_visual"]]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -13, 3.1, -2)
 material_override = SubResource("StandardMaterial3D_e8phm")
 mesh = SubResource("BoxMesh_18mts")
 
-[node name="Floor_RoomB_Storage" type="MeshInstance3D" parent="Geometry" unique_id=423334870 groups=["map_floor"]]
+[node name="Floor_RoomB_Storage" type="MeshInstance3D" parent="Geometry" unique_id=1893633914 groups=["map_floor"]]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 13, -0.1, -2)
 material_override = SubResource("StandardMaterial3D_u526d")
 mesh = SubResource("BoxMesh_oy0kp")
 
-[node name="Ceiling_RoomB_Storage" type="MeshInstance3D" parent="Geometry" unique_id=864383689 groups=["map_visual"]]
+[node name="Ceiling_RoomB_Storage" type="MeshInstance3D" parent="Geometry" unique_id=936667362 groups=["map_visual"]]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 13, 3.1, -2)
 material_override = SubResource("StandardMaterial3D_e8phm")
 mesh = SubResource("BoxMesh_0eky7")
 
-[node name="Floor_CorridorW_N" type="MeshInstance3D" parent="Geometry" unique_id=924454101 groups=["map_floor"]]
+[node name="Floor_CorridorW_N" type="MeshInstance3D" parent="Geometry" unique_id=36624366 groups=["map_floor"]]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -13, -0.1, 7.5)
 material_override = SubResource("StandardMaterial3D_u526d")
 mesh = SubResource("BoxMesh_ayqqg")
 
-[node name="Ceiling_CorridorW_N" type="MeshInstance3D" parent="Geometry" unique_id=459421569 groups=["map_visual"]]
+[node name="Ceiling_CorridorW_N" type="MeshInstance3D" parent="Geometry" unique_id=35393748 groups=["map_visual"]]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -13, 3.1, 7.5)
 material_override = SubResource("StandardMaterial3D_e8phm")
 mesh = SubResource("BoxMesh_7m14x")
 
-[node name="Floor_CorridorW_S" type="MeshInstance3D" parent="Geometry" unique_id=1238009985 groups=["map_floor"]]
+[node name="Floor_CorridorW_S" type="MeshInstance3D" parent="Geometry" unique_id=692794381 groups=["map_floor"]]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -9.5, -0.1, 14)
 material_override = SubResource("StandardMaterial3D_u526d")
 mesh = SubResource("BoxMesh_npttq")
 
-[node name="Ceiling_CorridorW_S" type="MeshInstance3D" parent="Geometry" unique_id=1990760382 groups=["map_visual"]]
+[node name="Ceiling_CorridorW_S" type="MeshInstance3D" parent="Geometry" unique_id=1959209039 groups=["map_visual"]]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -9.5, 3.1, 14)
 material_override = SubResource("StandardMaterial3D_e8phm")
 mesh = SubResource("BoxMesh_6y5mt")
 
-[node name="Floor_CorridorE_N" type="MeshInstance3D" parent="Geometry" unique_id=985231004 groups=["map_floor"]]
+[node name="Floor_CorridorE_N" type="MeshInstance3D" parent="Geometry" unique_id=426085966 groups=["map_floor"]]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 13, -0.1, 7.5)
 material_override = SubResource("StandardMaterial3D_u526d")
 mesh = SubResource("BoxMesh_q12li")
 
-[node name="Ceiling_CorridorE_N" type="MeshInstance3D" parent="Geometry" unique_id=27668489 groups=["map_visual"]]
+[node name="Ceiling_CorridorE_N" type="MeshInstance3D" parent="Geometry" unique_id=483163987 groups=["map_visual"]]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 13, 3.1, 7.5)
 material_override = SubResource("StandardMaterial3D_e8phm")
 mesh = SubResource("BoxMesh_n4fdu")
 
-[node name="Floor_CorridorE_S" type="MeshInstance3D" parent="Geometry" unique_id=1398393250 groups=["map_floor"]]
+[node name="Floor_CorridorE_S" type="MeshInstance3D" parent="Geometry" unique_id=1479526288 groups=["map_floor"]]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9.5, -0.1, 14)
 material_override = SubResource("StandardMaterial3D_u526d")
 mesh = SubResource("BoxMesh_ck11t")
 
-[node name="Ceiling_CorridorE_S" type="MeshInstance3D" parent="Geometry" unique_id=1905684128 groups=["map_visual"]]
+[node name="Ceiling_CorridorE_S" type="MeshInstance3D" parent="Geometry" unique_id=790250542 groups=["map_visual"]]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9.5, 3.1, 14)
 material_override = SubResource("StandardMaterial3D_e8phm")
 mesh = SubResource("BoxMesh_owup1")
 
-[node name="Floor_Yard" type="MeshInstance3D" parent="Geometry" unique_id=172524162 groups=["map_floor"]]
+[node name="Floor_Yard" type="MeshInstance3D" parent="Geometry" unique_id=1886054414 groups=["map_floor"]]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.1, -15)
 material_override = SubResource("StandardMaterial3D_7bojn")
 mesh = SubResource("BoxMesh_8dojk")
 
-[node name="Floor_PadE1" type="MeshInstance3D" parent="Geometry" unique_id=977230780 groups=["map_floor"]]
+[node name="Floor_PadE1" type="MeshInstance3D" parent="Geometry" unique_id=1044682966 groups=["map_floor"]]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -10, -0.1, -25.5)
 material_override = SubResource("StandardMaterial3D_7bojn")
 mesh = SubResource("BoxMesh_3ny1w")
 
-[node name="Floor_PadE2" type="MeshInstance3D" parent="Geometry" unique_id=2058853472 groups=["map_floor"]]
+[node name="Floor_PadE2" type="MeshInstance3D" parent="Geometry" unique_id=43369009 groups=["map_floor"]]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 10, -0.1, -25.5)
 material_override = SubResource("StandardMaterial3D_7bojn")
 mesh = SubResource("BoxMesh_qomeo")
 
-[node name="Floor_PadE3" type="MeshInstance3D" parent="Geometry" unique_id=1365060777 groups=["map_floor"]]
+[node name="Floor_PadE3" type="MeshInstance3D" parent="Geometry" unique_id=68546371 groups=["map_floor"]]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -19.5, -0.1, -2)
 material_override = SubResource("StandardMaterial3D_7bojn")
 mesh = SubResource("BoxMesh_kn2mg")
 
-[node name="Floor_PadE4" type="MeshInstance3D" parent="Geometry" unique_id=1554834830 groups=["map_floor"]]
+[node name="Floor_PadE4" type="MeshInstance3D" parent="Geometry" unique_id=1420912389 groups=["map_floor"]]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 19.5, -0.1, -2)
 material_override = SubResource("StandardMaterial3D_7bojn")
 mesh = SubResource("BoxMesh_o00sw")
 
-[node name="SafeN_19" type="MeshInstance3D" parent="Geometry" unique_id=2082806049 groups=["map_wall"]]
+[node name="SafeN_19" type="MeshInstance3D" parent="Geometry" unique_id=1463528218 groups=["map_wall"]]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.5, 10)
 material_override = SubResource("StandardMaterial3D_05r3r")
 mesh = SubResource("BoxMesh_6dywp")
 
-[node name="SafeS_20" type="MeshInstance3D" parent="Geometry" unique_id=772863938 groups=["map_wall"]]
+[node name="SafeS_20" type="MeshInstance3D" parent="Geometry" unique_id=727281201 groups=["map_wall"]]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.5, 18)
 material_override = SubResource("StandardMaterial3D_05r3r")
 mesh = SubResource("BoxMesh_7vno3")
 
-[node name="SafeSideW_21" type="MeshInstance3D" parent="Geometry" unique_id=1633892816 groups=["map_wall"]]
+[node name="SafeSideW_21" type="MeshInstance3D" parent="Geometry" unique_id=596699820 groups=["map_wall"]]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -5, 1.5, 11.5)
 material_override = SubResource("StandardMaterial3D_05r3r")
 mesh = SubResource("BoxMesh_dnq02")
 
-[node name="SafeSideW_22" type="MeshInstance3D" parent="Geometry" unique_id=1207431872 groups=["map_wall"]]
+[node name="SafeSideW_22" type="MeshInstance3D" parent="Geometry" unique_id=1662562990 groups=["map_wall"]]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -5, 1.5, 16.5)
 material_override = SubResource("StandardMaterial3D_05r3r")
 mesh = SubResource("BoxMesh_1swf2")
 
-[node name="SafeSideE_23" type="MeshInstance3D" parent="Geometry" unique_id=1003710880 groups=["map_wall"]]
+[node name="SafeSideE_23" type="MeshInstance3D" parent="Geometry" unique_id=972004512 groups=["map_wall"]]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 5, 1.5, 11.5)
 material_override = SubResource("StandardMaterial3D_05r3r")
 mesh = SubResource("BoxMesh_61i3u")
 
-[node name="SafeSideE_24" type="MeshInstance3D" parent="Geometry" unique_id=1942491503 groups=["map_wall"]]
+[node name="SafeSideE_24" type="MeshInstance3D" parent="Geometry" unique_id=2025588415 groups=["map_wall"]]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 5, 1.5, 16.5)
 material_override = SubResource("StandardMaterial3D_05r3r")
 mesh = SubResource("BoxMesh_c7ta0")
 
-[node name="CorrSW_25" type="MeshInstance3D" parent="Geometry" unique_id=2068464498 groups=["map_wall"]]
+[node name="CorrSW_25" type="MeshInstance3D" parent="Geometry" unique_id=192268355 groups=["map_wall"]]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -9.5, 1.5, 15)
 material_override = SubResource("StandardMaterial3D_05r3r")
 mesh = SubResource("BoxMesh_k538y")
 
-[node name="CorrSE_26" type="MeshInstance3D" parent="Geometry" unique_id=640340654 groups=["map_wall"]]
+[node name="CorrSE_26" type="MeshInstance3D" parent="Geometry" unique_id=2077624213 groups=["map_wall"]]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9.5, 1.5, 15)
 material_override = SubResource("StandardMaterial3D_05r3r")
 mesh = SubResource("BoxMesh_d7o4r")
 
-[node name="CorrNW_27" type="MeshInstance3D" parent="Geometry" unique_id=1801483354 groups=["map_wall"]]
+[node name="CorrNW_27" type="MeshInstance3D" parent="Geometry" unique_id=321954821 groups=["map_wall"]]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -8.5, 1.5, 13)
 material_override = SubResource("StandardMaterial3D_05r3r")
 mesh = SubResource("BoxMesh_xnfsd")
 
-[node name="CorrNE_28" type="MeshInstance3D" parent="Geometry" unique_id=211734213 groups=["map_wall"]]
+[node name="CorrNE_28" type="MeshInstance3D" parent="Geometry" unique_id=2105761858 groups=["map_wall"]]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 8.5, 1.5, 13)
 material_override = SubResource("StandardMaterial3D_05r3r")
 mesh = SubResource("BoxMesh_31tvv")
 
-[node name="CorrOuterW_29" type="MeshInstance3D" parent="Geometry" unique_id=141451556 groups=["map_wall"]]
+[node name="CorrOuterW_29" type="MeshInstance3D" parent="Geometry" unique_id=1794301286 groups=["map_wall"]]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -14, 1.5, 8.5)
 material_override = SubResource("StandardMaterial3D_05r3r")
 mesh = SubResource("BoxMesh_qck80")
 
-[node name="CorrOuterE_30" type="MeshInstance3D" parent="Geometry" unique_id=518789981 groups=["map_wall"]]
+[node name="CorrOuterE_30" type="MeshInstance3D" parent="Geometry" unique_id=1191626247 groups=["map_wall"]]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 14, 1.5, 8.5)
 material_override = SubResource("StandardMaterial3D_05r3r")
 mesh = SubResource("BoxMesh_drsr3")
 
-[node name="CorrInnerW_31" type="MeshInstance3D" parent="Geometry" unique_id=2036249377 groups=["map_wall"]]
+[node name="CorrInnerW_31" type="MeshInstance3D" parent="Geometry" unique_id=882883931 groups=["map_wall"]]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -12, 1.5, 7.5)
 material_override = SubResource("StandardMaterial3D_05r3r")
 mesh = SubResource("BoxMesh_535ba")
 
-[node name="CorrInnerE_32" type="MeshInstance3D" parent="Geometry" unique_id=868768643 groups=["map_wall"]]
+[node name="CorrInnerE_32" type="MeshInstance3D" parent="Geometry" unique_id=1480813574 groups=["map_wall"]]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 12, 1.5, 7.5)
 material_override = SubResource("StandardMaterial3D_05r3r")
 mesh = SubResource("BoxMesh_t8pqa")
 
-[node name="RoomSouthW_33" type="MeshInstance3D" parent="Geometry" unique_id=1235976321 groups=["map_wall"]]
+[node name="RoomSouthW_33" type="MeshInstance3D" parent="Geometry" unique_id=1633715173 groups=["map_wall"]]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -16, 1.5, 2)
 material_override = SubResource("StandardMaterial3D_05r3r")
 mesh = SubResource("BoxMesh_1m81x")
 
-[node name="RoomSouthW_34" type="MeshInstance3D" parent="Geometry" unique_id=666775417 groups=["map_wall"]]
+[node name="RoomSouthW_34" type="MeshInstance3D" parent="Geometry" unique_id=642924259 groups=["map_wall"]]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -10, 1.5, 2)
 material_override = SubResource("StandardMaterial3D_05r3r")
 mesh = SubResource("BoxMesh_ecrhl")
 
-[node name="RoomSouthE_35" type="MeshInstance3D" parent="Geometry" unique_id=1318220483 groups=["map_wall"]]
+[node name="RoomSouthE_35" type="MeshInstance3D" parent="Geometry" unique_id=188374275 groups=["map_wall"]]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 10, 1.5, 2)
 material_override = SubResource("StandardMaterial3D_05r3r")
 mesh = SubResource("BoxMesh_y6p6m")
 
-[node name="RoomSouthE_36" type="MeshInstance3D" parent="Geometry" unique_id=1408103636 groups=["map_wall"]]
+[node name="RoomSouthE_36" type="MeshInstance3D" parent="Geometry" unique_id=104786447 groups=["map_wall"]]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 16, 1.5, 2)
 material_override = SubResource("StandardMaterial3D_05r3r")
 mesh = SubResource("BoxMesh_q2d8o")
 
-[node name="RoomNorthW_37" type="MeshInstance3D" parent="Geometry" unique_id=744586726 groups=["map_wall"]]
+[node name="RoomNorthW_37" type="MeshInstance3D" parent="Geometry" unique_id=1230567525 groups=["map_wall"]]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -16.125, 1.5, -6)
 material_override = SubResource("StandardMaterial3D_05r3r")
 mesh = SubResource("BoxMesh_42ojm")
 
-[node name="RoomNorthW_38" type="MeshInstance3D" parent="Geometry" unique_id=95438560 groups=["map_wall"]]
+[node name="RoomNorthW_38" type="MeshInstance3D" parent="Geometry" unique_id=1460493869 groups=["map_wall"]]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -9.875, 1.5, -6)
 material_override = SubResource("StandardMaterial3D_05r3r")
 mesh = SubResource("BoxMesh_lcflr")
 
-[node name="RoomNorthE_39" type="MeshInstance3D" parent="Geometry" unique_id=728592301 groups=["map_wall"]]
+[node name="RoomNorthE_39" type="MeshInstance3D" parent="Geometry" unique_id=1698834530 groups=["map_wall"]]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9.875, 1.5, -6)
 material_override = SubResource("StandardMaterial3D_05r3r")
 mesh = SubResource("BoxMesh_p7ct3")
 
-[node name="RoomNorthE_40" type="MeshInstance3D" parent="Geometry" unique_id=1822525268 groups=["map_wall"]]
+[node name="RoomNorthE_40" type="MeshInstance3D" parent="Geometry" unique_id=1951048920 groups=["map_wall"]]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 16.125, 1.5, -6)
 material_override = SubResource("StandardMaterial3D_05r3r")
 mesh = SubResource("BoxMesh_syvj2")
 
-[node name="RoomOuterW_41" type="MeshInstance3D" parent="Geometry" unique_id=499391202 groups=["map_wall"]]
+[node name="RoomOuterW_41" type="MeshInstance3D" parent="Geometry" unique_id=1303598755 groups=["map_wall"]]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -18, 1.5, -4.45)
 material_override = SubResource("StandardMaterial3D_05r3r")
 mesh = SubResource("BoxMesh_rgwi4")
 
-[node name="RoomOuterW_42" type="MeshInstance3D" parent="Geometry" unique_id=1518051936 groups=["map_wall"]]
+[node name="RoomOuterW_42" type="MeshInstance3D" parent="Geometry" unique_id=1167792542 groups=["map_wall"]]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -18, 1.5, 0.45000005)
 material_override = SubResource("StandardMaterial3D_05r3r")
 mesh = SubResource("BoxMesh_0726m")
 
-[node name="RoomOuterE_43" type="MeshInstance3D" parent="Geometry" unique_id=558072361 groups=["map_wall"]]
+[node name="RoomOuterE_43" type="MeshInstance3D" parent="Geometry" unique_id=95436383 groups=["map_wall"]]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 18, 1.5, -4.45)
 material_override = SubResource("StandardMaterial3D_05r3r")
 mesh = SubResource("BoxMesh_aaq0w")
 
-[node name="RoomOuterE_44" type="MeshInstance3D" parent="Geometry" unique_id=1776282021 groups=["map_wall"]]
+[node name="RoomOuterE_44" type="MeshInstance3D" parent="Geometry" unique_id=880596437 groups=["map_wall"]]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 18, 1.5, 0.45000005)
 material_override = SubResource("StandardMaterial3D_05r3r")
 mesh = SubResource("BoxMesh_hygfa")
 
-[node name="RoomInnerW_45" type="MeshInstance3D" parent="Geometry" unique_id=1464277631 groups=["map_wall"]]
+[node name="RoomInnerW_45" type="MeshInstance3D" parent="Geometry" unique_id=354279419 groups=["map_wall"]]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -8, 1.5, -2)
 material_override = SubResource("StandardMaterial3D_05r3r")
 mesh = SubResource("BoxMesh_ci4re")
 
-[node name="RoomInnerE_46" type="MeshInstance3D" parent="Geometry" unique_id=450260948 groups=["map_wall"]]
+[node name="RoomInnerE_46" type="MeshInstance3D" parent="Geometry" unique_id=1522878221 groups=["map_wall"]]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 8, 1.5, -2)
 material_override = SubResource("StandardMaterial3D_05r3r")
 mesh = SubResource("BoxMesh_vbrqn")
 
-[node name="Facade_47" type="MeshInstance3D" parent="Geometry" unique_id=975166844 groups=["map_wall"]]
+[node name="Facade_47" type="MeshInstance3D" parent="Geometry" unique_id=661134498 groups=["map_wall"]]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.5, -6)
 material_override = SubResource("StandardMaterial3D_05r3r")
 mesh = SubResource("BoxMesh_fotr4")
 
-[node name="FenceSideW_48" type="MeshInstance3D" parent="Geometry" unique_id=1587097032 groups=["map_wall"]]
+[node name="FenceSideW_48" type="MeshInstance3D" parent="Geometry" unique_id=1858279425 groups=["map_wall"]]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -22, 1.2, -15)
 material_override = SubResource("StandardMaterial3D_ym8y4")
 mesh = SubResource("BoxMesh_pcf6n")
 
-[node name="FenceSideE_49" type="MeshInstance3D" parent="Geometry" unique_id=579925335 groups=["map_wall"]]
+[node name="FenceSideE_49" type="MeshInstance3D" parent="Geometry" unique_id=752333190 groups=["map_wall"]]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 22, 1.2, -15)
 material_override = SubResource("StandardMaterial3D_ym8y4")
 mesh = SubResource("BoxMesh_ukpxn")
 
-[node name="FenceCornerW_50" type="MeshInstance3D" parent="Geometry" unique_id=773589479 groups=["map_wall"]]
+[node name="FenceCornerW_50" type="MeshInstance3D" parent="Geometry" unique_id=1991452265 groups=["map_wall"]]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -20, 1.2, -6)
 material_override = SubResource("StandardMaterial3D_ym8y4")
 mesh = SubResource("BoxMesh_wgusf")
 
-[node name="FenceCornerE_51" type="MeshInstance3D" parent="Geometry" unique_id=1794274743 groups=["map_wall"]]
+[node name="FenceCornerE_51" type="MeshInstance3D" parent="Geometry" unique_id=1545696438 groups=["map_wall"]]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 20, 1.2, -6)
 material_override = SubResource("StandardMaterial3D_ym8y4")
 mesh = SubResource("BoxMesh_qfbhq")
 
-[node name="FenceNorth_52" type="MeshInstance3D" parent="Geometry" unique_id=278005577 groups=["map_wall"]]
+[node name="FenceNorth_52" type="MeshInstance3D" parent="Geometry" unique_id=882492176 groups=["map_wall"]]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -16.5, 1.2, -24)
 material_override = SubResource("StandardMaterial3D_ym8y4")
 mesh = SubResource("BoxMesh_o7ydh")
 
-[node name="FenceNorth_53" type="MeshInstance3D" parent="Geometry" unique_id=945105742 groups=["map_wall"]]
+[node name="FenceNorth_53" type="MeshInstance3D" parent="Geometry" unique_id=1148090403 groups=["map_wall"]]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.2, -24)
 material_override = SubResource("StandardMaterial3D_ym8y4")
 mesh = SubResource("BoxMesh_bgl81")
 
-[node name="FenceNorth_54" type="MeshInstance3D" parent="Geometry" unique_id=535117810 groups=["map_wall"]]
+[node name="FenceNorth_54" type="MeshInstance3D" parent="Geometry" unique_id=1951322426 groups=["map_wall"]]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 16.5, 1.2, -24)
 material_override = SubResource("StandardMaterial3D_ym8y4")
 mesh = SubResource("BoxMesh_up76s")
 
-[node name="PadNwW_55" type="MeshInstance3D" parent="Geometry" unique_id=1116884100 groups=["map_wall"]]
+[node name="PadNwW_55" type="MeshInstance3D" parent="Geometry" unique_id=57378268 groups=["map_wall"]]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -11.5, 1.2, -25.5)
 material_override = SubResource("StandardMaterial3D_ym8y4")
 mesh = SubResource("BoxMesh_ikhnx")
 
-[node name="PadNwE_56" type="MeshInstance3D" parent="Geometry" unique_id=1400599617 groups=["map_wall"]]
+[node name="PadNwE_56" type="MeshInstance3D" parent="Geometry" unique_id=959257048 groups=["map_wall"]]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 11.5, 1.2, -25.5)
 material_override = SubResource("StandardMaterial3D_ym8y4")
 mesh = SubResource("BoxMesh_q8m1o")
 
-[node name="PadNeW_57" type="MeshInstance3D" parent="Geometry" unique_id=338189432 groups=["map_wall"]]
+[node name="PadNeW_57" type="MeshInstance3D" parent="Geometry" unique_id=1016318119 groups=["map_wall"]]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -8.5, 1.2, -25.5)
 material_override = SubResource("StandardMaterial3D_ym8y4")
 mesh = SubResource("BoxMesh_xkmvw")
 
-[node name="PadNeE_58" type="MeshInstance3D" parent="Geometry" unique_id=896575604 groups=["map_wall"]]
+[node name="PadNeE_58" type="MeshInstance3D" parent="Geometry" unique_id=236228860 groups=["map_wall"]]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 8.5, 1.2, -25.5)
 material_override = SubResource("StandardMaterial3D_ym8y4")
 mesh = SubResource("BoxMesh_ybqiw")
 
-[node name="PadNnW_59" type="MeshInstance3D" parent="Geometry" unique_id=1947964738 groups=["map_wall"]]
+[node name="PadNnW_59" type="MeshInstance3D" parent="Geometry" unique_id=248255201 groups=["map_wall"]]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -10, 1.2, -27)
 material_override = SubResource("StandardMaterial3D_ym8y4")
 mesh = SubResource("BoxMesh_mqgbt")
 
-[node name="PadNnE_60" type="MeshInstance3D" parent="Geometry" unique_id=2036789996 groups=["map_wall"]]
+[node name="PadNnE_60" type="MeshInstance3D" parent="Geometry" unique_id=711139867 groups=["map_wall"]]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 10, 1.2, -27)
 material_override = SubResource("StandardMaterial3D_ym8y4")
 mesh = SubResource("BoxMesh_2mfyu")
 
-[node name="PadWsW_61" type="MeshInstance3D" parent="Geometry" unique_id=1627336833 groups=["map_wall"]]
+[node name="PadWsW_61" type="MeshInstance3D" parent="Geometry" unique_id=1515203057 groups=["map_wall"]]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -19.5, 1.5, -3.5)
 material_override = SubResource("StandardMaterial3D_05r3r")
 mesh = SubResource("BoxMesh_61wa0")
 
-[node name="PadWsE_62" type="MeshInstance3D" parent="Geometry" unique_id=1253620429 groups=["map_wall"]]
+[node name="PadWsE_62" type="MeshInstance3D" parent="Geometry" unique_id=1818624768 groups=["map_wall"]]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 19.5, 1.5, -3.5)
 material_override = SubResource("StandardMaterial3D_05r3r")
 mesh = SubResource("BoxMesh_w52d4")
 
-[node name="PadWnW_63" type="MeshInstance3D" parent="Geometry" unique_id=127147304 groups=["map_wall"]]
+[node name="PadWnW_63" type="MeshInstance3D" parent="Geometry" unique_id=1102279674 groups=["map_wall"]]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -19.5, 1.5, -0.5)
 material_override = SubResource("StandardMaterial3D_05r3r")
 mesh = SubResource("BoxMesh_bjepp")
 
-[node name="PadWnE_64" type="MeshInstance3D" parent="Geometry" unique_id=242247676 groups=["map_wall"]]
+[node name="PadWnE_64" type="MeshInstance3D" parent="Geometry" unique_id=802201063 groups=["map_wall"]]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 19.5, 1.5, -0.5)
 material_override = SubResource("StandardMaterial3D_05r3r")
 mesh = SubResource("BoxMesh_mxsj1")
 
-[node name="PadWwW_65" type="MeshInstance3D" parent="Geometry" unique_id=1368314100 groups=["map_wall"]]
+[node name="PadWwW_65" type="MeshInstance3D" parent="Geometry" unique_id=2088369202 groups=["map_wall"]]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -21, 1.5, -2)
 material_override = SubResource("StandardMaterial3D_05r3r")
 mesh = SubResource("BoxMesh_u1ujo")
 
-[node name="PadWwE_66" type="MeshInstance3D" parent="Geometry" unique_id=948703403 groups=["map_wall"]]
+[node name="PadWwE_66" type="MeshInstance3D" parent="Geometry" unique_id=1105551158 groups=["map_wall"]]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 21, 1.5, -2)
 material_override = SubResource("StandardMaterial3D_05r3r")
 mesh = SubResource("BoxMesh_ywps5")
 
-[node name="CrateStack" type="MeshInstance3D" parent="Geometry" unique_id=1487456473 groups=["map_wall"]]
+[node name="CrateStack" type="MeshInstance3D" parent="Geometry" unique_id=1880663981 groups=["map_wall"]]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -5, 0.5, -14)
 material_override = SubResource("StandardMaterial3D_27e6a")
 mesh = SubResource("BoxMesh_y0o5w")
 
-[node name="CrateRow" type="MeshInstance3D" parent="Geometry" unique_id=1624016371 groups=["map_wall"]]
+[node name="CrateRow" type="MeshInstance3D" parent="Geometry" unique_id=1258683198 groups=["map_wall"]]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6, 0.55, -17)
 material_override = SubResource("StandardMaterial3D_27e6a")
 mesh = SubResource("BoxMesh_vfa4o")
 
-[node name="Container" type="MeshInstance3D" parent="Geometry" unique_id=1487064628 groups=["map_wall"]]
+[node name="Container" type="MeshInstance3D" parent="Geometry" unique_id=413292016 groups=["map_wall"]]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.2, -11)
 material_override = SubResource("StandardMaterial3D_fcgw5")
 mesh = SubResource("BoxMesh_spc0g")
 
-[node name="Barrier" type="MeshInstance3D" parent="Geometry" unique_id=840448099 groups=["map_wall"]]
+[node name="Barrier" type="MeshInstance3D" parent="Geometry" unique_id=1008527543 groups=["map_wall"]]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -14, 0.5, -17)
 material_override = SubResource("StandardMaterial3D_oa7gs")
 mesh = SubResource("BoxMesh_5uf20")
 
-[node name="Barrier2" type="MeshInstance3D" parent="Geometry" unique_id=1778567116 groups=["map_wall"]]
+[node name="Barrier2" type="MeshInstance3D" parent="Geometry" unique_id=2135477638 groups=["map_wall"]]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 14, 0.5, -19)
 material_override = SubResource("StandardMaterial3D_oa7gs")
 mesh = SubResource("BoxMesh_f8m7f")
 
-[node name="LabBench" type="MeshInstance3D" parent="Geometry" unique_id=1518359107 groups=["map_wall"]]
+[node name="LabBench" type="MeshInstance3D" parent="Geometry" unique_id=590097359 groups=["map_wall"]]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -13, 0.475, -3.5)
 material_override = SubResource("StandardMaterial3D_vi65v")
 mesh = SubResource("BoxMesh_png6h")
 
-[node name="Shelving" type="MeshInstance3D" parent="Geometry" unique_id=244963122 groups=["map_wall"]]
+[node name="Shelving" type="MeshInstance3D" parent="Geometry" unique_id=586820978 groups=["map_wall"]]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 13, 1.1, -3.6)
 material_override = SubResource("StandardMaterial3D_vi65v")
 mesh = SubResource("BoxMesh_c3epp")
 
-[node name="AmmoCrate" type="MeshInstance3D" parent="Geometry" unique_id=505262248 groups=["map_wall"]]
+[node name="AmmoCrate" type="MeshInstance3D" parent="Geometry" unique_id=1032873446 groups=["map_wall"]]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.4, 10.45)
 material_override = SubResource("StandardMaterial3D_g23y6")
 mesh = SubResource("BoxMesh_ia4vi")
 
-[node name="BuyPanel_rifle" type="MeshInstance3D" parent="Geometry" unique_id=756114737 groups=["map_visual"]]
+[node name="BuyPanel_rifle" type="MeshInstance3D" parent="Geometry" unique_id=1141147285 groups=["map_visual"]]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -8.16, 1.45, -2)
 material_override = SubResource("StandardMaterial3D_npuo5")
 mesh = SubResource("BoxMesh_7xno6")
 
-[node name="BuyLabel_rifle" type="Label3D" parent="Geometry" unique_id=1106119359]
+[node name="BuyLabel_rifle" type="Label3D" parent="Geometry" unique_id=376080206]
 transform = Transform3D(-4.371139e-08, 0, -1, 0, 1, 0, 1, 0, -4.371139e-08, -8.25, 2.15, -2)
 pixel_size = 0.004
 modulate = Color(0.95, 0.85, 0.4, 1)
@@ -731,7 +734,7 @@ text = "AR-7 CARBINE"
 font_size = 48
 outline_size = 8
 
-[node name="AmmoLabel" type="Label3D" parent="Geometry" unique_id=1167725180]
+[node name="AmmoLabel" type="Label3D" parent="Geometry" unique_id=1712168760]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.25, 10.5)
 pixel_size = 0.004
 modulate = Color(0.95, 0.85, 0.4, 1)
@@ -739,120 +742,132 @@ text = "AMMO"
 font_size = 48
 outline_size = 8
 
-[node name="Markers" type="Node3D" parent="." unique_id=1278150950]
+[node name="SupplyBox_block" type="MeshInstance3D" parent="Geometry" unique_id=119363066 groups=["map_wall"]]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 16.5, 0.4, 1.4)
+visible = false
+material_override = SubResource("StandardMaterial3D_27e6a")
+mesh = SubResource("BoxMesh_0mphj")
 
-[node name="PlayerSpawn1" type="Marker3D" parent="Markers" unique_id=1182460983 groups=["map_player_spawn"]]
+[node name="Markers" type="Node3D" parent="." unique_id=1425452382]
+
+[node name="PlayerSpawn1" type="Marker3D" parent="Markers" unique_id=86051590 groups=["map_player_spawn"]]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.5, 0, 15.5)
 
-[node name="PlayerSpawn2" type="Marker3D" parent="Markers" unique_id=1792177690 groups=["map_player_spawn"]]
+[node name="PlayerSpawn2" type="Marker3D" parent="Markers" unique_id=1088204086 groups=["map_player_spawn"]]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.5, 0, 15.5)
 
-[node name="PlayerSpawn3" type="Marker3D" parent="Markers" unique_id=833456796 groups=["map_player_spawn"]]
+[node name="PlayerSpawn3" type="Marker3D" parent="Markers" unique_id=1536981467 groups=["map_player_spawn"]]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.5, 0, 17)
 
-[node name="PlayerSpawn4" type="Marker3D" parent="Markers" unique_id=563414261 groups=["map_player_spawn"]]
+[node name="PlayerSpawn4" type="Marker3D" parent="Markers" unique_id=976624762 groups=["map_player_spawn"]]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.5, 0, 17)
 
-[node name="ZombieEntry_yard_nw" type="Marker3D" parent="Markers" unique_id=2137788379 groups=["map_zombie_entry"]]
+[node name="ZombieEntry_yard_nw" type="Marker3D" parent="Markers" unique_id=1614492762 groups=["map_zombie_entry"]]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -10, 0, -25.8)
 metadata/entry_id = "yard_nw"
 metadata/inside = Vector2(-10, -22.5)
 
-[node name="ZombieEntry_yard_ne" type="Marker3D" parent="Markers" unique_id=2120754267 groups=["map_zombie_entry"]]
+[node name="ZombieEntry_yard_ne" type="Marker3D" parent="Markers" unique_id=52544290 groups=["map_zombie_entry"]]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 10, 0, -25.8)
 metadata/entry_id = "yard_ne"
 metadata/inside = Vector2(10, -22.5)
 
-[node name="ZombieEntry_lab_window" type="Marker3D" parent="Markers" unique_id=60203963 groups=["map_zombie_entry"]]
+[node name="ZombieEntry_lab_window" type="Marker3D" parent="Markers" unique_id=910754831 groups=["map_zombie_entry"]]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -19.8, 0, -2)
 metadata/entry_id = "lab_window"
 metadata/inside = Vector2(-16.5, -2)
 
-[node name="ZombieEntry_storage_window" type="Marker3D" parent="Markers" unique_id=175935156 groups=["map_zombie_entry"]]
+[node name="ZombieEntry_storage_window" type="Marker3D" parent="Markers" unique_id=1212717943 groups=["map_zombie_entry"]]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 19.8, 0, -2)
 metadata/entry_id = "storage_window"
 metadata/inside = Vector2(16.5, -2)
 
-[node name="Buy_rifle" type="Marker3D" parent="Markers" unique_id=684367046 groups=["map_interact"]]
+[node name="Buy_rifle" type="Marker3D" parent="Markers" unique_id=1587724827 groups=["map_interact"]]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -8.6, 0, -2)
 metadata/interact_id = "buy_rifle"
 metadata/kind = "weapon"
 metadata/item = "rifle"
 metadata/radius = 1.8
 
-[node name="Ammo" type="Marker3D" parent="Markers" unique_id=616045997 groups=["map_interact"]]
+[node name="Ammo" type="Marker3D" parent="Markers" unique_id=1605041378 groups=["map_interact"]]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 11.3)
 metadata/interact_id = "ammo_safe"
 metadata/kind = "ammo"
 metadata/radius = 1.8
 
-[node name="SafeArea" type="Marker3D" parent="Markers" unique_id=468462346 groups=["map_safe_area"]]
+[node name="SupplyBox" type="Marker3D" parent="Markers" unique_id=1906574263 groups=["map_interact"]]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 16.5, 0, 0.2)
+metadata/interact_id = "box_storage"
+metadata/kind = "box"
+metadata/radius = 1.9
+
+[node name="SafeArea" type="Marker3D" parent="Markers" unique_id=2062512868 groups=["map_safe_area"]]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 14)
 metadata/min = Vector2(-5, 10)
 metadata/max = Vector2(5, 18)
 
-[node name="Lights" type="Node3D" parent="." unique_id=1392118923]
+[node name="Lights" type="Node3D" parent="." unique_id=1708258479]
 
-[node name="SafeLight" type="OmniLight3D" parent="Lights" unique_id=1931964020 groups=["map_light"]]
+[node name="SafeLight" type="OmniLight3D" parent="Lights" unique_id=2120440386 groups=["map_light"]]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.7, 14)
 light_color = Color(0.75, 0.85, 1, 1)
 light_energy = 1.1
 omni_range = 9.0
 omni_attenuation = 1.2
 
-[node name="CorrW_Red" type="OmniLight3D" parent="Lights" unique_id=267047698 groups=["map_light"]]
+[node name="CorrW_Red" type="OmniLight3D" parent="Lights" unique_id=854764252 groups=["map_light"]]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -13, 2.6, 7)
 light_color = Color(1, 0.15, 0.1, 1)
 light_energy = 1.6
 omni_range = 7.0
 omni_attenuation = 1.2
 
-[node name="CorrE_Red" type="OmniLight3D" parent="Lights" unique_id=2062118381 groups=["map_light"]]
+[node name="CorrE_Red" type="OmniLight3D" parent="Lights" unique_id=1326033905 groups=["map_light"]]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 13, 2.6, 7)
 light_color = Color(1, 0.15, 0.1, 1)
 light_energy = 1.6
 omni_range = 7.0
 omni_attenuation = 1.2
 
-[node name="CorrW_Amber" type="OmniLight3D" parent="Lights" unique_id=387453492 groups=["map_light"]]
+[node name="CorrW_Amber" type="OmniLight3D" parent="Lights" unique_id=1659272278 groups=["map_light"]]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -9, 2.6, 14)
 light_color = Color(1, 0.55, 0.15, 1)
 light_energy = 1.2
 omni_range = 6.0
 omni_attenuation = 1.2
 
-[node name="CorrE_Amber" type="OmniLight3D" parent="Lights" unique_id=992667961 groups=["map_light"]]
+[node name="CorrE_Amber" type="OmniLight3D" parent="Lights" unique_id=584352020 groups=["map_light"]]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9, 2.6, 14)
 light_color = Color(1, 0.55, 0.15, 1)
 light_energy = 1.2
 omni_range = 6.0
 omni_attenuation = 1.2
 
-[node name="LabLight" type="OmniLight3D" parent="Lights" unique_id=889088083 groups=["map_light"]]
+[node name="LabLight" type="OmniLight3D" parent="Lights" unique_id=1193562240 groups=["map_light"]]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -13, 2.7, -2)
 light_color = Color(1, 0.6, 0.25, 1)
 light_energy = 1.3
 omni_range = 10.0
 omni_attenuation = 1.2
 
-[node name="StorageLight" type="OmniLight3D" parent="Lights" unique_id=177872576 groups=["map_light"]]
+[node name="StorageLight" type="OmniLight3D" parent="Lights" unique_id=396725477 groups=["map_light"]]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 13, 2.7, -2)
 light_color = Color(1, 0.6, 0.25, 1)
 light_energy = 1.3
 omni_range = 10.0
 omni_attenuation = 1.2
 
-[node name="YardLamp" type="OmniLight3D" parent="Lights" unique_id=2076955925 groups=["map_light"]]
+[node name="YardLamp" type="OmniLight3D" parent="Lights" unique_id=1764404497 groups=["map_light"]]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 5, -17)
 light_color = Color(1, 0.7, 0.35, 1)
 light_energy = 2.0
 omni_range = 16.0
 omni_attenuation = 1.2
 
-[node name="Moon" type="DirectionalLight3D" parent="Lights" unique_id=2102628581]
+[node name="Moon" type="DirectionalLight3D" parent="Lights" unique_id=902799104]
 transform = Transform3D(0.8660254, -0.38302222, 0.32139382, 0, 0.64278764, 0.76604444, -0.5, -0.66341394, 0.5566704, 0, 0, 0)
 light_color = Color(0.55, 0.65, 0.9, 1)
 light_energy = 0.35
 
-[node name="WorldEnvironment" type="WorldEnvironment" parent="." unique_id=872811549]
-environment = SubResource("Environment_0mphj")
+[node name="WorldEnvironment" type="WorldEnvironment" parent="." unique_id=1520378755]
+environment = SubResource("Environment_18b4q")

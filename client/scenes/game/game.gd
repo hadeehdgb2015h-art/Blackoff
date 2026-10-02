@@ -18,6 +18,7 @@ var _sfx: Sfx
 var _hud: Hud
 var _controls: TouchControls
 var _zviews := {}  ## zid -> ZombieView
+var _boxes := {}   ## box id -> BoxView
 var _acc: float = 0.0
 var _paused: bool = false
 var _pause_menu: Control
@@ -52,6 +53,7 @@ func _ready() -> void:
 	_controls.pause_requested.connect(_toggle_pause)
 
 	world = SimWorld.new(defs, map_id, randi())
+	_spawn_box_views(defs)
 	pid = world.add_player("You")
 	var p: SimPlayer = world.players[pid]
 	_controls.set_look(p.yaw, p.pitch)
@@ -105,6 +107,20 @@ func _publish_debug(p: SimPlayer, delta: float) -> void:
 		"mag": p.weapon().mag, "hp": p.hp, "wave": world.director.wave, "zombies": world.zombies.size(),
 		"tick": world.tick}
 	JavaScriptBridge.eval("window.__blackoff = %s;" % JSON.stringify(d), true)
+
+
+func _spawn_box_views(defs: Dictionary) -> void:
+	var pool := []
+	for id in defs.weapons:
+		if float(defs.weapons[id].get("boxWeight", 0)) > 0.0:
+			pool.append(id)
+	for b in world.box_sys.boxes.values():
+		var v := BoxView.new()
+		add_child(v)
+		# Face the interaction point (the box sits just behind it).
+		var block_center: Vector2 = b.pos + Vector2(0, 1.2)
+		v.setup(b.id, block_center, SimMath.yaw_to(b.pos, block_center) + PI, pool)
+		_boxes[b.id] = v
 
 
 func _sync_views() -> void:
@@ -181,6 +197,20 @@ func _on_event(e: Dictionary) -> void:
 		"wave_cleared":
 			_sfx.play("wave_end", -6.0, 0.0)
 			print("[game] wave %d cleared, kills=%d" % [e.wave, world.players[pid].kills])
+		"box_opened":
+			_boxes[e.box].on_open(float(world.constants.supplyBox.rollSec))
+			_sfx.play_at("box_open", _boxes[e.box].global_position + Vector3(0, 0.8, 0), 0.0, 0.0)
+			_sfx.play_at("box_roll", _boxes[e.box].global_position + Vector3(0, 0.8, 0), -4.0, 0.0)
+		"box_offer":
+			_boxes[e.box].on_offer(e.weapon)
+			_sfx.play_at("box_offer", _boxes[e.box].global_position + Vector3(0, 0.8, 0), 0.0, 0.0)
+		"box_taken":
+			_boxes[e.box].on_close()
+			if local:
+				_sfx.play("buy", -4.0)
+				_rig.on_switch(e.weapon)
+		"box_expired":
+			_boxes[e.box].on_close()
 		"game_over":
 			print("[game] game over at wave %d" % e.wave)
 			_controls.enabled = false

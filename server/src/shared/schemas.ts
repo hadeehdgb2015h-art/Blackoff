@@ -21,6 +21,7 @@ export const ConstantsSchema = z.object({
   }),
   economy: z.object({ hitReward: pos, headshotKillBonus: pos, reviveReward: pos }),
   maps: z.object({ default: z.string(), navCellSize: num.positive(), navAgentRadius: pos }),
+  supplyBox: z.object({ price: z.number().int().nonnegative(), rollSec: num.positive(), offerSec: num.positive() }),
   progression: z.object({
     xpPerKill: pos, xpPerHeadshot: pos, xpPerWaveReached: pos, levelXpBase: pos, levelXpGrowth: num.min(1),
     maxLevel: z.number().int().positive(),
@@ -40,6 +41,7 @@ export const WeaponSchema = z.object({
   magSize: z.number().int().positive(), reserveStart: z.number().int().nonnegative(), reserveMax: z.number().int().nonnegative(),
   reloadSec: pos, range: num.positive(), spreadDeg: pos, moveSpreadDeg: pos, pellets: z.number().int().positive(),
   price: z.number().int().nonnegative(), ammoPrice: z.number().int().nonnegative(),
+  boxWeight: z.number().nonnegative(),
 });
 export const WeaponsSchema = z.object({ schemaVersion: z.literal(1), weapons: z.record(z.string(), WeaponSchema) });
 
@@ -93,7 +95,7 @@ export const MapSchema = z.object({
   playerSpawns: z.array(z.object({ pos: v2, yaw: num })).min(1),
   zombieEntries: z.array(z.object({ id: z.string(), pos: v2, inside: v2 })).min(1),
   interactables: z.array(z.object({
-    id: z.string(), kind: z.enum(["weapon", "ammo"]), item: z.string().optional(), pos: v2, radius: num.positive(),
+    id: z.string(), kind: z.enum(["weapon", "ammo", "box"]), item: z.string().optional(), pos: v2, radius: num.positive(),
   })),
   safeArea: z.object({ min: v2, max: v2 }),
 });

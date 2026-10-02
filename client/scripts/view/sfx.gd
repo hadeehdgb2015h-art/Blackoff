@@ -4,7 +4,7 @@ extends Node
 ## (generated placeholders, see tools/gen_sfx.py; replace files to upgrade).
 
 const NAMES := ["pistol_shot", "rifle_shot", "dry_fire", "reload", "switch", "zombie_groan1", "zombie_groan2",
-	"zombie_attack", "zombie_hit", "zombie_death", "player_hurt", "buy", "deny", "wave_start", "wave_end"]
+	"zombie_attack", "zombie_hit", "zombie_death", "player_hurt", "buy", "deny", "wave_start", "wave_end", "shotgun_shot", "smg_shot", "box_open", "box_roll", "box_offer"]
 const POOL_2D := 8
 const POOL_3D := 8
 

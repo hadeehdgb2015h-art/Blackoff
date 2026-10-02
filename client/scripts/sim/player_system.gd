@@ -103,31 +103,65 @@ func _shoot(p: SimPlayer, wp: WeaponState, inp: PlayerIntent) -> void:
 	wp.mag -= 1
 	p.shots_fired += 1
 	var spread := deg_to_rad(float(wp.def.moveSpreadDeg if p.moving else wp.def.spreadDeg))
-	var ang := w.rng.randf() * spread
-	var az := w.rng.randf() * TAU
-	var yaw := inp.yaw + cos(az) * ang
-	var pitch := clampf(inp.pitch + sin(az) * ang, -1.5, 1.5)
-	var dir := SimMath.dir3(yaw, pitch)
 	var origin := Vector3(p.pos.x, float(c_player.eyeHeight), p.pos.y)
 	var rng_max := float(wp.def.range)
-	var best_t := w.map.raycast(origin, dir, rng_max)
-	var hit_wall := best_t < rng_max
-	var target: SimZombie = null
-	var head := false
-	for z in w.zombies.values():
-		if z.pos.distance_squared_to(p.pos) > (rng_max + 1.0) * (rng_max + 1.0):
-			continue
-		var h := HitTest.ray_character(origin, dir, z.pos, z.radius(), float(z.def.headCenterHeight), float(z.def.headRadius))
-		if not h.is_empty() and h.t < best_t:
-			best_t = h.t
-			target = z
-			head = h.head
-	var end := origin + dir * best_t
-	w.emit({"type": "shot", "pid": p.id, "weapon": wp.id, "from": origin, "to": end,
-		"hit": "zombie" if target else ("wall" if hit_wall else "none")})
-	if target:
-		var dmg := float(wp.def.damage) * (float(wp.def.headMultiplier) if head else 1.0)
-		w.zombie_sys.apply_damage(target, dmg, head, p, end)
+	var pellets := maxi(1, int(wp.def.pellets))
+	var ends: Array[Vector3] = []
+	var hits := {}  ## zid -> {dmg, head, point}
+	var any_wall := false
+	for i in pellets:
+		var ang := w.rng.randf() * spread
+		var az := w.rng.randf() * TAU
+		var yaw := inp.yaw + cos(az) * ang
+		var pitch := clampf(inp.pitch + sin(az) * ang, -1.5, 1.5)
+		var dir := SimMath.dir3(yaw, pitch)
+		var best_t := w.map.raycast(origin, dir, rng_max)
+		var hit_wall := best_t < rng_max
+		var target: SimZombie = null
+		var head := false
+		for z in w.zombies.values():
+			if z.pos.distance_squared_to(p.pos) > (rng_max + 1.0) * (rng_max + 1.0):
+				continue
+			var h := HitTest.ray_character(origin, dir, z.pos, z.radius(), float(z.def.headCenterHeight), float(z.def.headRadius))
+			if not h.is_empty() and h.t < best_t:
+				best_t = h.t
+				target = z
+				head = h.head
+		var end := origin + dir * best_t
+		ends.append(end)
+		if target:
+			var dmg := float(wp.def.damage) * (float(wp.def.headMultiplier) if head else 1.0)
+			if not hits.has(target.id):
+				hits[target.id] = {"z": target, "dmg": 0.0, "head": false, "point": end}
+			hits[target.id].dmg += dmg
+			hits[target.id].head = hits[target.id].head or head
+		elif hit_wall:
+			any_wall = true
+	w.emit({"type": "shot", "pid": p.id, "weapon": wp.id, "from": origin, "to": ends[0], "ends": ends,
+		"hit": "zombie" if not hits.is_empty() else ("wall" if any_wall else "none")})
+	# One damage application per zombie per trigger pull (pellets are summed).
+	for h in hits.values():
+		if w.zombies.has(h.z.id):
+			w.zombie_sys.apply_damage(h.z, h.dmg, h.head, p, h.point)
+
+
+## Gives a weapon: refills it if owned, fills a free slot, else replaces the held one.
+func give_weapon(p: SimPlayer, id: String) -> void:
+	var owned := p.find_weapon(id)
+	if owned >= 0:
+		var ow: WeaponState = p.weapons[owned]
+		ow.mag = int(ow.def.magSize)
+		ow.reserve = int(ow.def.reserveMax)
+		p.slot = owned
+	else:
+		var ws := WeaponState.create(id, w.defs.weapons[id])
+		if p.weapons.size() < int(c_player.maxWeaponSlots):
+			p.weapons.append(ws)
+			p.slot = p.weapons.size() - 1
+		else:
+			p.weapons[p.slot] = ws
+	p.reload_end = 0.0
+	p.switch_end = w.time + float(c_player.weaponSwitchSec)
 
 
 ## Returns the interaction the player can do now, or {}:
@@ -145,7 +179,9 @@ func interact_option(p: SimPlayer) -> Dictionary:
 	if best.is_empty():
 		return {}
 	var opt := {"id": best.id, "kind": best.kind, "item": best.item}
-	if best.kind == "weapon":
+	if best.kind == "box":
+		opt.merge(w.box_sys.option(w.box_sys.boxes[best.id], p), true)
+	elif best.kind == "weapon":
 		var def: Dictionary = w.defs.weapons[best.item]
 		var owned := p.find_weapon(best.item)
 		if owned >= 0:
@@ -157,7 +193,7 @@ func interact_option(p: SimPlayer) -> Dictionary:
 		var wp := p.weapon()
 		opt.merge({"action": "ammo", "item": wp.id, "cost": int(wp.def.ammoPrice), "label": "Ammo: " + wp.def.displayName,
 			"full": wp.reserve >= int(wp.def.reserveMax)}, true)
-	opt["affordable"] = p.currency >= int(opt.cost)
+	opt["affordable"] = p.currency >= int(opt.cost) and not opt.get("busy", false)
 	return opt
 
 
@@ -168,19 +204,22 @@ func _interact(p: SimPlayer) -> void:
 	if opt.full:
 		w.emit({"type": "purchase_denied", "pid": p.id, "reason": "full"})
 		return
+	if opt.get("busy", false):
+		return
 	if not opt.affordable:
 		w.emit({"type": "purchase_denied", "pid": p.id, "reason": "funds"})
 		return
 	var item: String = opt.item
+	if opt.action == "box":
+		var b = w.box_sys.boxes[opt.id]
+		if not w.box_sys.open(b, p):
+			w.emit({"type": "purchase_denied", "pid": p.id, "reason": "full"})
+		return
+	if opt.action == "take":
+		w.box_sys.take(w.box_sys.boxes[opt.id], p)
+		return
 	if opt.action == "weapon":
-		var ws := WeaponState.create(item, w.defs.weapons[item])
-		if p.weapons.size() < int(c_player.maxWeaponSlots):
-			p.weapons.append(ws)
-			p.slot = p.weapons.size() - 1
-		else:
-			p.weapons[p.slot] = ws
-		p.reload_end = 0.0
-		p.switch_end = w.time + float(c_player.weaponSwitchSec)
+		give_weapon(p, item)
 	else:
 		var wp: WeaponState = p.weapons[p.find_weapon(item)]
 		wp.reserve = int(wp.def.reserveMax)

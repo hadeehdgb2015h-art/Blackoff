@@ -137,6 +137,14 @@ func _markers() -> void:
 	ammo.set_meta("kind", "ammo")
 	ammo.set_meta("radius", 1.8)
 	_label("AmmoLabel", Vector3(0, 1.25, 10.5), "AMMO", 0.0)
+	# Supply cache (random weapon box) in the storage room; the visible model is
+	# spawned by the game (BoxView), this hidden box only blocks movement.
+	var box_block := _box("SupplyBox_block", Vector3(15.8, 0, 1.05), Vector3(17.2, 0.8, 1.75), "crate", "map_wall")
+	box_block.visible = false
+	var box := _marker("SupplyBox", Vector2(16.5, 0.2), "map_interact")
+	box.set_meta("interact_id", "box_storage")
+	box.set_meta("kind", "box")
+	box.set_meta("radius", 1.9)
 	var safe := _marker("SafeArea", Vector2(0, 14), "map_safe_area")
 	safe.set_meta("min", Vector2(-5, 10))
 	safe.set_meta("max", Vector2(5, 18))

@@ -17,7 +17,8 @@
       "moveSpreadDeg": 2.0,
       "pellets": 1,
       "price": 0,
-      "ammoPrice": 100
+      "ammoPrice": 100,
+      "boxWeight": 0
     },
     "rifle": {
       "displayName": "AR-7 Carbine",
@@ -35,7 +36,46 @@
       "moveSpreadDeg": 3.5,
       "pellets": 1,
       "price": 1200,
-      "ammoPrice": 600
+      "ammoPrice": 600,
+      "boxWeight": 3
+    },
+    "shotgun": {
+      "displayName": "KS-12 Breacher",
+      "slot": "primary",
+      "fireMode": "semi",
+      "damage": 17,
+      "headMultiplier": 1.5,
+      "fireRateRpm": 80,
+      "magSize": 6,
+      "reserveStart": 36,
+      "reserveMax": 54,
+      "reloadSec": 2.8,
+      "range": 20,
+      "spreadDeg": 5.5,
+      "moveSpreadDeg": 7.0,
+      "pellets": 8,
+      "price": 0,
+      "ammoPrice": 500,
+      "boxWeight": 3
+    },
+    "smg": {
+      "displayName": "VX-9 Ripper",
+      "slot": "primary",
+      "fireMode": "auto",
+      "damage": 22,
+      "headMultiplier": 1.8,
+      "fireRateRpm": 900,
+      "magSize": 32,
+      "reserveStart": 160,
+      "reserveMax": 256,
+      "reloadSec": 1.9,
+      "range": 35,
+      "spreadDeg": 2.4,
+      "moveSpreadDeg": 3.2,
+      "pellets": 1,
+      "price": 0,
+      "ammoPrice": 450,
+      "boxWeight": 3
     }
   }
 }

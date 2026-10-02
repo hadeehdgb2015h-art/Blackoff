@@ -160,9 +160,17 @@ func update_state(p: SimPlayer, w: SimWorld, interact: Dictionary, delta: float)
 	if interact.is_empty():
 		_prompt.text = ""
 	else:
-		var verb := "Buy" if interact.action == "weapon" else "Refill"
-		var suffix := "  (full)" if interact.full else ""
-		_prompt.text = "%s %s  $%d%s" % [verb, interact.label, interact.cost, suffix]
+		match interact.action:
+			"box":
+				_prompt.text = "Open Supply Cache  $%d" % interact.cost
+			"take":
+				_prompt.text = "Take %s" % interact.label
+			"wait":
+				_prompt.text = "Supply Cache in use"
+			_:
+				var verb := "Buy" if interact.action == "weapon" else "Refill"
+				var suffix := "  (full)" if interact.full else ""
+				_prompt.text = "%s %s  $%d%s" % [verb, interact.label, interact.cost, suffix]
 		_prompt.add_theme_color_override("font_color", UiTheme.TEXT if interact.affordable and not interact.full else UiTheme.MUTED)
 	_cross.spread = 1.6 if p.moving else 1.0
 	_cross.visible = p.is_alive()
@@ -204,6 +212,9 @@ func on_event(e: Dictionary, local_pid: int) -> void:
 		"purchase":
 			if e.pid == local_pid:
 				_show_toast("Purchased")
+		"box_offer":
+			if e.pid == local_pid:
+				_show_toast("Take it before it's gone!")
 
 
 func show_game_over(wave: int, p: SimPlayer) -> void:

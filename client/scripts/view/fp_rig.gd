@@ -59,7 +59,7 @@ func set_weapon(id: String) -> void:
 	_weapon_node = Visuals.try_model(_vis.get("model", ""))
 	if _weapon_node == null:
 		var mi := MeshInstance3D.new()
-		mi.mesh = _weapon_mesh(id, _vis)
+		mi.mesh = weapon_mesh(id, _vis)
 		mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 		_weapon_node = mi
 	_vm_holder.add_child(_weapon_node)
@@ -160,7 +160,9 @@ func _animate(delta: float) -> void:
 			_light.light_energy = 2.5 * (_flash_t / 0.05)
 
 
-static func _weapon_mesh(id: String, v: Dictionary) -> ArrayMesh:
+static func weapon_mesh(id: String, v: Dictionary = {}) -> ArrayMesh:
+	if v.is_empty():
+		v = Visuals.weapon(id)
 	if _weapon_mesh_cache.has(id):
 		return _weapon_mesh_cache[id]
 	var body := MeshKit.mat(Color(v.body), 0.5)
@@ -174,6 +176,23 @@ static func _weapon_mesh(id: String, v: Dictionary) -> ArrayMesh:
 			{"mesh": MeshKit.box(Vector3(0.032, 0.03, 0.17)), "xform": MeshKit.xf(Vector3(0, 0.005, -0.07)), "mat": 1},
 			{"mesh": MeshKit.box(Vector3(0.03, 0.11, 0.05)), "xform": MeshKit.xf(Vector3(0, -0.04, 0.0), Vector3(-0.25, 0, 0)), "mat": 1},
 			{"mesh": MeshKit.box(Vector3(0.06, 0.07, 0.09)), "xform": MeshKit.xf(Vector3(0.0, -0.05, 0.03), Vector3(-0.25, 0, 0)), "mat": 2},
+		]
+	elif v.shape == "shotgun":
+		parts = [
+			{"mesh": MeshKit.box(Vector3(0.055, 0.075, 0.3)), "xform": MeshKit.xf(Vector3(0, 0.0, -0.1)), "mat": 0},
+			{"mesh": MeshKit.cylinder(0.018, 0.42), "xform": MeshKit.xf(Vector3(0, 0.02, -0.42), Vector3(PI / 2, 0, 0)), "mat": 0},
+			{"mesh": MeshKit.cylinder(0.022, 0.2), "xform": MeshKit.xf(Vector3(0, -0.02, -0.36), Vector3(PI / 2, 0, 0)), "mat": 1},
+			{"mesh": MeshKit.box(Vector3(0.045, 0.09, 0.2)), "xform": MeshKit.xf(Vector3(0, -0.025, 0.13), Vector3(-0.1, 0, 0)), "mat": 1},
+			{"mesh": MeshKit.box(Vector3(0.06, 0.07, 0.09)), "xform": MeshKit.xf(Vector3(0, -0.06, 0.0), Vector3(-0.2, 0, 0)), "mat": 2},
+			{"mesh": MeshKit.box(Vector3(0.06, 0.06, 0.09)), "xform": MeshKit.xf(Vector3(-0.01, -0.05, -0.36)), "mat": 2},
+		]
+	elif v.shape == "smg":
+		parts = [
+			{"mesh": MeshKit.box(Vector3(0.045, 0.065, 0.24)), "xform": MeshKit.xf(Vector3(0, 0.0, -0.08)), "mat": 0},
+			{"mesh": MeshKit.cylinder(0.014, 0.12), "xform": MeshKit.xf(Vector3(0, 0.012, -0.26), Vector3(PI / 2, 0, 0)), "mat": 1},
+			{"mesh": MeshKit.box(Vector3(0.03, 0.16, 0.04)), "xform": MeshKit.xf(Vector3(0, -0.1, -0.06)), "mat": 0},
+			{"mesh": MeshKit.box(Vector3(0.02, 0.05, 0.16)), "xform": MeshKit.xf(Vector3(0, -0.005, 0.12)), "mat": 1},
+			{"mesh": MeshKit.box(Vector3(0.06, 0.07, 0.09)), "xform": MeshKit.xf(Vector3(0, -0.06, 0.02), Vector3(-0.2, 0, 0)), "mat": 2},
 		]
 	else:
 		parts = [

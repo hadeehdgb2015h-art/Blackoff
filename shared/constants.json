@@ -47,5 +47,6 @@
     "maxInputsPerSecond": 40
   },
   "anticheat": {"speedToleranceFactor": 1.25, "fireRateToleranceMs": 15, "logOnly": true},
-  "maps": {"default": "facility_01", "navCellSize": 0.5, "navAgentRadius": 0.3}
+  "maps": {"default": "facility_01", "navCellSize": 0.5, "navAgentRadius": 0.3},
+  "supplyBox": {"price": 950, "rollSec": 4.0, "offerSec": 9.0}
 }

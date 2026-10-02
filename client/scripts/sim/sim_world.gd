@@ -24,6 +24,7 @@ var events: Array[Dictionary] = []
 var _next_id: int = 1
 var player_sys: PlayerSystem
 var zombie_sys: ZombieSystem
+var box_sys: BoxSystem
 
 
 ## defs = SharedLoader.load_all() result; map_id selects defs.maps entry.
@@ -37,6 +38,7 @@ func _init(shared_defs: Dictionary, map_id: String, seed: int) -> void:
 	director = WaveDirector.new(defs.waves, defs.zombies)
 	player_sys = PlayerSystem.new(self)
 	zombie_sys = ZombieSystem.new(self)
+	box_sys = BoxSystem.new(self)
 
 
 func add_player(display_name: String) -> int:
@@ -73,6 +75,7 @@ func step() -> void:
 		return
 	for p in players.values():
 		player_sys.update(p)
+	box_sys.update()
 	_update_director()
 	zombie_sys.update_all()
 	zombie_sys.separate_from_players()

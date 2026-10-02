@@ -44,7 +44,11 @@
       "purchase": 7,
       "reloadDone": 8,
       "playerJoined": 9,
-      "playerLeft": 10
+      "playerLeft": 10,
+      "boxOpened": 11,
+      "boxOffer": 12,
+      "boxTaken": 13,
+      "boxExpired": 14
     }
   },
   "types": {

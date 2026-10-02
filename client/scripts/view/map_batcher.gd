@@ -15,7 +15,7 @@ static func batch(map_root: Node3D) -> int:
 		var n: Node = stack.pop_back()
 		stack.append_array(n.get_children())
 		var mi := n as MeshInstance3D
-		if mi == null or mi.mesh == null:
+		if mi == null or mi.mesh == null or not mi.visible:
 			continue
 		var in_group := false
 		for g in GROUPS:
@@ -36,6 +36,13 @@ static func batch(map_root: Node3D) -> int:
 		out.name = "Batched_" + (mat.resource_name if mat else "nomat")
 		out.mesh = st.commit()
 		map_root.add_child(out)
+	# Hidden collision-only meshes (e.g. the supply box block) are dropped too.
+	stack = [map_root]
+	while not stack.is_empty():
+		var n: Node = stack.pop_back()
+		stack.append_array(n.get_children())
+		if n is MeshInstance3D and not n.visible and n.is_in_group("map_wall"):
+			victims.append(n)
 	for v in victims:
 		v.get_parent().remove_child(v)
 		v.queue_free()
