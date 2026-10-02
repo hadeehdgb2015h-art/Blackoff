@@ -33,11 +33,12 @@ cd server && npm ci && npm run typecheck && npm test && npm run build
 - Chromium for Playwright lives at `/opt/pw-browsers`. The global `playwright` package is under `$(npm root -g)`.
 - The claude.ai artifact host rejects the 38 MB wasm (15 MB file limit), so it cannot host previews.
 
-## Preview link: blocked on the owner
+## Preview link: GitHub Pages (owner chose public repo)
 
-The repository is private, so GitHub Pages likely needs a paid plan. Options:
-1. **(Recommended) Owner's server**: needed from phase 4 anyway. Requires the secrets listed in "Needs from owner".
-2. Make the repository public, then enable Pages (Settings → Pages → Source: GitHub Actions); a Pages job then gets added.
+The `pages` job in `ci.yml` deploys `build/web` to GitHub Pages after every push. It is non-blocking (`continue-on-error`) until the owner enables Pages.
+Owner steps: make the repo public; Settings → Pages → Source: GitHub Actions; Settings → Environments → github-pages → allow branch pattern `claude/*`.
+Expected URL: https://hadeehdgb2015h-art.github.io/Blackoff/
+Pages is for client previews only. From phase 2 on, the game server runs on the owner's server.
 
 ## Needs from owner (open)
 

@@ -69,3 +69,27 @@ jobs:
           name: smoke-screenshot
           path: build/smoke.png
           if-no-files-found: ignore
+
+  # Phone-testable preview on GitHub Pages (needs a public repo with
+  # Settings > Pages > Source = GitHub Actions). Non-blocking until enabled.
+  pages:
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+    needs: client-web
+    runs-on: ubuntu-24.04
+    continue-on-error: true
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: web-build
+          path: site
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+      - id: deploy
+        uses: actions/deploy-pages@v4
