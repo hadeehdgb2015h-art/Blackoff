@@ -35,6 +35,7 @@ var mic_talking: bool = false     ## pulse the mic ring while the player speaks
 var mic_blocked: bool = false     ## permission denied / unsupported: drawn crossed and grey
 
 var _touches := {}  ## index -> {role, button, start, last}
+var _drawn_state: Array = []
 var _stick_origin := Vector2.ZERO
 var _stick_vec := Vector2.ZERO
 var _fire_held_touch: bool = false
@@ -324,7 +325,13 @@ func _process(delta: float) -> void:
 			step = _aim_pending
 		_aim_pending -= step
 		_aim(step)
-	queue_redraw()
+	# Redrawing every frame costs real battery on phones: only when the drawn
+	# state changed (touch events already request a redraw themselves).
+	var state := [interact_label, interact_ok, revive_available, enabled, edit_mode, voice_buttons, mic_on, speaker_on,
+		mic_blocked, melee_mode, opacity, size]
+	if state != _drawn_state or (mic_talking and mic_on):
+		_drawn_state = state
+		queue_redraw()
 
 
 func _draw() -> void:

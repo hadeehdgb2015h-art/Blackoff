@@ -63,7 +63,7 @@ func _ready() -> void:
 	var row := HBoxContainer.new()
 	row.add_theme_constant_override("separation", 10)
 	bar.add_child(row)
-	_title = UiTheme.label("LAYOUT · drag a button", 18, UiTheme.ACCENT)
+	_title = UiTheme.title("LAYOUT  ·  drag a button", 16, UiTheme.GOLD)
 	_title.custom_minimum_size = Vector2(190, 0)
 	row.add_child(_title)
 	row.add_child(UiTheme.label("Size", 16, UiTheme.MUTED))
@@ -96,18 +96,18 @@ func _ready() -> void:
 		_layout.fire2["enabled"] = on
 		_controls.queue_redraw())
 	row.add_child(_fire2)
-	for b in [UiTheme.button("Reset", _reset), UiTheme.button("Save", func(): _save(op.value)),
-			UiTheme.button("Cancel", func():
+	for b in [UiTheme.button("RESET", _reset), UiTheme.gold_button("SAVE", func(): _save(op.value)),
+			UiTheme.button("CANCEL", func():
 				closed.emit()
 				queue_free())]:
-		b.add_theme_font_size_override("font_size", 20)
-		var sb := StyleBoxFlat.new()
-		sb.bg_color = Color(0.13, 0.14, 0.16)
-		sb.set_corner_radius_all(4)
-		sb.set_content_margin_all(8)
-		sb.content_margin_left = 16
-		sb.content_margin_right = 16
-		b.add_theme_stylebox_override("normal", sb)
+		b.add_theme_font_size_override("font_size", 16)
+		for st in ["normal", "hover", "pressed"]:
+			var sb: StyleBoxTexture = b.get_theme_stylebox(st).duplicate()
+			sb.content_margin_left = 14
+			sb.content_margin_right = 14
+			sb.content_margin_top = 6
+			sb.content_margin_bottom = 6
+			b.add_theme_stylebox_override(st, sb)
 		row.add_child(b)
 	_select("fire")
 	print("[layout] editor ready: %d controls, view %s" % [_controls._buttons().size(), str(_view_size())])

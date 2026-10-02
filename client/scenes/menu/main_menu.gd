@@ -4,7 +4,7 @@ extends Control
 ## profile card (name and record when logged in through Telegram).
 ## ?autostart=1 jumps straight into solo practice (browser smoke test with
 ## ?bot=1); with ?server=… or ?online=1 it starts quick play online instead.
-## ?screen=layout opens the controls editor, ?screen=hunt the weekly hunt (screenshot tests).
+## ?screen=layout|settings|howto|hunt opens that screen at once (screenshot tests).
 
 const GAME := "res://scenes/game/game.tscn"
 const BACKDROP := "res://assets/ui/menu_bg.jpg"
@@ -41,6 +41,10 @@ func _ready() -> void:
 	_show_profile()
 	if Platform.query_param("screen") == "layout":
 		_open_layout.call_deferred()
+	elif Platform.query_param("screen") == "settings":
+		_settings.call_deferred()
+	elif Platform.query_param("screen") == "howto":
+		_how_to_play.call_deferred()
 	elif Platform.query_param("screen") == "hunt":
 		# screenshot tests: open the weekly hunt once logged in (needs ?server= and ?name=)
 		if Net.status in ["offline", "failed"] and Net.is_online_available():
@@ -58,7 +62,7 @@ func _ready() -> void:
 
 func _build_backdrop() -> void:
 	var bg := ColorRect.new()
-	bg.color = Color(0.03, 0.035, 0.04)
+	bg.color = UiTheme.BG
 	bg.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	add_child(bg)
 	if ResourceLoader.exists(BACKDROP):
@@ -67,13 +71,14 @@ func _build_backdrop() -> void:
 		tex.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 		tex.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 		tex.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
+		tex.modulate = Color(0.8, 0.78, 0.8)
 		add_child(tex)
-	# darken the left side so text stays readable over the picture
+	# the left half fades to black so the menu reads over the picture
 	var shade := TextureRect.new()
 	var g := Gradient.new()
-	g.set_color(0, Color(0.02, 0.02, 0.03, 0.92))
-	g.add_point(0.55, Color(0.02, 0.02, 0.03, 0.45))
-	g.set_color(g.get_point_count() - 1, Color(0.02, 0.02, 0.03, 0.15))
+	g.set_color(0, Color(0.02, 0.02, 0.03, 0.96))
+	g.add_point(0.5, Color(0.02, 0.02, 0.03, 0.55))
+	g.set_color(g.get_point_count() - 1, Color(0.02, 0.02, 0.03, 0.1))
 	var gt := GradientTexture2D.new()
 	gt.gradient = g
 	gt.fill_from = Vector2(0, 0)
@@ -83,43 +88,52 @@ func _build_backdrop() -> void:
 	shade.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	shade.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(shade)
-	var stripe := ColorRect.new()
-	stripe.color = UiTheme.ACCENT
-	stripe.set_anchors_and_offsets_preset(Control.PRESET_LEFT_WIDE)
-	stripe.offset_right = 8
-	add_child(stripe)
+	add_child(UiTheme.vignette(0.9))
+	var embers := UiTheme.embers(30)  # 30 soft dots: cheap even on low phones
+	embers.position = Vector2(640, 760)
+	add_child(embers)
+	# a brass hairline frames the screen
+	var frame := UiTheme.Rule.new()
+	frame.color = UiTheme.BRASS_DARK
+	frame.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_WIDE)
+	frame.offset_top = -56
+	frame.offset_bottom = -42
+	frame.offset_left = 60
+	frame.offset_right = -60
+	frame.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(frame)
 
 
 func _build_title() -> void:
-	var title := UiTheme.label("BLACKOFF", 84, UiTheme.TEXT)
-	title.position = Vector2(80, 36)
+	var glow := UiTheme.title("BLACKOFF", 88, Color(0.6, 0.12, 0.08, 0.55))
+	glow.position = Vector2(82, 32)
+	glow.add_theme_constant_override("outline_size", 14)
+	glow.add_theme_color_override("font_outline_color", Color(0.5, 0.1, 0.06, 0.25))
+	add_child(glow)
+	var title := UiTheme.title("BLACKOFF", 88, UiTheme.TEXT)
+	title.position = Vector2(80, 30)
+	title.add_theme_constant_override("outline_size", 6)
 	add_child(title)
-	var sub := UiTheme.label("DARK FANTASY ZOMBIE SURVIVAL  ·  CO-OP", 20, UiTheme.MUTED)
-	sub.position = Vector2(86, 130)
+	var sub := UiTheme.title(UiTheme.spaced("dark fantasy zombie survival"), 15, UiTheme.GOLD)
+	sub.position = Vector2(86, 128)
 	add_child(sub)
+	var r := UiTheme.rule(520)
+	r.position = Vector2(84, 154)
+	add_child(r)
 
 
 func _build_left_column() -> void:
 	var col := VBoxContainer.new()
-	col.add_theme_constant_override("separation", 14)
-	col.position = Vector2(84, 190)
+	col.add_theme_constant_override("separation", 10)
+	col.position = Vector2(84, 184)
 	col.custom_minimum_size = Vector2(520, 0)
 	add_child(col)
-	var mode := HBoxContainer.new()
-	mode.add_theme_constant_override("separation", 10)
-	var tag := UiTheme.label("ZOMBIES", 20, UiTheme.ACCENT)
-	mode.add_child(tag)
-	mode.add_child(UiTheme.label("co-op: survive the waves with up to 5 players", 18, UiTheme.MUTED))
-	col.add_child(mode)
-	_play = UiTheme.big_button("PLAY ONLINE", _play_online)
+	_play = UiTheme.big_button("PLAY ONLINE  ·  ZOMBIES", _play_online)
 	col.add_child(_play)
-	var mode2 := HBoxContainer.new()
-	mode2.add_theme_constant_override("separation", 10)
-	mode2.add_child(UiTheme.label("INFECTION", 20, Color(0.45, 0.85, 0.5)))
-	mode2.add_child(UiTheme.label("players vs players: soldiers against the infected, up to 10", 18, UiTheme.MUTED))
-	col.add_child(mode2)
+	col.add_child(_caption("Co-op survival: hold the waves with up to 5 players"))
 	_play_inf = UiTheme.big_button("PLAY INFECTION", _play_infection)
 	col.add_child(_play_inf)
+	col.add_child(_caption("Players vs players: soldiers against the infected, up to 10"))
 	var why := ""
 	if not Net.is_online_available():
 		why = "  (server not set)"
@@ -129,53 +143,80 @@ func _build_left_column() -> void:
 		for b in [_play, _play_inf]:
 			b.disabled = true
 			b.text += why
-	col.add_child(UiTheme.button("SOLO PRACTICE", _play_solo))
 	var row := HBoxContainer.new()
-	row.add_theme_constant_override("separation", 10)
+	row.add_theme_constant_override("separation", 8)
+	row.add_child(UiTheme.button("SOLO PRACTICE", _play_solo))
 	row.add_child(UiTheme.button("SETTINGS", _settings))
 	row.add_child(UiTheme.button("CONTROLS", _open_layout))
-	row.add_child(UiTheme.button("HOW TO PLAY", _how_to_play))
 	col.add_child(row)
-	_board_button = UiTheme.button("WEEKLY HUNT  ·  TON leaderboard", _show_leaderboard)
+	var row2 := HBoxContainer.new()
+	row2.add_theme_constant_override("separation", 8)
+	_board_button = UiTheme.gold_button("WEEKLY HUNT  ·  TON", _show_leaderboard)
 	_board_button.disabled = true
-	col.add_child(_board_button)
-	var soon := UiTheme.label("Online: voice chat with MIC / SPK on the HUD. Infection kills count for the match, TON comes from zombies only.", 16, UiTheme.MUTED)
-	col.add_child(soon)
+	row2.add_child(_board_button)
+	row2.add_child(UiTheme.button("HOW TO PLAY", _how_to_play))
+	col.add_child(row2)
 	if Platform.query_param("debug") == "1":
 		col.add_child(UiTheme.button("DIAGNOSTICS", func(): get_tree().change_scene_to_file("res://scenes/boot/boot.tscn")))
+
+
+func _caption(text: String) -> Label:
+	var l := UiTheme.label(text, 15, UiTheme.MUTED)
+	l.add_theme_constant_override("outline_size", 3)
+	return l
 
 
 func _build_profile_card() -> void:
 	var card := PanelContainer.new()
 	card.set_anchors_and_offsets_preset(Control.PRESET_TOP_RIGHT)
-	card.offset_left = -400
-	card.offset_right = -28
-	card.offset_top = 28
-	card.offset_bottom = 28
+	card.offset_left = -392
+	card.offset_right = -36
+	card.offset_top = 36
+	card.offset_bottom = 36
+	card.add_theme_stylebox_override("panel", UiTheme.panel_box(18))
 	add_child(card)
 	var v := VBoxContainer.new()
-	v.add_theme_constant_override("separation", 6)
+	v.add_theme_constant_override("separation", 4)
 	card.add_child(v)
-	v.add_child(UiTheme.label("PLAYER", 16, UiTheme.MUTED))
-	_profile_name = UiTheme.label("Guest", 28, UiTheme.TEXT)
+	v.add_child(UiTheme.title(UiTheme.spaced("player"), 12, UiTheme.GOLD))
+	_profile_name = UiTheme.title("Guest", 26, UiTheme.TEXT)
 	v.add_child(_profile_name)
-	_profile_stats = UiTheme.label("", 20, UiTheme.GOLD)
+	v.add_child(UiTheme.rule(300, UiTheme.BRASS_DARK))
+	_profile_stats = UiTheme.label("", 18, UiTheme.GOLD)
 	v.add_child(_profile_stats)
-	_profile_hint = UiTheme.label("", 16, UiTheme.MUTED)
+	_profile_hint = UiTheme.label("", 15, UiTheme.MUTED)
 	_profile_hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	v.add_child(_profile_hint)
 
 
 func _build_footer() -> void:
 	var ver := UiTheme.label("v%s  ·  build %s" % [ProjectSettings.get_setting("application/config/version"),
-		Platform.build_id()], 16, UiTheme.MUTED)
+		Platform.build_id()], 13, UiTheme.MUTED)
 	ver.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_RIGHT)
 	ver.offset_left = -420
-	ver.offset_top = -36
-	ver.offset_right = -24
-	ver.offset_bottom = -10
+	ver.offset_top = -34
+	ver.offset_right = -64
+	ver.offset_bottom = -12
 	ver.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	add_child(ver)
+
+
+## A dark curtain with a line of text while the game scene loads (the map is
+## batched on entry, which takes a moment on phones).
+func _loading(text: String) -> void:
+	var cover := ColorRect.new()
+	cover.color = Color(0.02, 0.02, 0.03, 0.97)
+	cover.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	add_child(cover)
+	var l := UiTheme.title(text, 28, UiTheme.GOLD)
+	l.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
+	l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	cover.add_child(l)
+	var r := UiTheme.rule(360)
+	r.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
+	r.offset_top += 30
+	r.offset_bottom += 30
+	cover.add_child(r)
 
 
 # ------------------------------------------------------------------ profile
@@ -215,6 +256,14 @@ func _show_profile() -> void:
 func _play_solo() -> void:
 	Net.online_requested = false
 	Platform.request_fullscreen()
+	_enter("SOLO PRACTICE")
+
+
+## Shows the loading curtain, then changes scene after it has been drawn.
+func _enter(label: String) -> void:
+	_loading(label)
+	await get_tree().process_frame
+	await get_tree().process_frame
 	get_tree().change_scene_to_file(GAME)
 
 
@@ -222,14 +271,14 @@ func _play_online() -> void:
 	Net.online_requested = true
 	Net.mode = 0
 	Platform.request_fullscreen()
-	get_tree().change_scene_to_file(GAME)
+	_enter("ENTERING THE FACILITY")
 
 
 func _play_infection() -> void:
 	Net.online_requested = true
 	Net.mode = 1
 	Platform.request_fullscreen()
-	get_tree().change_scene_to_file(GAME)
+	_enter("INFECTION")
 
 
 func _settings() -> void:
@@ -267,8 +316,9 @@ func _show_leaderboard() -> void:
 	var v := VBoxContainer.new()
 	v.add_theme_constant_override("separation", 8)
 	panel.add_child(v)
-	var title := UiTheme.label("WEEKLY HUNT", 32, UiTheme.ACCENT)
+	var title := UiTheme.title("WEEKLY HUNT", 30, UiTheme.GOLD)
 	v.add_child(title)
+	v.add_child(UiTheme.rule(620))
 	var sub := UiTheme.label("Loading…", 18, UiTheme.MUTED)
 	v.add_child(sub)
 	var grid := GridContainer.new()
@@ -281,7 +331,7 @@ func _show_leaderboard() -> void:
 	var note := UiTheme.label("Every zombie you kill online earns TON points. The week's top hunter gets the prize, paid by the game owner.", 15, UiTheme.MUTED)
 	note.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	v.add_child(note)
-	v.add_child(UiTheme.button("Close", func():
+	v.add_child(UiTheme.gold_button("CLOSE", func():
 		_overlay.queue_free()
 		_overlay = null))
 	var fill := func(b: Dictionary) -> void:
@@ -329,7 +379,8 @@ func _how_to_play() -> void:
 	var v := VBoxContainer.new()
 	v.add_theme_constant_override("separation", 10)
 	panel.add_child(v)
-	v.add_child(UiTheme.label("HOW TO PLAY", 32, UiTheme.ACCENT))
+	v.add_child(UiTheme.title("HOW TO PLAY", 30, UiTheme.GOLD))
+	v.add_child(UiTheme.rule(700))
 	for line in [
 		"Left thumb: move.  Right thumb: drag to aim, FIRE also aims while held.",
 		"Survive the waves. Kills and hits earn credits ($).",
@@ -339,9 +390,10 @@ func _how_to_play() -> void:
 		"A downed teammate bleeds out in 30 s: stand next to them and hold REVIVE.",
 		"If everyone is down, the game is over. Your best wave is saved to your Telegram account.",
 	]:
-		var l := UiTheme.label("•  " + line, 19)
+		var l := UiTheme.label("•  " + line, 18)
 		l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		v.add_child(l)
-	v.add_child(UiTheme.button("Close", func():
+	v.add_child(UiTheme.label("•  INFECTION: soldiers against infected players. A soldier who falls turns; the infected come back after 5 s. Last soldier standing or the clock decides.", 18))
+	v.add_child(UiTheme.gold_button("CLOSE", func():
 		_overlay.queue_free()
 		_overlay = null))

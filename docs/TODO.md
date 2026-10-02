@@ -71,5 +71,11 @@
 - [x] Infection kills count in the match and profile but earn no TON (players, not zombies: nothing to farm)
 - [ ] Later ideas: round score table, a last-survivor bonus, an infected-only sprint
 
+## Phase 14: phone feedback (sound, performance, look)
+- [x] No sound on phones: runtime audio buses looped the web sample graph into silence; flat audio on the web
+- [x] Lag and heat: auto quality (phones start low, climb while the frame rate holds), 30 FPS option, controls redraw on change only, same-tap fullscreen
+- [x] Dark fantasy UI: Cinzel, stone/brass panels, ember buttons, vignette and embers, loading curtain; settings, leaderboard, layout editor, HUD headlines restyled
+- [ ] Still to hear from the owner: phone model, Telegram or browser, frame rate shown by the FPS counter
+
 ## Open questions for the owner
 - Own subdomain or the free sslip.io address (installer default)

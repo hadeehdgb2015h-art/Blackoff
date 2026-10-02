@@ -89,7 +89,10 @@ window.BlackoffTG = (function () {
 })();
 </script>
 <script>
-document.addEventListener('pointerup', function () { window.BlackoffTG._applyFullscreen(); }, true);
+// Godot handles the tap a frame later and only then asks for fullscreen; the
+// browser still counts the tap as a user gesture for a few seconds, so apply it
+// shortly after (same tap), instead of on the next one.
+document.addEventListener('pointerup', function () { setTimeout(function () { window.BlackoffTG._applyFullscreen(); }, 150); }, true);
 // Godot's web runtime turns every 'pointermove' into a mouse motion, touch
 // fingers included, so the move-stick finger would also turn the camera.
 // Touch already reaches the game through touch events: drop non-mouse moves.

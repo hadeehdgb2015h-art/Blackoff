@@ -41,6 +41,7 @@ var _ton_pop_t: float = 0.0
 var _ton_game: int = 0   ## TON points (millionths) earned this game (display only; the server owns the real number)
 
 var _dead_at: float = -1.0   ## infection: when the local infected player fell (respawn countdown)
+var _fps_t: float = 0.0
 var _world: SimWorld
 var _banner_t: float = 0.0
 var _toast_t: float = 0.0
@@ -174,7 +175,8 @@ func _ready() -> void:
 	add_child(_hp_label)
 
 	# Wave (top-centre)
-	_wave_label = _top_centered(40, UiTheme.ACCENT, 10)
+	_wave_label = _top_centered(36, UiTheme.ACCENT, 12)
+	_wave_label.add_theme_font_override("font", UiTheme.display_font())
 	_wave_sub = _top_centered(20, UiTheme.MUTED, 60)
 	_boosts = _top_centered(22, Color(1.0, 0.8, 0.3), 86)
 
@@ -200,9 +202,11 @@ func _ready() -> void:
 	_status = _centered(26, UiTheme.ACCENT, 70)
 
 	_prompt = _centered(26, UiTheme.TEXT, 150)
-	_banner = _centered(64, UiTheme.ACCENT, -120, true)
+	_banner = _centered(56, UiTheme.ACCENT, -120, true)
+	_banner.add_theme_font_override("font", UiTheme.display_font())
 	_toast = _centered(24, Color(1, 0.55, 0.45), 200)
-	_downed = _centered(40, UiTheme.ACCENT, -40, true)
+	_downed = _centered(36, UiTheme.ACCENT, -40, true)
+	_downed.add_theme_font_override("font", UiTheme.display_font())
 
 	_fps = UiTheme.label("", 18, UiTheme.MUTED)
 	_fps.position = Vector2(24, 52)
@@ -346,7 +350,10 @@ func update_state(p: SimPlayer, w: SimWorld, interact: Dictionary, delta: float)
 	else:
 		_revive_label.text = ""
 	_fps.visible = Settings.show_fps
-	_fps.text = "%d FPS" % Engine.get_frames_per_second()
+	_fps_t -= delta
+	if _fps_t <= 0.0:
+		_fps_t = 0.5
+		_fps.text = "%d FPS  ·  %s" % [Engine.get_frames_per_second(), Settings.effective_quality()]
 	_tick(delta)
 
 
@@ -550,9 +557,12 @@ func _build_game_over() -> void:
 	v.add_theme_constant_override("separation", 18)
 	v.alignment = BoxContainer.ALIGNMENT_CENTER
 	_game_over.add_child(v)
-	var title := UiTheme.label("OVERRUN", 56, UiTheme.ACCENT)
+	var title := UiTheme.title("OVERRUN", 52, UiTheme.ACCENT)
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	v.add_child(title)
+	var r := UiTheme.rule(420)
+	r.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	v.add_child(r)
 	_go_stats = UiTheme.label("", 26)
 	_go_stats.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	v.add_child(_go_stats)
@@ -564,8 +574,8 @@ func _build_game_over() -> void:
 	var row := HBoxContainer.new()
 	row.add_theme_constant_override("separation", 16)
 	row.alignment = BoxContainer.ALIGNMENT_CENTER
-	row.add_child(UiTheme.button("Play again", func(): retry_pressed.emit()))
-	row.add_child(UiTheme.button("Main menu", func(): menu_pressed.emit()))
+	row.add_child(UiTheme.big_button("PLAY AGAIN", func(): retry_pressed.emit()))
+	row.add_child(UiTheme.button("MAIN MENU", func(): menu_pressed.emit()))
 	v.add_child(row)
 	add_child(_game_over)
 

@@ -21,6 +21,9 @@ var _controls: TouchControls
 var _zviews := {}  ## zid -> ZombieView
 var _pviews := {}  ## other players' entity id -> RemotePlayerView
 var _izviews := {}  ## infection: infected players' entity id -> ZombieView (with a name tag)
+var _perf_t: float = 0.0
+var _perf_frames: int = 0
+var _perf_good: int = 0
 var _online: bool = false
 var _net_log_t: float = 10.0
 var _showcase_soldiers: Array = []
@@ -91,6 +94,14 @@ func _ready() -> void:
 	_defs = defs
 	Settings.changed.connect(_apply_quality)
 	_debug_js = Platform.is_web and Platform.query_param("debug") == "1"
+	if _debug_js or Platform.query_param("audiocheck") == "1":
+		# how this platform plays sound (web without threads = sample playback; a
+		# stream that is not registered as a sample stays silent there)
+		var music: AudioStream = load("res://assets/sfx/music_menu.wav")
+		var shot: AudioStream = load("res://assets/sfx/pistol_shot.wav")
+		print("[audio] music sample=%s shot sample=%s; music class %s; buses %d; master %.1f dB" % [
+			AudioServer.is_stream_registered_as_sample(music), AudioServer.is_stream_registered_as_sample(shot),
+			music.get_class(), AudioServer.bus_count, AudioServer.get_bus_volume_db(0)])
 	_online = Net.online_requested or Platform.query_param("server") != ""
 	if Platform.query_param("mode") == "infection" and not Net.online_requested:
 		Net.mode = 1  # headless/online tests launch the game scene directly
@@ -207,6 +218,7 @@ func _process(delta: float) -> void:
 	_controls.interact_ok = not opt.is_empty() and opt.affordable and not opt.full
 	_hud.update_state(p, world, opt, delta)
 	_hud.set_markers(_downed_markers(p))
+	_govern_quality(delta)
 	_ambient_groans(delta)
 	if not _showcase_soldiers.is_empty():
 		_update_soldier_showcase(delta)
@@ -680,6 +692,38 @@ func _toggle_pause() -> void:
 	elif _pause_menu:
 		_pause_menu.queue_free()
 		_pause_menu = null
+
+
+## Auto quality: phones start low and climb while the frame rate holds; any
+## tier that cannot hold ~42 FPS drops. Measured over 4-second windows.
+func _govern_quality(delta: float) -> void:
+	if Settings.quality != "auto":
+		return
+	_perf_t += delta
+	_perf_frames += 1
+	if _perf_t < 4.0:
+		return
+	var fps := _perf_frames / _perf_t
+	_perf_t = 0.0
+	_perf_frames = 0
+	var tiers := ["low", "medium", "high"]
+	var i := tiers.find(Settings.auto_tier)
+	var top := 1 if Platform.is_touch else 2   # phones never go above medium on their own
+	var want := i
+	if fps < 42.0 and i > 0:
+		want = i - 1
+		_perf_good = 0
+	elif fps > 56.0 and i < top:
+		_perf_good += 1
+		if _perf_good >= 3:   # 12 steady seconds before stepping up
+			want = i + 1
+			_perf_good = 0
+	else:
+		_perf_good = 0
+	if want != i:
+		Settings.auto_tier = tiers[want]
+		print("[perf] auto quality -> %s (%.0f fps)" % [Settings.auto_tier, fps])
+		_apply_quality()
 
 
 func _apply_quality() -> void:

@@ -21,5 +21,9 @@ Phase 5 adds the team list under the health bar (name and health of each teammat
 
 The team panel draws sound waves before the name of a teammate who is talking (`Net.voice_speaking()`). In infection mode the top shows ROUND, the clock and soldiers left (or the lobby countdown / waiting count), infected players are marked INFECTED (RESPAWNING while down) in green, the local infected sees CLAWS instead of ammo and "INFECTED · hunt the soldiers"; banners: ROUND n, YOU ARE INFECTED, SOLDIERS WIN / INFECTED WIN; toasts name who was infected.
 
+## Look (`scripts/ui/ui_theme.gd`, phase 14)
+Dark fantasy: near-black stone panels and buttons drawn from small generated gradient textures (9-slice) with an old-brass edge, ember red for the calls to action, bone text, Cinzel (OFL) for titles and buttons, a diamond rule as the only ornament (no stars, sigils or symbols), a radial vignette and slow embers behind the menu, spaced capitals for subtitles. The menu shows a loading curtain before the game scene loads. Helpers: `title`, `label`, `button`, `big_button`, `gold_button`, `rule`, `vignette`, `embers`, `panel_box`.
+
 ## Settings (`scripts/core/settings.gd`, autoload)
+Graphics quality defaults to **auto**: phones start on the low tier and the game steps up while the frame rate holds above 56 for 12 s (never above medium on touch devices on its own) and steps down below 42 (`game.gd: _govern_quality`, 4-second windows). The frame cap (60 or 30 FPS, `Engine.max_fps`) is a setting: 30 runs cooler. The touch controls redraw only when their drawn state changes.
 Saved to `user://settings.cfg`: sensitivity, invert-Y, quality, show FPS, volume.

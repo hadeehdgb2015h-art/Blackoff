@@ -4,11 +4,13 @@ extends Node
 signal changed
 
 const PATH := "user://settings.cfg"
-const QUALITY := ["low", "medium", "high"]
+const QUALITY := ["auto", "low", "medium", "high"]
 
 var sensitivity: float = 1.0      ## multiplier on touch/mouse look speed
 var invert_y: bool = false
-var quality: String = "medium"
+var quality: String = "auto"        ## auto = the game picks a tier from the measured frame rate
+var auto_tier: String = "low"       ## current tier under auto (not saved; set by the game)
+var fps_cap: int = 60                ## 30 runs cooler on phones
 var show_fps: bool = true
 var master_volume: float = 0.8
 var music_volume: float = 0.5
@@ -26,6 +28,7 @@ func _ready() -> void:
 		var q := str(cf.get_value("video", "quality", quality))
 		quality = q if q in QUALITY else quality
 		show_fps = bool(cf.get_value("video", "show_fps", show_fps))
+		fps_cap = 30 if int(cf.get_value("video", "fps_cap", fps_cap)) == 30 else 60
 		master_volume = clampf(float(cf.get_value("audio", "master_volume", master_volume)), 0.0, 1.0)
 		music_volume = clampf(float(cf.get_value("audio", "music_volume", music_volume)), 0.0, 1.0)
 		sfx_volume = clampf(float(cf.get_value("audio", "sfx_volume", sfx_volume)), 0.0, 1.0)
@@ -42,6 +45,7 @@ func save() -> void:
 	cf.set_value("input", "invert_y", invert_y)
 	cf.set_value("video", "quality", quality)
 	cf.set_value("video", "show_fps", show_fps)
+	cf.set_value("video", "fps_cap", fps_cap)
 	cf.set_value("audio", "master_volume", master_volume)
 	cf.set_value("audio", "music_volume", music_volume)
 	cf.set_value("audio", "sfx_volume", sfx_volume)
@@ -53,11 +57,16 @@ func save() -> void:
 	changed.emit()
 
 
+## The tier in force: the chosen one, or under auto the measured one.
+func effective_quality() -> String:
+	return auto_tier if quality == "auto" else quality
+
+
 ## Per-tier rendering parameters, applied by the game scene.
 func quality_params() -> Dictionary:
-	match quality:
+	match effective_quality():
 		"low":
-			return {"msaa": 0, "scale": 0.65, "lights": false, "muzzle_light": false, "fog": false, "far": 520.0, "glow": false}
+			return {"msaa": 0, "scale": 0.6, "lights": false, "muzzle_light": false, "fog": false, "far": 480.0, "glow": false}
 		"high":
 			return {"msaa": 4, "scale": 1.0, "lights": true, "muzzle_light": true, "fog": true, "far": 700.0, "glow": true}
 		_:
@@ -65,4 +74,5 @@ func quality_params() -> Dictionary:
 
 
 func _apply_audio() -> void:
+	Engine.max_fps = fps_cap
 	AudioServer.set_bus_volume_db(0, linear_to_db(maxf(master_volume, 0.0001)))

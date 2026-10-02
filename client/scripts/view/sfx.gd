@@ -24,12 +24,12 @@ func _ready() -> void:
 			_streams[n] = load(path)
 	for i in POOL_2D:
 		var p := AudioStreamPlayer.new()
-		p.bus = "SFX"
+		p.bus = Audio.bus_for("SFX")
 		add_child(p)
 		_p2d.append(p)
 	for i in POOL_3D:
 		var p := AudioStreamPlayer3D.new()
-		p.bus = "SFX"
+		p.bus = Audio.bus_for("SFX")
 		p.unit_size = 4.0
 		p.max_distance = 45.0
 		p.attenuation_model = AudioStreamPlayer3D.ATTENUATION_INVERSE_DISTANCE
@@ -44,7 +44,7 @@ func play(name: String, volume_db := 0.0, pitch_var := 0.05) -> void:
 	var p := _p2d[_i2d]
 	_i2d = (_i2d + 1) % POOL_2D
 	p.stream = _streams[name]
-	p.volume_db = volume_db
+	p.volume_db = volume_db + Audio.sfx_offset_db()
 	p.pitch_scale = 1.0 + randf_range(-pitch_var, pitch_var)
 	p.play()
 
@@ -59,6 +59,6 @@ func play_at(name: String, pos: Vector3, volume_db := 0.0, pitch_var := 0.08) ->
 	# Behind a wall: muffled and quieter (cheap occlusion from the sim map).
 	var occluded := occlusion_check.is_valid() and bool(occlusion_check.call(pos))
 	p.attenuation_filter_cutoff_hz = 900.0 if occluded else 20500.0
-	p.volume_db = volume_db - (7.0 if occluded else 0.0)
+	p.volume_db = volume_db - (7.0 if occluded else 0.0) + Audio.sfx_offset_db()
 	p.pitch_scale = 1.0 + randf_range(-pitch_var, pitch_var)
 	p.play()

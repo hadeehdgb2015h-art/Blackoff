@@ -19,7 +19,8 @@ func _ready() -> void:
 	var v := VBoxContainer.new()
 	v.add_theme_constant_override("separation", 16)
 	add_child(v)
-	v.add_child(UiTheme.label("SETTINGS", 32, UiTheme.ACCENT))
+	v.add_child(UiTheme.title("SETTINGS", 30, UiTheme.GOLD))
+	v.add_child(UiTheme.rule(560))
 
 	_sens_label = UiTheme.label("")
 	v.add_child(_sens_label)
@@ -71,13 +72,13 @@ func _ready() -> void:
 	v.add_child(sfx)
 	_music_label.text = "Music: %d%%" % roundi(Settings.music_volume * 100)
 	_sfx_label.text = "Sound effects: %d%%" % roundi(Settings.sfx_volume * 100)
-	v.add_child(UiTheme.button("CONTROLS LAYOUT  (move and resize buttons)", func():
+	v.add_child(UiTheme.button("CONTROLS LAYOUT  ·  move and resize buttons", func():
 		open_layout.emit()
 		_close()))
 
-	v.add_child(UiTheme.label("Graphics quality", 22, UiTheme.MUTED))
+	v.add_child(UiTheme.label("Graphics quality  (Auto picks a tier from your frame rate)", 18, UiTheme.MUTED))
 	var q := HBoxContainer.new()
-	q.add_theme_constant_override("separation", 10)
+	q.add_theme_constant_override("separation", 8)
 	var group := ButtonGroup.new()
 	for name in Settings.QUALITY:
 		var b := Button.new()
@@ -86,9 +87,25 @@ func _ready() -> void:
 		b.button_group = group
 		b.button_pressed = Settings.quality == name
 		b.focus_mode = Control.FOCUS_NONE
+		b.add_theme_font_size_override("font_size", 18)
 		b.pressed.connect(func(): Settings.quality = name)
 		q.add_child(b)
 	v.add_child(q)
+	v.add_child(UiTheme.label("Frame rate  (30 runs cooler and saves battery)", 18, UiTheme.MUTED))
+	var fr := HBoxContainer.new()
+	fr.add_theme_constant_override("separation", 8)
+	var fgroup := ButtonGroup.new()
+	for cap in [60, 30]:
+		var b := Button.new()
+		b.text = "%d FPS" % cap
+		b.toggle_mode = true
+		b.button_group = fgroup
+		b.button_pressed = Settings.fps_cap == cap
+		b.focus_mode = Control.FOCUS_NONE
+		b.add_theme_font_size_override("font_size", 18)
+		b.pressed.connect(func(): Settings.fps_cap = cap)
+		fr.add_child(b)
+	v.add_child(fr)
 
 	var inv := CheckButton.new()
 	inv.text = "Invert vertical look"
@@ -107,7 +124,7 @@ func _ready() -> void:
 	spk.toggled.connect(func(on): Settings.voice_speaker = on)
 	v.add_child(spk)
 
-	v.add_child(UiTheme.button("Done", _close))
+	v.add_child(UiTheme.gold_button("DONE", _close))
 	_refresh()
 
 

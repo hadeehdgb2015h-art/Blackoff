@@ -1,5 +1,8 @@
 # Presentation
 
+## Audio on the web (phase 14)
+The web export runs without threads, so the engine plays every sound as a browser sample (an `AudioBufferSourceNode` per playback, gain nodes per bus). Buses added at runtime came out wired in a loop in that graph (bus → previous bus, master → bus), and Web Audio renders a loop without a delay as silence: the owner heard nothing. `Audio.flat` (true on the web) keeps every player on Master and applies the music and effects volumes per player (`Audio.bus_for`, `Audio.sfx_offset_db`); bus effects (reverb, low-pass) do not exist in sample mode anyway. The analyser probe (`scratchpad` during phase 14) confirmed sound reaches the destination. Phones: iPhone mutes Web Audio with the ringer switch; the first tap on the page also unlocks the browser's audio.
+
 ## Audio (phase 9)
 `Audio` autoload (`scripts/core/audio.gd`): buses Music, SFX and UI under Master (volumes from Settings: master, music, sound effects), a reverb on the SFX bus whose room size and wetness follow the local player (indoors when walls surround them, from 8 short raycasts twice a second), looping music with crossfades (`music_menu`, `music_ambient` between waves, `music_tension` during a wave, silence at game over), and UI clicks on every button. `Sfx` plays on the SFX bus; 3D sounds behind a wall (raycast through the sim map) are low-passed and quieter. The local player gets footsteps (4 variants, faster with Longstride), a heartbeat under 30 % health, a hit tick on every hit and a chime on head kills. All sounds and music are synthesised by `tools/gen_sfx.py` (`music_*` loop; `tools/fix_audio_imports.py` sets loop and QOA compression).
 
