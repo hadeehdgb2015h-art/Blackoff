@@ -33,17 +33,16 @@ cd server && npm ci && npm run typecheck && npm test && npm run build
 - Chromium for Playwright lives at `/opt/pw-browsers`. The global `playwright` package is under `$(npm root -g)`.
 - The claude.ai artifact host rejects the 38 MB wasm (15 MB file limit), so it cannot host previews.
 
-## Preview link: GitHub Pages (owner chose public repo)
+## Preview link: live on GitHub Pages
 
-The `pages` job in `ci.yml` deploys `build/web` to GitHub Pages after every push. It is non-blocking (`continue-on-error`) until the owner enables Pages.
-Owner steps: make the repo public; Settings → Pages → Source: GitHub Actions; Settings → Environments → github-pages → allow branch pattern `claude/*`.
-Expected URL: https://hadeehdgb2015h-art.github.io/Blackoff/
+**https://hadeehdgb2015h-art.github.io/Blackoff/**, redeployed on every push. CI checks it after each deploy: wasm is served gzip, about 10.3 MB total first download. The cloud session proxy blocks github.io, so check it through the CI log.
+
+The repo is public, Pages Source is set to GitHub Actions, and the github-pages environment allows `claude/*`.
 Pages is for client previews only. From phase 2 on, the game server runs on the owner's server.
 
 ## Needs from owner (open)
 
-- Choice of preview hosting (above).
-- For server hosting, set these as GitHub secrets: `DEPLOY_HOST`, `DEPLOY_USER`, `DEPLOY_SSH_KEY` (private key of a dedicated deploy key), `DEPLOY_PORT` (SSH, optional), plus the domain or subdomain and URL path for the game, and a free local port for the Node process.
+- Before phase 2 (game server), set these as GitHub secrets: `DEPLOY_HOST`, `DEPLOY_USER`, `DEPLOY_SSH_KEY` (private key of a dedicated deploy key), `DEPLOY_PORT` (SSH, optional), plus the domain or subdomain and URL path for the game, and a free local port for the Node process.
 - Later (phase 4): Telegram bot token as a server-side secret, and a Postgres database and user.
 
 ## Next steps (phase 1, after approval)
