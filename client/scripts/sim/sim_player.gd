@@ -33,6 +33,7 @@ var shots_fired: int = 0
 var downs: int = 0
 var revives: int = 0
 var perks: Array[String] = []  ## owned perk ids (lost when downed)
+var team: int = 0  ## infection mode: 0 soldier, 1 infected (classic: always 0)
 
 
 func weapon() -> WeaponState:

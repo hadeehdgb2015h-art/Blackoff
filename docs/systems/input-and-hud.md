@@ -13,11 +13,13 @@
 
 Online with voice chat the HUD also has **MIC** and **SPK** buttons (under the pause button by default, movable in CONTROLS like the rest): green when on, crossed when off, the mic ring pulses while the player is heard by the voice gate, grey and crossed when the browser refused the microphone (a toast says so). Taps go to `Net.set_voice_mic` / `Net.set_voice_speaker`.
 
+Infection mode, playing infected: FIRE reads ATTACK (`melee_mode`), reload and swap are hidden.
+
 ## HUD (`scripts/ui/hud.gd`)
 Health bar, wave and remaining count or intermission countdown, credits with +reward pop-ups, ammo and weapon name, reload or no-ammo status, interaction prompt with price (greyed out when you can't afford it or ammo is full), crosshair that widens while moving, hit markers (red for head or kill), damage vignette, wave banners, game-over panel.
 Phase 5 adds the team list under the health bar (name and health of each teammate, or DOWN with the bleed-out seconds, REVIVING, or DEAD); a pulsing red cross over each downed teammate with the distance, pinned to the screen edge with an arrow when off screen or behind you; a revive progress bar (yours or the one being done on you); the downed screen (bleed-out countdown, "being revived", or "no one left"); "back at the next wave" after bleeding out; and the game-over table (kills, headshots, downs, revives per player, from the server's `scoreboard` online).
 
-The team panel draws sound waves before the name of a teammate who is talking (`Net.voice_speaking()`).
+The team panel draws sound waves before the name of a teammate who is talking (`Net.voice_speaking()`). In infection mode the top shows ROUND, the clock and soldiers left (or the lobby countdown / waiting count), infected players are marked INFECTED (RESPAWNING while down) in green, the local infected sees CLAWS instead of ammo and "INFECTED · hunt the soldiers"; banners: ROUND n, YOU ARE INFECTED, SOLDIERS WIN / INFECTED WIN; toasts name who was infected.
 
 ## Settings (`scripts/core/settings.gd`, autoload)
 Saved to `user://settings.cfg`: sensitivity, invert-Y, quality, show FPS, volume.

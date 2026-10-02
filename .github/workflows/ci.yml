@@ -111,6 +111,19 @@ jobs:
             ! grep -E "SCRIPT ERROR|Parse Error" /tmp/online$i.log
           done
           grep -q "\[game\] wave 1 cleared" /tmp/online1.log /tmp/online2.log
+          # infection mode: two bots, one turns infected at round start and hunts the other
+          for i in 1 2; do
+            BLACKOFF_SERVER=ws://127.0.0.1:8799/ws BLACKOFF_BOT=1 BLACKOFF_MODE=infection BLACKOFF_NAME=Inf$i \
+              timeout 75 /opt/godot/godot --headless --path client --max-fps 60 res://scenes/game/game.tscn > /tmp/infection$i.log 2>&1 &
+          done
+          wait || true
+          grep -E "\[net\]|\[game\]" /tmp/infection1.log | head -20
+          for i in 1 2; do
+            grep -q "\[game\] online: joined zone .* (infection)" /tmp/infection$i.log
+            grep -q "\[game\] round 1 started" /tmp/infection$i.log
+            ! grep -E "SCRIPT ERROR|Parse Error" /tmp/infection$i.log
+          done
+          grep -qE "\[game\] player [0-9]+ (infected|killed) by|\[game\] round 1 over" /tmp/infection1.log /tmp/infection2.log
           # the web export joins too (WebSocket from the browser)
           export NODE_PATH=/tmp/smoke/node_modules SMOKE_DPR=0.5
           SMOKE_EXPECT="[game] online: joined" node tools/smoke_web.cjs build/web build/online.png "?autostart=1&bot=1&server=ws://127.0.0.1:8799/ws&name=WebBot" 20
@@ -200,7 +213,10 @@ jobs:
           echo ci-next > /tmp/next/blackoff/VERSION && tar -C /tmp/next -czf /tmp/next/blackoff.tar.gz blackoff
           (cd /tmp/next && sha256sum blackoff.tar.gz > blackoff.tar.gz.sha256 && echo ci-next > version.txt)
           sudo sed -i 's#^BLACKOFF_RELEASE_URL=.*#BLACKOFF_RELEASE_URL=file:///tmp/next#' /opt/blackoff/.env
-          # a player is still in a zone (the Mini App test), so a normal check waits...
+          # a player is in a zone (a held smoke client), so a normal check waits...
+          (cd server && SMOKE_BOT_TOKEN=123456:CI-token npx tsx tools/smokeDeploy.ts ws://blackoff.localhost/ws 3 90 > /tmp/hold.log 2>&1 &)
+          for i in $(seq 1 30); do curl -fsS http://blackoff.localhost/healthz | grep -q '"players":[1-9]' && break; sleep 1; done
+          curl -fsS http://blackoff.localhost/healthz | grep -q '"players":[1-9]'
           $SUDO bash /opt/blackoff/bin/update.sh --once
           test "$(cat /opt/blackoff/current/VERSION)" != ci-next
           # ...and --force installs it anyway

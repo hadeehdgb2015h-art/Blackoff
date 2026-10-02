@@ -57,8 +57,8 @@ describe("zone results", () => {
     z.close(61_000);
     z.close(62_000);
     expect(got).toEqual([
-      { accountId: "dev:A", name: "A", kills: 5, headshots: 2, wave: z.world.director.wave, seconds: 30, shots: 0, hits: 0 },
-      { accountId: "dev:B", name: "B", kills: 0, headshots: 0, wave: z.world.director.wave, seconds: 60, shots: 0, hits: 0 },
+      { accountId: "dev:A", name: "A", kills: 5, headshots: 2, wave: z.world.director.wave, seconds: 30, shots: 0, hits: 0, mode: 0 },
+      { accountId: "dev:B", name: "B", kills: 0, headshots: 0, wave: z.world.director.wave, seconds: 60, shots: 0, hits: 0, mode: 0 },
     ]);
     expect(z.peakPlayers).toBe(2);
     expect(m2.entityId).not.toBe(m.entityId);

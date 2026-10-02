@@ -40,6 +40,8 @@ var _ton_pop: Label
 var _ton_pop_t: float = 0.0
 var _ton_game: int = 0   ## TON points (millionths) earned this game (display only; the server owns the real number)
 
+var _dead_at: float = -1.0   ## infection: when the local infected player fell (respawn countdown)
+var _world: SimWorld
 var _banner_t: float = 0.0
 var _toast_t: float = 0.0
 var _pop_t: float = 0.0
@@ -83,6 +85,9 @@ class TeamPanel extends Control:
 		for r in rows:
 			var col := Color(0.85, 0.85, 0.82)
 			var text: String = r.name
+			if r.get("infected", false):
+				col = Color(0.45, 0.85, 0.5)
+				text += "  RESPAWNING" if r.state == SimPlayer.State.DEAD else "  INFECTED"
 			if r.get("speaking", false):
 				# sound waves next to a talking teammate
 				var c := Vector2(-14, y + 8)
@@ -98,6 +103,8 @@ class TeamPanel extends Control:
 			draw_rect(Rect2(0, y + 4, 150, 8), Color(0, 0, 0, 0.55))
 			if r.state == SimPlayer.State.ALIVE:
 				draw_rect(Rect2(1, y + 5, 148.0 * r.hp_k, 6), col)
+			if r.get("infected", false) and r.state != SimPlayer.State.DEAD:
+				text = r.name + "  INFECTED"
 			draw_string(font, Vector2(160, y + 14), text, HORIZONTAL_ALIGNMENT_LEFT, -1, 18, col)
 			y += 26.0
 
@@ -235,30 +242,41 @@ func _ready() -> void:
 
 
 func update_state(p: SimPlayer, w: SimWorld, interact: Dictionary, delta: float) -> void:
+	_world = w
 	var hp_k := clampf(p.hp / p.max_hp, 0.0, 1.0)
 	_hp_bar.size.x = 294.0 * hp_k
 	_hp_bar.color = Color(0.85, 0.85, 0.82) if hp_k > 0.35 else UiTheme.ACCENT
 	_hp_label.text = str(ceili(p.hp))
 	var d := w.director
-	match w.zone_state:
-		SimWorld.ZoneState.WAVE:
-			_wave_label.text = "WAVE %d" % d.wave
-			_wave_sub.text = "%d left" % d.remaining()
-		SimWorld.ZoneState.INTERMISSION:
-			_wave_label.text = "WAVE %d" % d.wave if d.wave > 0 else "GET READY"
-			_wave_sub.text = "next wave in %d" % ceili(maxf(0.0, d.phase_end - w.time))
-		_:
-			_wave_sub.text = ""
-	_credits.text = "$ %d" % p.currency
+	var infection := w is NetWorld and (w as NetWorld).mode == 1
+	if infection:
+		_infection_top(p, w as NetWorld)
+	else:
+		match w.zone_state:
+			SimWorld.ZoneState.WAVE:
+				_wave_label.text = "WAVE %d" % d.wave
+				_wave_sub.text = "%d left" % d.remaining()
+			SimWorld.ZoneState.INTERMISSION:
+				_wave_label.text = "WAVE %d" % d.wave if d.wave > 0 else "GET READY"
+				_wave_sub.text = "next wave in %d" % ceili(maxf(0.0, d.phase_end - w.time))
+			_:
+				_wave_sub.text = ""
+	_credits.text = "" if infection else "$ %d" % p.currency
+	_ton.visible = not infection
 	var wp := p.weapon()
 	if wp:
 		_ammo.text = "%d / %d" % [wp.mag, wp.reserve]
 		_ammo.add_theme_color_override("font_color", UiTheme.ACCENT if wp.mag == 0 else UiTheme.TEXT)
 		_weapon_name.text = str(wp.def.displayName)
+	elif p.team == 1:
+		_ammo.text = ""
+		_weapon_name.text = "CLAWS"
 	if p.is_reloading():
 		_status.text = "RELOADING"
 	elif wp and wp.mag == 0 and wp.reserve == 0:
 		_status.text = "NO AMMO"
+	elif infection and p.team == 1 and p.is_alive() and w.zone_state == SimWorld.ZoneState.WAVE:
+		_status.text = "INFECTED  ·  hunt the soldiers"
 	else:
 		_status.text = ""
 	if interact.is_empty():
@@ -301,11 +319,14 @@ func update_state(p: SimPlayer, w: SimWorld, interact: Dictionary, delta: float)
 		if o.is_alive():
 			mates += 1
 		rows.append({"name": o.name, "hp_k": clampf(o.hp / maxf(1.0, o.max_hp), 0.0, 1.0), "state": o.state,
-			"bleed": w.bleedout_left(o), "revived": w.is_being_revived(o), "speaking": o.id in speaking})
+			"bleed": w.bleedout_left(o), "revived": w.is_being_revived(o), "speaking": o.id in speaking, "infected": o.team == 1})
 	_team.rows = rows
 	_team.queue_redraw()
 	var prog := w.revive_progress(p)
-	if p.state == SimPlayer.State.DOWNED:
+	if infection and p.state == SimPlayer.State.DEAD:
+		var left := float(w.constants.infection.zombieRespawnSec) - (w.time - _dead_at) if _dead_at >= 0.0 else 0.0
+		_downed.text = "YOU FELL\nBack in %d" % ceili(maxf(0.0, left))
+	elif p.state == SimPlayer.State.DOWNED:
 		var line := "BEING REVIVED" if w.is_being_revived(p) else ("Hold on, a teammate can revive you" if mates > 0 else "No one left to revive you")
 		_downed.text = "YOU ARE DOWN  %d\n%s" % [ceili(w.bleedout_left(p)), line]
 	elif p.state == SimPlayer.State.DEAD:
@@ -379,8 +400,47 @@ func on_event(e: Dictionary, local_pid: int) -> void:
 		"player_respawned":
 			if e.pid == local_pid:
 				_show_banner("BACK IN THE FIGHT")
+		"player_hit":
+			if e.pid == local_pid:
+				_cross.hit_t = 0.12
+				_cross.hit_head = e.head
+				_cross.hit_kill = false
+		"player_killed":
+			if e.pid == local_pid:
+				_dead_at = _world.time if _world else 0.0
+			elif e.by == local_pid:
+				_cross.hit_t = 0.18
+				_cross.hit_kill = true
+		"infected":
+			if e.pid == local_pid:
+				_show_banner("YOU ARE INFECTED")
+				_show_toast("Hunt the soldiers: tap ATTACK next to them")
+			else:
+				var who: SimPlayer = _world.players.get(e.pid) if _world else null
+				_show_toast("%s was infected" % (who.name if who else "A soldier"))
+		"round_start":
+			_show_banner("ROUND %d" % e.round)
+			_show_toast("%d infected among you. Survive %d:%02d" % [e.infected, int(e.seconds) / 60, int(e.seconds) % 60])
+		"round_end":
+			_show_banner("SOLDIERS WIN" if e.soldiersWin else "INFECTED WIN")
 		"powerup_taken":
 			_show_banner(str(e.ptype).to_upper().replace("INSTAKILL", "INSTA-KILL").replace("DOUBLEPOINTS", "DOUBLE POINTS").replace("MAXAMMO", "MAX AMMO").replace("FIRESALE", "FIRE SALE"))
+
+
+## Infection mode: round, clock and soldiers left (or the lobby countdown).
+func _infection_top(p: SimPlayer, nw: NetWorld) -> void:
+	var left := ceili(nw.phase_left)
+	match nw.zone_state:
+		SimWorld.ZoneState.WAVE:
+			_wave_label.text = "ROUND %d   %d:%02d" % [nw.director.wave, left / 60, left % 60]
+			_wave_sub.text = "%d soldier%s left" % [nw.soldiers_left, "" if nw.soldiers_left == 1 else "s"]
+		SimWorld.ZoneState.INTERMISSION:
+			_wave_label.text = "SOLDIERS WIN" if nw.round_result == 1 else "INFECTED WIN"
+			_wave_sub.text = "next round in %d" % left
+		_:
+			_wave_label.text = "INFECTION"
+			var need := int(nw.constants.infection.minPlayers)
+			_wave_sub.text = ("Starting in %d" % left) if nw.phase_left > 0.0 else "Waiting for players  %d / %d" % [nw.players.size(), need]
 
 
 ## Positions of downed teammates on screen (computed by the game from its camera).

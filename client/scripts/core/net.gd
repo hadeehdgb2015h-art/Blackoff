@@ -15,6 +15,7 @@ const RETRY_SEC := 2.0
 
 var status: String = "offline"
 var online_requested: bool = false  ## set by the menu; the game scene plays online
+var mode: int = 0                   ## game mode for quick play: 0 zombies (co-op), 1 infection (players vs players)
 var url: String = ""
 var player_id: int = 0
 var display_name: String = ""
@@ -75,7 +76,7 @@ func connect_to_server(join_zone: bool = true) -> void:
 func quick_play() -> void:
 	_want_zone = true
 	if status == "ready":
-		send("quickPlay", {})
+		send("quickPlay", {"mode": mode})
 
 
 func leave() -> void:
@@ -172,7 +173,7 @@ func _on_packet(data: PackedByteArray) -> void:
 			_retry_until = 0.0
 			_set_status("ready")
 			if _want_zone and not resumed:
-				send("quickPlay", {})
+				send("quickPlay", {"mode": mode})
 		"zoneJoined":
 			_set_status("in_zone")
 		"profile":

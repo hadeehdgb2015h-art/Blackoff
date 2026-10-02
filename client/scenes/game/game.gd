@@ -20,6 +20,7 @@ var _hud: Hud
 var _controls: TouchControls
 var _zviews := {}  ## zid -> ZombieView
 var _pviews := {}  ## other players' entity id -> RemotePlayerView
+var _izviews := {}  ## infection: infected players' entity id -> ZombieView (with a name tag)
 var _online: bool = false
 var _net_log_t: float = 10.0
 var _showcase_soldiers: Array = []
@@ -91,6 +92,8 @@ func _ready() -> void:
 	Settings.changed.connect(_apply_quality)
 	_debug_js = Platform.is_web and Platform.query_param("debug") == "1"
 	_online = Net.online_requested or Platform.query_param("server") != ""
+	if Platform.query_param("mode") == "infection" and not Net.online_requested:
+		Net.mode = 1  # headless/online tests launch the game scene directly
 	if _online:
 		# Online: the server owns the zone; we wait for our slot (zoneJoined + first snapshot).
 		world = NetWorld.new(defs, map_id)
@@ -150,7 +153,7 @@ func _process(delta: float) -> void:
 		if nw.ready_to_play and nw.local_pid >= 0:
 			pid = nw.local_pid
 			_on_player_ready()
-			print("[game] online: joined zone %d as entity %d" % [nw.zone_id, pid])
+			print("[game] online: joined zone %d as entity %d (%s)" % [nw.zone_id, pid, "infection" if nw.mode == 1 else "zombies"])
 			_sync_voice_buttons()
 			if Platform.query_param("voice") == "1":  # browser tests: talk right away
 				Net.set_voice_mic(true)
@@ -186,8 +189,13 @@ func _process(delta: float) -> void:
 	_rig.set_view(Vector3(eye.x, float(world.constants.player.eyeHeight), eye.y), _controls.yaw, _controls.pitch, p.moving, delta)
 	for v in _zviews.values():
 		v.update_view(alpha, delta)
+	for v in _izviews.values():
+		v.update_view(alpha, delta)
 	for v in _pviews.values():
 		v.update_view(alpha, delta)
+	if _online:
+		_rig.set_claws(p.team == 1)
+		_controls.melee_mode = p.team == 1
 	_sync_powerup_views()
 	for v in _puviews.values():
 		v.update_view(world.time, delta)
@@ -208,6 +216,12 @@ func _process(delta: float) -> void:
 			_net_log_t = 10.0
 			var nw := world as NetWorld
 			print("[net] rtt=%d ms players=%d zombies=%d corrections=%d max_error=%.2f m" % [Net.rtt_ms, world.players.size(), world.zombies.size(), nw.corrections, nw.max_error])
+			if nw.mode == 1:
+				var others := PackedStringArray()
+				for o in world.players.values():
+					if o.id != pid:
+						others.append("%d:%s@%.1fm" % [o.id, "inf" if o.team == 1 else "sol", p.pos.distance_to(o.pos)])
+				print("[game] infection: me %s hp=%d at (%.1f, %.1f) others %s" % ["inf" if p.team == 1 else "sol", p.hp, p.pos.x, p.pos.y, " ".join(others)])
 	if _debug_js:
 		_publish_debug(p, delta)
 
@@ -282,11 +296,38 @@ func _spawn_box_views(defs: Dictionary) -> void:
 
 func _sync_views() -> void:
 	for id in _pviews.keys():
-		if not world.players.has(id):
+		if not world.players.has(id) or world.players[id].team == 1:
 			_pviews[id].queue_free()
 			_pviews.erase(id)
+	for id in _izviews.keys():
+		var o: SimPlayer = world.players.get(id)
+		if o == null or o.team != 1 or o.state == SimPlayer.State.DEAD:
+			_izviews[id].queue_free()
+			_izviews.erase(id)
 	for p in world.players.values():
 		if p.id == pid:
+			continue
+		if p.team == 1:
+			# an infected player looks like a zombie (walker model) with a name tag
+			if p.state == SimPlayer.State.DEAD:
+				continue
+			var iv: ZombieView = _izviews.get(p.id)
+			if iv == null:
+				iv = ZombieView.new()
+				add_child(iv)
+				iv.setup(p.id, "walker", _defs.zombies.walker, p.pos, p.yaw)
+				var tag := Label3D.new()
+				tag.position = Vector3(0, 2.15, 0)
+				tag.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+				tag.font_size = 44
+				tag.pixel_size = 0.004
+				tag.outline_size = 10
+				tag.modulate = Color(0.55, 0.95, 0.6)
+				tag.no_depth_test = true
+				tag.text = p.name
+				iv.add_child(tag)
+				_izviews[p.id] = iv
+			iv.set_sim_state(p.pos, p.yaw, p.moving)
 			continue
 		var pv: RemotePlayerView = _pviews.get(p.id)
 		if pv == null:
@@ -352,10 +393,63 @@ func _on_event(e: Dictionary) -> void:
 			if local and e.head:
 				_sfx.play("headshot", -8.0, 0.02)
 		"zombie_attack":
+			if e.get("player", false):
+				# an infected player's claw
+				if e.zid == pid:
+					_rig.on_claw()
+					_sfx.play("zombie_attack", -4.0)
+					Platform.haptic("medium")
+				else:
+					var iv: ZombieView = _izviews.get(e.zid)
+					if iv:
+						iv.on_attack(0.25)
+						_sfx.play_at("zombie_attack", iv.global_position + Vector3(0, 1.5, 0), 0.0)
+				return
 			var v: ZombieView = _zviews.get(e.zid)
 			if v:
 				v.on_attack(float(v.def.attackWindupSec))
 				_sfx.play_at("zombie_attack", v.global_position + Vector3(0, 1.5, 0), 0.0)
+		"player_hit":
+			_effects.impact(e.point, true)
+			var iv: ZombieView = _izviews.get(e.target)
+			if iv:
+				iv.on_hit()
+			if local:
+				_sfx.play("zombie_hit", -6.0)
+				_sfx.play("hit_tick", -12.0, 0.02)
+		"player_killed":
+			var iv: ZombieView = _izviews.get(e.pid)
+			var victim: SimPlayer = world.players.get(e.pid)
+			if iv and victim:
+				iv.on_death(victim.pos, victim.yaw)
+				_izviews.erase(e.pid)
+			if victim:
+				_sfx.play_at("zombie_death", Vector3(victim.pos.x, 1.4, victim.pos.y), -2.0)
+			if local:
+				_controls.release_all()
+			elif e.by == pid and e.head:
+				_sfx.play("headshot", -8.0, 0.02)
+			print("[game] player %d killed by %d" % [e.pid, e.by])
+		"infected":
+			var victim: SimPlayer = world.players.get(e.pid)
+			if victim:
+				_sfx.play_at("zombie_attack", Vector3(victim.pos.x, 1.5, victim.pos.y), 0.0)
+			if local:
+				_sfx.play("player_hurt", -3.0)
+				_rig.set_claws(true)
+				_controls.release_all()
+				Platform.haptic("heavy")
+			print("[game] player %d infected by %d" % [e.pid, e.by])
+		"round_start":
+			_sfx.play("wave_start", -6.0, 0.0)
+			Audio.play_music("tension")
+			_controls.enabled = true
+			_controls.release_all()
+			print("[game] round %d started (%d infected, %d s)" % [e.round, e.infected, e.seconds])
+		"round_end":
+			_sfx.play("wave_end", -6.0, 0.0)
+			Audio.play_music("ambient")
+			print("[game] round %d over: %s win" % [e.round, "soldiers" if e.soldiersWin else "infected"])
 		"player_damaged":
 			if local:
 				_rig.on_damage(float(e.amount))

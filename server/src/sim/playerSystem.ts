@@ -1,6 +1,6 @@
 /** Player movement, regen, weapons, interactions and reviving downed teammates
  *  (mirror of player_system.gd). Every check is authoritative. */
-import { Btn, PlayerState, WeaponState, type PlayerIntent, type SimPlayer, type SimZombie } from "./entities.js";
+import { Btn, PlayerState, Team, WeaponState, type PlayerIntent, type SimPlayer, type SimZombie } from "./entities.js";
 import { rayCharacter } from "./hitTest.js";
 import { type V3, add, clamp, dir3, dist, dist2, forward, len2, limitLength, right, scale, wrapAngle, yawTo } from "./math.js";
 import type { SimWorld } from "./simWorld.js";
@@ -69,6 +69,10 @@ export class PlayerSystem {
       w.emit({ type: "reload_done", pid: p.id });
     }
     if (reviving) return; // hands are busy: no switching, reloading, buying or firing
+    if (p.team === Team.ZOMBIE && w.infection) {
+      w.infection.melee(p, inp, (inp.buttons & Btn.FIRE_PRESSED) !== 0); // infected: claws only
+      return;
+    }
     if (pressed & Btn.SWITCH) this.switchWeapon(p);
     if (pressed & Btn.RELOAD) this.startReload(p);
     if (pressed & Btn.INTERACT) this.interact(p);
@@ -127,7 +131,8 @@ export class PlayerSystem {
     p.moving = len2(mv) > 0.01;
     if (!p.moving) return;
     const dir = add(scale(right(p.yaw), mv.x), scale(forward(p.yaw), mv.y));
-    p.pos = this.w.map.moveCircle(p.pos, scale(dir, this.cp.moveSpeed * this.perkMul(p, "moveSpeedMul") * this.w.dt), this.cp.radius);
+    const teamMul = p.team === Team.ZOMBIE ? this.w.constants.infection.zombieSpeedMul : 1;
+    p.pos = this.w.map.moveCircle(p.pos, scale(dir, this.cp.moveSpeed * this.perkMul(p, "moveSpeedMul") * teamMul * this.w.dt), this.cp.radius);
   }
 
   private regen(p: SimPlayer): void {
@@ -188,6 +193,8 @@ export class PlayerSystem {
     const pellets = Math.max(1, wp.def.pellets);
     const ends: V3[] = [];
     const hits = new Map<number, { z: SimZombie; dmg: number; head: boolean; point: V3 }>();
+    const phits = new Map<number, { z: SimPlayer; dmg: number; head: boolean; point: V3 }>();
+    const infected = this.infectedTargets(p);
     let anyWall = false;
     for (let i = 0; i < pellets; i++) {
       const ang = w.rng.randf() * spread;
@@ -198,6 +205,7 @@ export class PlayerSystem {
       let bestT = w.map.raycast(origin, dir, rngMax);
       const hitWall = bestT < rngMax;
       let target: SimZombie | null = null;
+      let ptarget: SimPlayer | null = null;
       let head = false;
       for (const z of w.zombies.values()) {
         if (dist2(z.pos, p.pos) > (rngMax + 1) * (rngMax + 1)) continue;
@@ -208,20 +216,36 @@ export class PlayerSystem {
           head = h.head;
         }
       }
+      for (const o of infected) {
+        const h = rayCharacter(origin, dir, o.pos, this.cp.radius, this.cp.headCenterHeight, this.cp.headRadius);
+        if (h && h.t < bestT) {
+          bestT = h.t;
+          target = null;
+          ptarget = o;
+          head = h.head;
+        }
+      }
       const end = { x: origin.x + dir.x * bestT, y: origin.y + dir.y * bestT, z: origin.z + dir.z * bestT };
       ends.push(end);
-      if (target) {
+      if (target || ptarget) {
         const dmg = wp.def.damage * (head ? wp.def.headMultiplier : 1);
-        let h = hits.get(target.id);
-        if (!h) hits.set(target.id, (h = { z: target, dmg: 0, head: false, point: end }));
-        h.dmg += dmg;
-        h.head = h.head || head;
+        if (ptarget) {
+          let h = phits.get(ptarget.id);
+          if (!h) phits.set(ptarget.id, (h = { z: ptarget, dmg: 0, head: false, point: end }));
+          h.dmg += dmg;
+          h.head = h.head || head;
+        } else {
+          let h = hits.get(target!.id);
+          if (!h) hits.set(target!.id, (h = { z: target!, dmg: 0, head: false, point: end }));
+          h.dmg += dmg;
+          h.head = h.head || head;
+        }
       } else if (hitWall) {
         anyWall = true;
       }
     }
     w.emit({ type: "shot", pid: p.id, weapon: wp.id, from: origin, to: ends[0], ends,
-      hit: hits.size > 0 ? "zombie" : anyWall ? "wall" : "none" });
+      hit: hits.size > 0 || phits.size > 0 ? "zombie" : anyWall ? "wall" : "none" });
     // Energy weapons: area damage around the first pellet's end point, hitting
     // every other zombie in range (the direct target takes the direct damage).
     if (wp.def.splashRadius > 0) {
@@ -232,11 +256,25 @@ export class PlayerSystem {
         if ((z.pos.x - end.x) ** 2 + (z.pos.y - end.z) ** 2 > r2) continue;
         hits.set(z.id, { z, dmg: wp.def.splashDamage, head: false, point: { x: z.pos.x, y: 1.2, z: z.pos.y } });
       }
+      for (const o of infected) {
+        if (phits.has(o.id)) continue;
+        if ((o.pos.x - end.x) ** 2 + (o.pos.y - end.z) ** 2 > r2) continue;
+        phits.set(o.id, { z: o, dmg: wp.def.splashDamage, head: false, point: { x: o.pos.x, y: 1.2, z: o.pos.y } });
+      }
     }
     // One damage application per zombie per trigger pull (pellets are summed).
     for (const h of hits.values()) {
       if (w.zombies.has(h.z.id)) w.zombieSys.applyDamage(h.z, h.dmg, h.head, p, h.point);
     }
+    for (const h of phits.values()) {
+      if (h.z.isAlive()) w.infection!.hitZombie(h.z, h.dmg, h.head, p, h.point);
+    }
+  }
+
+  /** Infection mode: living infected players, the soldiers' targets. */
+  private infectedTargets(p: SimPlayer): SimPlayer[] {
+    if (!this.w.infection) return [];
+    return [...this.w.players.values()].filter((o) => o !== p && o.team === Team.ZOMBIE && o.isAlive());
   }
 
   /** Wind weapons: a blast that hits every zombie inside a cone in front of
@@ -247,18 +285,21 @@ export class PlayerSystem {
     const range = wp.def.range;
     const dir = dir3(inp.yaw, 0);
     const victims: SimZombie[] = [];
-    for (const z of w.zombies.values()) {
-      const d = dist(z.pos, p.pos);
-      if (d > range) continue;
-      const ang = Math.abs(wrapAngle(yawTo(p.pos, z.pos) - inp.yaw));
-      if (ang > half) continue;
-      if (!w.map.segmentClear(p.pos, z.pos, 0.05)) continue;
-      victims.push(z);
-    }
+    const pvictims: SimPlayer[] = [];
+    const inCone = (pos: { x: number; y: number }): boolean => {
+      if (dist(pos, p.pos) > range) return false;
+      if (Math.abs(wrapAngle(yawTo(p.pos, pos) - inp.yaw)) > half) return false;
+      return w.map.segmentClear(p.pos, pos, 0.05);
+    };
+    for (const z of w.zombies.values()) if (inCone(z.pos)) victims.push(z);
+    for (const o of this.infectedTargets(p)) if (inCone(o.pos)) pvictims.push(o);
     const to = { x: origin.x + dir.x * range, y: origin.y, z: origin.z + dir.z * range };
-    w.emit({ type: "shot", pid: p.id, weapon: wp.id, from: origin, to, ends: [to], hit: victims.length ? "zombie" : "none" });
+    w.emit({ type: "shot", pid: p.id, weapon: wp.id, from: origin, to, ends: [to], hit: victims.length || pvictims.length ? "zombie" : "none" });
     for (const z of victims) {
       if (w.zombies.has(z.id)) w.zombieSys.applyDamage(z, wp.def.damage, false, p, { x: z.pos.x, y: 1.2, z: z.pos.y });
+    }
+    for (const o of pvictims) {
+      if (o.isAlive()) w.infection!.hitZombie(o, wp.def.damage, false, p, { x: o.pos.x, y: 1.2, z: o.pos.y });
     }
   }
 

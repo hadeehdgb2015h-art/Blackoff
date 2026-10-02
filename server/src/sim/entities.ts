@@ -37,6 +37,9 @@ export class WeaponState {
 
 export enum PlayerState { ALIVE = 0, DOWNED = 1, DEAD = 2 }
 
+/** Infection mode sides (classic: everyone is a soldier). */
+export enum Team { SOLDIER = 0, ZOMBIE = 1 }
+
 export class SimPlayer {
   pos: V2 = { x: 0, y: 0 };
   prevPos: V2 = { x: 0, y: 0 };
@@ -67,6 +70,11 @@ export class SimPlayer {
   revives = 0;
   /** owned perk ids (lost when downed) */
   perks: string[] = [];
+  /** infection mode: soldier or infected */
+  team = Team.SOLDIER;
+  /** infection mode: sim time a dead infected player comes back */
+  respawnAt = 0;
+  deaths = 0;
 
   constructor(readonly id: number, public name: string) {}
 

@@ -6,8 +6,8 @@
  */
 import type { Codec, Msg } from "../net/codec.js";
 import type { SharedData } from "../shared/loadShared.js";
-import { BTN_MASK, Btn, PlayerState, ZombieState, emptyIntent, type PlayerIntent, type SimEvent, type SimPlayer } from "../sim/entities.js";
-import { SimWorld, ZoneState } from "../sim/simWorld.js";
+import { BTN_MASK, Btn, PlayerState, Team, ZombieState, emptyIntent, type PlayerIntent, type SimEvent, type SimPlayer } from "../sim/entities.js";
+import { GameMode, SimWorld, ZoneState } from "../sim/simWorld.js";
 import { Phase } from "../sim/waveDirector.js";
 /** What a zone knows about a member's play when they leave (the hub turns it
  *  into a MatchResult with TON points and anti-cheat flags). */
@@ -20,6 +20,7 @@ export interface ZoneResult {
   seconds: number;
   shots: number;
   hits: number;
+  mode: GameMode;
 }
 
 /** What a zone needs from a connection (implemented by Session). */
@@ -74,8 +75,8 @@ export class Zone {
   private readonly powerupIdx = new Map<string, number>();
   private readonly snapEvery: number;
 
-  constructor(readonly id: number, private readonly shared: SharedData, private readonly codec: Codec, readonly mapId: string, seed: number, now: number) {
-    this.world = new SimWorld(shared, mapId, seed);
+  constructor(readonly id: number, private readonly shared: SharedData, private readonly codec: Codec, readonly mapId: string, seed: number, now: number, readonly mode: GameMode = GameMode.CLASSIC) {
+    this.world = new SimWorld(shared, mapId, seed, mode);
     this.createdAt = now;
     this.emptySince = now;
     Object.keys(shared.weapons).sort().forEach((k, i) => this.weaponIdx.set(k, i));
@@ -194,14 +195,14 @@ export class Zone {
       accountId: m.accountId, name: m.name, kills: p?.kills ?? 0, headshots: p?.headshots ?? 0,
       // a dropped player's time ends when the connection did, not after the grace period
       wave: this.world.director.wave, seconds: Math.max(0, (m.client ? now : m.disconnectedAt) - m.joinedAt) / 1000,
-      shots: m.shots, hits: m.hits,
+      shots: m.shots, hits: m.hits, mode: this.mode,
     });
   }
 
   // ------------------------------------------------------------------ output
 
   private welcomeMember(m: Member): void {
-    this.sendTo(m, "zoneJoined", { zoneId: this.id, mapId: this.mapId, entityId: m.entityId });
+    this.sendTo(m, "zoneJoined", { zoneId: this.id, mapId: this.mapId, entityId: m.entityId, mode: this.mode });
     this.broadcastRoster();
   }
 
@@ -255,7 +256,19 @@ export class Zone {
       }
       case "zombie_killed": return this.event("kill", n("zid"), n("pid"), this.zombieIdx.get(String(e.ztype)) ?? 0, e.head ? 1 : 0);
       case "zombie_spawned": return this.event("zombieSpawned", n("zid"), this.zombieIdx.get(String(e.ztype)) ?? 0, this.entryIdx.get(String(e.entry)) ?? 0);
-      case "zombie_attack": return this.event("zombieAttack", n("zid"), n("pid"));
+      case "zombie_attack": return this.event("zombieAttack", n("zid"), n("pid"), 0, e.player ? 1 : 0);
+      // infection mode
+      case "player_hit": {
+        const m = this.members.get(n("pid"));
+        if (m) m.hits += 1;
+        return this.event("hit", n("target"), n("pid"), Math.round(n("damage")), (e.head ? 1 : 0) | 2);
+      }
+      case "player_killed": return this.event("playerKilled", n("pid"), n("by"), 0, e.head ? 1 : 0);
+      case "infected": return this.event("infected", n("pid"), n("by"));
+      case "round_start": return this.event("roundStart", n("round"), n("infected"), n("seconds"));
+      case "round_end":
+        this.event("roundEnd", n("round"), 0, 0, e.soldiersWin ? 1 : 0);
+        return this.broadcast("scoreboard", this.scoreboard());
       case "player_damaged": return this.event("playerDamaged", n("pid"), n("source"), Math.round(n("amount")));
       case "player_downed": return this.event("playerDowned", n("pid"));
       case "player_died": return this.event("playerDied", n("pid"));
@@ -294,7 +307,7 @@ export class Zone {
     const players = [...this.world.players.values()].map((p) => ({
       id: p.id, name: p.name, kills: u16(p.kills), headshots: u16(p.headshots), downs: Math.min(255, p.downs), revives: Math.min(255, p.revives),
     }));
-    return { wave: u16(this.world.director.wave), players: players.slice(0, 255) };
+    return { wave: u16(this.world.infection ? this.world.infection.round : this.world.director.wave), players: players.slice(0, 255) };
   }
 
   /** 0-255 progress of the revive this player is doing, or (when downed) receiving. */
@@ -312,8 +325,10 @@ export class Zone {
       id: p.id, kind: 0, sub: this.weaponIdx.get(p.weapon()?.id ?? "") ?? 0, x: p.pos.x, y: p.pos.y, floor: 0, yaw: p.yaw,
       hp: pct(p.hp, p.maxHp),
       flags: (p.moving ? 1 : 0) | (p.state === PlayerState.DOWNED ? 4 : 0) | (p.isReloading() ? 8 : 0)
-        | (p.state === PlayerState.DOWNED && w.reviverOf(p) ? 16 : 0) | (p.state === PlayerState.DEAD ? 32 : 0),
+        | (p.state === PlayerState.DOWNED && w.reviverOf(p) ? 16 : 0) | (p.state === PlayerState.DEAD ? 32 : 0)
+        | (p.team === Team.ZOMBIE ? 64 : 0),
     }));
+    const inf = w.infection;
     for (const m of this.members.values()) {
       if (!m.client) continue;
       const self = w.players.get(m.entityId);
@@ -335,9 +350,11 @@ export class Zone {
       m.known = ids;
       const d = w.director;
       this.sendTo(m, "snapshot", {
-        tick: w.tick >>> 0, ackSeq: m.appliedSeq, zoneState: w.zoneState, wave: u16(d.wave),
-        remaining: u16(d.phase === Phase.WAVE ? d.remaining() : 0),
-        timer: u16(d.phase === Phase.INTERMISSION ? Math.max(0, d.phaseEnd - w.time) * 10 : 0),
+        tick: w.tick >>> 0, ackSeq: m.appliedSeq, zoneState: w.zoneState,
+        // infection: round, soldiers left and the phase clock ride in the wave fields
+        wave: u16(inf ? inf.round : d.wave),
+        remaining: u16(inf ? inf.soldiersAlive() : d.phase === Phase.WAVE ? d.remaining() : 0),
+        timer: u16(inf ? inf.secondsLeft() * 10 : d.phase === Phase.INTERMISSION ? Math.max(0, d.phaseEnd - w.time) * 10 : 0),
         entities: entities.slice(0, 255), removed,
         instaKill: Math.min(255, w.powerups.secondsLeft("instaKill")), doublePoints: Math.min(255, w.powerups.secondsLeft("doublePoints")),
         fireSale: Math.min(255, w.powerups.secondsLeft("fireSale")),
@@ -346,7 +363,7 @@ export class Zone {
         hp: Math.max(0, Math.min(255, Math.round(self.hp))), state: self.state, currency: Math.max(0, Math.min(0xffffffff, self.currency)),
         slot: self.slot,
         weapons: self.weapons.map((wp) => ({ weapon: this.weaponIdx.get(wp.id) ?? 0, mag: Math.min(255, wp.mag), reserve: u16(wp.reserve) })),
-        flags: (self.isReloading() ? 1 : 0) | (w.time < self.switchEnd ? 2 : 0),
+        flags: (self.isReloading() ? 1 : 0) | (w.time < self.switchEnd ? 2 : 0) | (self.team === Team.ZOMBIE ? 4 : 0),
         revive: this.reviveProgress(self),
         perks: self.perks.reduce((m, id) => m | (1 << (this.perkIdx.get(id) ?? 0)), 0) & 0xff,
         bleedout: self.state === PlayerState.DOWNED ? Math.min(255, Math.ceil(w.bleedoutLeft(self))) : 0,

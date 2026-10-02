@@ -16,6 +16,10 @@ const BLEND := 0.35
 
 var local_pid: int = -1
 var zone_id: int = 0
+var mode: int = 0              ## 0 zombies, 1 infection (from zoneJoined)
+var soldiers_left: int = 0     ## infection: soldiers alive (snapshot)
+var phase_left: float = 0.0    ## infection: seconds left in the lobby countdown, round or result pause
+var round_result: int = -1     ## infection: 1 soldiers won, 0 infected won, -1 none yet
 var roster := {}             ## entity id -> display name
 var ready_to_play := false
 
@@ -134,7 +138,9 @@ func _move(pos: Vector2, inp: PlayerIntent) -> Vector2:
 		return pos
 	var yaw := SimMath.wrap_angle(inp.yaw)
 	var dir := SimMath.right(yaw) * mv.x + SimMath.forward(yaw) * mv.y
-	return map.move_circle(pos, dir * float(constants.player.moveSpeed) * dt, float(constants.player.radius))
+	var p: SimPlayer = players.get(local_pid)
+	var speed := float(constants.player.moveSpeed) * (float(constants.infection.zombieSpeedMul) if p and p.team == 1 else 1.0)
+	return map.move_circle(pos, dir * speed * dt, float(constants.player.radius))
 
 
 ## Cosmetic shots (muzzle, tracer, sound) right away; the server decides hits.
@@ -167,6 +173,13 @@ func _cosmetic_shot(p: SimPlayer, wp: WeaponState, inp: PlayerIntent) -> void:
 	var hit := "wall" if best < rng_max else "none"
 	for z in zombies.values():
 		var h := HitTest.ray_character(origin, dir, z.pos, z.radius(), float(z.def.headCenterHeight), float(z.def.headRadius))
+		if not h.is_empty() and h.t < best:
+			best = h.t
+			hit = "zombie"
+	for o in players.values():
+		if o.id == p.id or o.team != 1 or not o.is_alive():
+			continue
+		var h := HitTest.ray_character(origin, dir, o.pos, float(constants.player.radius), float(constants.player.headCenterHeight), float(constants.player.headRadius))
 		if not h.is_empty() and h.t < best:
 			best = h.t
 			hit = "zombie"
@@ -281,6 +294,12 @@ func _place_player(id: int, e: Dictionary, pos: Vector2, yaw: float) -> void:
 		_revived.erase(id)
 	p.hp = float(e.hp)
 	p.reload_end = time + 1.0 if int(e.flags) & 8 != 0 else 0.0
+	p.team = 1 if int(e.flags) & 64 != 0 else 0
+	if p.team == 1:
+		p.max_hp = float(constants.infection.zombieHealth) if mode == 1 else p.max_hp
+		p.weapons = []
+		p.slot = 0
+		return
 	var wid: String = _weapon_ids[clampi(int(e.sub), 0, _weapon_ids.size() - 1)]
 	if p.weapons.is_empty() or p.weapons[0].id != wid:
 		p.weapons = [WeaponState.create(wid, defs.weapons[wid])]
@@ -343,6 +362,7 @@ func _handle(msg_name: String, m: Dictionary) -> void:
 		"zoneJoined":
 			zone_id = int(m.zoneId)
 			local_pid = int(m.entityId)
+			mode = int(m.get("mode", 0))
 			var p: SimPlayer = players.get(local_pid)
 			if p == null:
 				p = _new_player(local_pid)
@@ -389,7 +409,11 @@ func _on_snapshot(m: Dictionary) -> void:
 		_snaps.pop_front()
 	zone_state = int(m.zoneState) as ZoneState
 	director.wave = int(m.wave)
-	if zone_state == ZoneState.WAVE:
+	if mode == 1:
+		soldiers_left = int(m.remaining)
+		phase_left = float(m.timer) / 10.0
+		director.phase = WaveDirector.Phase.STOPPED
+	elif zone_state == ZoneState.WAVE:
 		director.phase = WaveDirector.Phase.WAVE
 		director.to_spawn = int(m.remaining)
 		director.killed = 0
@@ -425,6 +449,10 @@ func _on_self(m: Dictionary) -> void:
 		return
 	p.hp = float(m.hp)
 	p.state = int(m.state) as SimPlayer.State
+	var was_team := p.team
+	p.team = 1 if int(m.flags) & 4 != 0 else 0
+	if p.team != was_team:
+		p.next_fire_time = 0.0
 	_self_revive = float(m.revive) / 255.0
 	_self_bleed = float(m.bleedout)
 	var bits := int(m.get("perks", 0))
@@ -433,7 +461,10 @@ func _on_self(m: Dictionary) -> void:
 		if bits & (1 << i) != 0:
 			owned.append(perk_ids[i])
 	p.perks = owned
-	p.max_hp = float(constants.player.maxHealth) * player_sys.perk_mul(p, "maxHealthMul")
+	if mode == 1:
+		p.max_hp = float(constants.infection.zombieHealth if p.team == 1 else constants.infection.soldierHealth)
+	else:
+		p.max_hp = float(constants.player.maxHealth) * player_sys.perk_mul(p, "maxHealthMul")
 	var cur := int(m.currency)
 	if _last_currency >= 0 and cur != _last_currency:
 		emit({"type": "currency", "pid": local_pid, "amount": cur - _last_currency, "reason": "server"})
@@ -474,6 +505,12 @@ func _on_event(m: Dictionary) -> void:
 		"hit":
 			var z: SimZombie = zombies.get(a)
 			var point := Vector3(z.pos.x, 1.3, z.pos.y) if z else Vector3.ZERO
+			if f & 2 != 0:  # infection: the target is an infected player
+				var t: SimPlayer = players.get(a)
+				if t:
+					point = Vector3(t.pos.x, 1.3, t.pos.y)
+				emit({"type": "player_hit", "pid": b, "target": a, "damage": float(v), "head": f & 1 != 0, "point": point})
+				return
 			emit({"type": "zombie_hit", "zid": a, "pid": b, "damage": float(v), "head": f & 1 != 0, "point": point})
 		"kill":
 			var z: SimZombie = zombies.get(a)
@@ -488,7 +525,33 @@ func _on_event(m: Dictionary) -> void:
 					killer.headshots += 1
 			emit({"type": "zombie_killed", "zid": a, "pid": b, "head": f & 1 != 0, "ztype": _zombie_types[clampi(v, 0, _zombie_types.size() - 1)], "pos": pos, "yaw": yaw})
 		"zombieSpawned": emit({"type": "zombie_spawned", "zid": a, "ztype": _zombie_types[clampi(b, 0, _zombie_types.size() - 1)], "entry": _entry_ids[clampi(v, 0, _entry_ids.size() - 1)]})
-		"zombieAttack": emit({"type": "zombie_attack", "zid": a, "pid": b})
+		"zombieAttack": emit({"type": "zombie_attack", "zid": a, "pid": b, "player": f & 1 != 0})
+		"playerKilled":
+			var victim: SimPlayer = players.get(a)
+			if victim:
+				victim.state = SimPlayer.State.DEAD
+			var killer: SimPlayer = players.get(b)
+			if killer:
+				killer.kills += 1
+				if f & 1 != 0:
+					killer.headshots += 1
+			emit({"type": "player_killed", "pid": a, "by": b, "head": f & 1 != 0})
+		"infected":
+			var victim: SimPlayer = players.get(a)
+			if victim:
+				victim.team = 1
+				victim.weapons = []
+				victim.downs += 1
+			var by: SimPlayer = players.get(b)
+			if by:
+				by.kills += 1
+			emit({"type": "infected", "pid": a, "by": b})
+		"roundStart":
+			round_result = -1
+			emit({"type": "round_start", "round": a, "infected": b, "seconds": v})
+		"roundEnd":
+			round_result = 1 if f & 1 != 0 else 0
+			emit({"type": "round_end", "round": a, "soldiersWin": f & 1 != 0})
 		"playerDamaged": emit({"type": "player_damaged", "pid": a, "amount": float(v), "source": b})
 		"playerDowned":
 			var p: SimPlayer = players.get(a)

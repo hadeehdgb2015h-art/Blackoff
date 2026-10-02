@@ -30,6 +30,13 @@ export const ConstantsSchema = z.object({
     protocolVersion: z.number().int().positive(), maxMessageBytes: z.number().int().positive(), interestRadius: pos,
     reconnectGraceSec: pos, clientInterpDelayMs: pos, inputRate: pos, maxInputsPerSecond: pos,
   }),
+  infection: z.object({
+    maxPlayers: z.number().int().positive(), minPlayers: z.number().int().min(1), lobbySec: pos, lobbyFullSec: pos, roundSec: num.positive(), resultSec: pos,
+    playersPerFirstInfected: z.number().int().positive(),
+    soldierHealth: num.positive(), soldierWeapons: z.array(z.string()).min(1),
+    zombieHealth: num.positive(), zombieSpeedMul: num.positive(), zombieAttackDamage: num.positive(), zombieAttackRange: num.positive(),
+    zombieAttackConeDeg: num.positive(), zombieAttackCooldownSec: num.positive(), zombieRespawnSec: pos,
+  }),
   voice: z.object({
     sampleRate: z.number().int().positive(), frameMs: z.number().int().positive(), maxFrameBytes: z.number().int().positive(),
     maxFramesPerSecond: z.number().int().positive(), vadThreshold: num.min(0), vadHoldFrames: z.number().int().nonnegative(),

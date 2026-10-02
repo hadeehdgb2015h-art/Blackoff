@@ -12,7 +12,7 @@ import { BTN_MASK, Btn, type PlayerIntent } from "../sim/entities.js";
 import { clamp, limitLength } from "../sim/math.js";
 import { log } from "../log.js";
 import type { Zone, ZoneClient } from "../zone/zone.js";
-import { ZoneState } from "../sim/simWorld.js";
+import { GameMode, ZoneState } from "../sim/simWorld.js";
 import { CodecError, type Codec, type Msg } from "./codec.js";
 import { cleanName, validateInitData } from "./telegramAuth.js";
 import { emptyProfile, weekLabel, weekStart, type MatchSummary, type Profile, type ProfileStore, type WeeklyStanding } from "../db/profileStore.js";
@@ -45,7 +45,8 @@ export class SessionHub implements ZoneSink {
     if (flags.length) {
       log.warn("anticheat flags", { account: z.accountId, name: z.name, flags, shots: z.shots, hits: z.hits, headshots: z.headshots, kills: z.kills, seconds: Math.round(z.seconds) });
     }
-    const r = { ...z, tonMicro: z.kills * this.env.TON_MICRO_PER_KILL, flags };
+    // TON points come from AI zombies only: infection kills are players, never farmed for prizes
+    const r = { ...z, tonMicro: z.mode === GameMode.INFECTION ? 0 : z.kills * this.env.TON_MICRO_PER_KILL, flags };
     this.track(this.store.record(r).then(
       async (profile) => {
         const session = this.byAccount.get(r.accountId);
@@ -169,7 +170,7 @@ export class Session implements ZoneClient {
     if (!this.account && name !== "hello") return this.strike("hello required first");
     switch (name) {
       case "hello": return void this.onHello(msg);
-      case "quickPlay": return this.onQuickPlay();
+      case "quickPlay": return this.onQuickPlay(msg);
       case "input": return this.onInput(msg);
       case "buy": return this.onBuy(msg);
       case "ping": return this.send("pong", { clientTime: msg.clientTime as number, serverTick: (this.zone?.world.tick ?? 0) >>> 0 });
@@ -281,13 +282,14 @@ export class Session implements ZoneClient {
     return slot;
   }
 
-  private onQuickPlay(): void {
-    if (this.zone && this.zone.state === ZoneState.GAME_OVER) this.leaveZone(); // play again
+  private onQuickPlay(msg: Msg): void {
+    const mode = msg.mode === GameMode.INFECTION ? GameMode.INFECTION : GameMode.CLASSIC;
+    if (this.zone && (this.zone.state === ZoneState.GAME_OVER || this.zone.mode !== mode)) this.leaveZone(); // play again / other mode
     if (this.zone) return; // already playing; quickPlay is idempotent
-    const { zone, member } = this.hub.zones.quickPlay(this, this.account!.id);
+    const { zone, member } = this.hub.zones.quickPlay(this, this.account!.id, mode);
     this.zone = zone;
     this.entityId = member.entityId;
-    log.info("joined zone", { account: this.account!.id, zone: zone.id, players: zone.size });
+    log.info("joined zone", { account: this.account!.id, zone: zone.id, mode: GameMode[mode], players: zone.size });
   }
 
   /** A voice frame: relayed as-is to the other members of the zone. The

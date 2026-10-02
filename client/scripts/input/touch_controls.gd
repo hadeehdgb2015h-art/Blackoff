@@ -28,6 +28,7 @@ var edit_mode: bool = false       ## layout editor: draw every control, take no 
 var layout: Dictionary = {}       ## TouchLayout (resolved on first use)
 var opacity: float = 1.0
 var voice_buttons: bool = false   ## show MIC and SPK (online with voice chat)
+var melee_mode: bool = false      ## infection, playing infected: FIRE is ATTACK, no reload/switch
 var mic_on: bool = false
 var speaker_on: bool = true
 var mic_talking: bool = false     ## pulse the mic ring while the player speaks
@@ -113,11 +114,13 @@ func _buttons() -> Dictionary:
 	var d := {}
 	var at := func(name: String) -> Vector2: return TouchLayout.position(layout, name, s)
 	var rad := func(name: String) -> float: return BASE_RADIUS[name] * TouchLayout.scale(layout, name)
-	d["fire"] = {"pos": at.call("fire"), "r": rad.call("fire"), "label": "FIRE"}
+	var fire_label := "ATTACK" if melee_mode else "FIRE"
+	d["fire"] = {"pos": at.call("fire"), "r": rad.call("fire"), "label": fire_label}
 	if layout.fire2.get("enabled", false) or edit_mode:
-		d["fire2"] = {"pos": at.call("fire2"), "r": rad.call("fire2"), "label": "FIRE"}
-	d["reload"] = {"pos": at.call("reload"), "r": rad.call("reload"), "label": "R"}
-	d["switch"] = {"pos": at.call("switch"), "r": rad.call("switch"), "label": "SWAP"}
+		d["fire2"] = {"pos": at.call("fire2"), "r": rad.call("fire2"), "label": fire_label}
+	if not melee_mode or edit_mode:
+		d["reload"] = {"pos": at.call("reload"), "r": rad.call("reload"), "label": "R"}
+		d["switch"] = {"pos": at.call("switch"), "r": rad.call("switch"), "label": "SWAP"}
 	d["pause"] = {"pos": at.call("pause"), "r": rad.call("pause"), "label": "II"}
 	if voice_buttons or edit_mode:
 		d["mic"] = {"pos": at.call("mic"), "r": rad.call("mic"), "label": "MIC"}

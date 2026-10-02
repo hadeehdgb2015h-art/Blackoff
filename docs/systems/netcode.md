@@ -35,6 +35,9 @@ The client plays online through the same game scene as offline practice. Only th
 - A zombie killed by an event stays dead even though older snapshots still list it (a 3 s dead list).
 - Other players' shots arrive as `shot` messages and are drawn as tracers from the shooter.
 
+## Infection mode (phase 13)
+Online only, no client sim mirror: `NetWorld` reads `mode` from `zoneJoined`, the infected flag (64) from player entities and bit 4 of `selfState.flags` for the local player, and the round, soldiers left and phase clock from the snapshot. Prediction moves an infected local player at `zombieSpeedMul` and never predicts shots for them (no weapon); the server's `zombieAttack` event (flag 1 = a player) swings the first-person claws (`FpRig.set_claws`, `on_claw`). Infected players are drawn as zombies (`ZombieView`, walker model) with a name tag; a fallen infected player disappears until `playerRespawned`. `BotBrain` plays both sides (soldiers also target infected players; an infected bot runs at the nearest soldier and claws). `?mode=infection` (or `BLACKOFF_MODE=infection` headless) with `?autostart=1` joins an infection zone.
+
 ## Voice chat (phase 12)
 `client/web/voice.js` runs in the page: the microphone (`getUserMedia` with echo cancellation, noise suppression and auto gain) feeds an AudioWorklet that resamples to 16 kHz mono and cuts 40 ms frames; a voice gate (`constants.voice.vadThreshold`, hold of `vadHoldFrames`) drops silence; frames are IMA ADPCM (4 bits per sample, 4-byte state header so each frame decodes alone, 324 bytes, about 65 kbit/s while talking, nothing while quiet). `Net._pump_voice` takes the frames through `Platform.voice_take()` and sends `voice {seq, data}`; the server (`Session.onVoice`) checks only size and rate and `Zone.relayVoice` sends `voice {entityId, seq, data}` to every other connected member whose speaker is on (`voiceListen`). Incoming frames go to `BlackoffVoice.play`: decoded and scheduled on one short jitter buffer per speaker (`jitterMs`) through a speaker gain. The server never decodes audio; `VOICE_CHAT=0` switches the relay off and `welcome.voice` tells clients. The mic is off at every start (privacy); the speaker choice is in Settings. `?voice=1` turns the mic on at join for browser tests.
 
@@ -48,6 +51,8 @@ The client plays online through the same game scene as offline practice. Only th
 |---|---|
 | Two headless Godot bots play the same zone on a real server (roster 2, wave 1 cleared, no script errors) | CI `client-web` → "Online end-to-end" |
 | The web export joins the server from Chromium | same step (`?server=ws://127.0.0.1:8799/ws`) |
+| Infection: lobby and countdown, round start with random infected, clock win, infected win, late joiners, claws (turn, cone, walls), bullets kill and respawn, speed; over the wire: matching by mode, flags, no TON | `server/test/infection.test.ts` |
+| Infection end to end: two Godot bots join an infection zone, a round starts, one hunts the other | CI `client-web` → "Online end-to-end" |
 | Voice: codec quality and independence of frames, `bytes16`, relay to listeners only, mute, size and flood limits, `VOICE_CHAT=0` | `server/test/voice.test.ts` |
 | Voice end to end: Chromium with a fake microphone (tone WAV) sends frames and plays what `server/tools/voiceBot.ts` says; the bot hears the browser | CI `client-web` → "Online end-to-end" (`SMOKE_VOICE=1`) |
 | Correction stats (`[net] rtt=… corrections=…`) are printed every 10 s | game log |

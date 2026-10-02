@@ -13,6 +13,7 @@ var _profile_name: Label
 var _profile_stats: Label
 var _profile_hint: Label
 var _play: Button
+var _play_inf: Button
 var _overlay: Control
 var _board_button: Button
 
@@ -49,7 +50,8 @@ func _ready() -> void:
 				_show_leaderboard())
 	if Platform.query_param("autostart") == "1":
 		var online := Platform.query_param("server") != "" or Platform.query_param("online") == "1"
-		(_play_online if online else _play_solo).call_deferred()
+		var inf := Platform.query_param("mode") == "infection"
+		(_play_infection if online and inf else (_play_online if online else _play_solo)).call_deferred()
 
 
 # ------------------------------------------------------------------ layout
@@ -107,16 +109,26 @@ func _build_left_column() -> void:
 	mode.add_theme_constant_override("separation", 10)
 	var tag := UiTheme.label("ZOMBIES", 20, UiTheme.ACCENT)
 	mode.add_child(tag)
-	mode.add_child(UiTheme.label("survive the waves with up to 4 players", 18, UiTheme.MUTED))
+	mode.add_child(UiTheme.label("co-op: survive the waves with up to 5 players", 18, UiTheme.MUTED))
 	col.add_child(mode)
 	_play = UiTheme.big_button("PLAY ONLINE", _play_online)
-	if not Net.is_online_available():
-		_play.disabled = true
-		_play.text = "PLAY ONLINE  (server not set)"
-	elif not Platform.is_telegram and Platform.query_param("server") == "" and Platform.query_param("name") == "":
-		_play.disabled = true
-		_play.text = "PLAY ONLINE  (open in Telegram)"
 	col.add_child(_play)
+	var mode2 := HBoxContainer.new()
+	mode2.add_theme_constant_override("separation", 10)
+	mode2.add_child(UiTheme.label("INFECTION", 20, Color(0.45, 0.85, 0.5)))
+	mode2.add_child(UiTheme.label("players vs players: soldiers against the infected, up to 10", 18, UiTheme.MUTED))
+	col.add_child(mode2)
+	_play_inf = UiTheme.big_button("PLAY INFECTION", _play_infection)
+	col.add_child(_play_inf)
+	var why := ""
+	if not Net.is_online_available():
+		why = "  (server not set)"
+	elif not Platform.is_telegram and Platform.query_param("server") == "" and Platform.query_param("name") == "":
+		why = "  (open in Telegram)"
+	if why != "":
+		for b in [_play, _play_inf]:
+			b.disabled = true
+			b.text += why
 	col.add_child(UiTheme.button("SOLO PRACTICE", _play_solo))
 	var row := HBoxContainer.new()
 	row.add_theme_constant_override("separation", 10)
@@ -127,7 +139,7 @@ func _build_left_column() -> void:
 	_board_button = UiTheme.button("WEEKLY HUNT  ·  TON leaderboard", _show_leaderboard)
 	_board_button.disabled = true
 	col.add_child(_board_button)
-	var soon := UiTheme.label("Online: voice chat with MIC / SPK on the HUD. Coming next: INFECTION mode (players vs players)", 16, UiTheme.MUTED)
+	var soon := UiTheme.label("Online: voice chat with MIC / SPK on the HUD. Infection kills count for the match, TON comes from zombies only.", 16, UiTheme.MUTED)
 	col.add_child(soon)
 	if Platform.query_param("debug") == "1":
 		col.add_child(UiTheme.button("DIAGNOSTICS", func(): get_tree().change_scene_to_file("res://scenes/boot/boot.tscn")))
@@ -208,6 +220,14 @@ func _play_solo() -> void:
 
 func _play_online() -> void:
 	Net.online_requested = true
+	Net.mode = 0
+	Platform.request_fullscreen()
+	get_tree().change_scene_to_file(GAME)
+
+
+func _play_infection() -> void:
+	Net.online_requested = true
+	Net.mode = 1
 	Platform.request_fullscreen()
 	get_tree().change_scene_to_file(GAME)
 

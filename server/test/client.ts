@@ -28,10 +28,11 @@ export class TestClient {
   }
 
   send(name: string, msg: Msg = {}): void {
+    if (name === "quickPlay" && !("mode" in msg)) msg = { mode: 0, ...msg }; // classic unless a test says otherwise
     this.ws.send(this.codec.encode("C2S", name, msg));
   }
 
-  hello(initData: string, resumeToken = "", protocolVersion = 6): void {
+  hello(initData: string, resumeToken = "", protocolVersion = 7): void {
     this.send("hello", { protocolVersion, initData, resumeToken });
   }
 

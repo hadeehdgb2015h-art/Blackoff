@@ -63,7 +63,13 @@
 - [x] MIC and SPK buttons on the HUD (movable in CONTROLS), talking marks in the team panel, speaker choice remembered, mic always off at start
 - [x] Tests: codec and relay (Node), fake-microphone browser test with a talking bot (CI)
 - [ ] Known limit: some Telegram versions give the page no microphone (the MIC button then says so); the speaker still works
-## Phase 13: infection mode (real zombies vs real soldiers, up to 10, no bots)
+## Phase 13: infection mode (done)
+- [x] Server rules (`server/src/sim/infectionSystem.ts`): lobby with countdown, rounds, first infected picked at random, claws, bullets on infected players, infection on the spot, respawn at a zombie entry, soldiers win on the clock, infected win when nobody is left; no AI zombies, boxes, perks or power-ups; up to 10 players
+- [x] Protocol v7: `quickPlay.mode`, `zoneJoined.mode`, `entityFlags.zombie`, events playerKilled/infected/roundStart/roundEnd; zones matched by mode
+- [x] Client: PLAY INFECTION in the menu, infected players shown as zombies with name tags, first-person claws, ATTACK button, round HUD, banners, the test bot plays both sides
+- [x] Tests: 8 sim and wire tests, CI runs two bots through a round
+- [x] Infection kills count in the match and profile but earn no TON (players, not zombies: nothing to farm)
+- [ ] Later ideas: round score table, a last-survivor bonus, an infected-only sprint
 
 ## Open questions for the owner
 - Own subdomain or the free sslip.io address (installer default)

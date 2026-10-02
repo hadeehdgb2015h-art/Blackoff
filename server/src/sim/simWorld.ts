@@ -9,13 +9,17 @@ import { MapData } from "./mapData.js";
 import { NavGrid } from "./navGrid.js";
 import { Rng } from "./rng.js";
 import { WaveDirector, Phase } from "./waveDirector.js";
-import { PlayerState, SimPlayer, WeaponState, type PlayerIntent, type SimEvent, type SimZombie } from "./entities.js";
+import { PlayerState, SimPlayer, Team, WeaponState, type PlayerIntent, type SimEvent, type SimZombie } from "./entities.js";
 import { PlayerSystem, type InteractOption } from "./playerSystem.js";
 import { ZombieSystem } from "./zombieSystem.js";
 import { BoxSystem } from "./boxSystem.js";
 import { PowerupSystem } from "./powerupSystem.js";
+import { InfectionSystem } from "./infectionSystem.js";
 
 export enum ZoneState { LOBBY = 0, INTERMISSION = 1, WAVE = 2, GAME_OVER = 3 }
+
+/** protocol.json `gameMode` */
+export enum GameMode { CLASSIC = 0, INFECTION = 1 }
 
 export class SimWorld {
   readonly constants: Constants;
@@ -36,9 +40,11 @@ export class SimWorld {
   readonly powerups: PowerupSystem;
   /** sorted perk ids (bit order of selfState.perks) */
   readonly perkIds: string[];
+  /** infection mode rules (null in classic) */
+  readonly infection: InfectionSystem | null;
   private nextId = 1;
 
-  constructor(readonly defs: SharedData, mapId: string, seed: number) {
+  constructor(readonly defs: SharedData, mapId: string, seed: number, readonly mode: GameMode = GameMode.CLASSIC) {
     this.constants = defs.constants;
     this.dt = 1 / this.constants.sim.tickRate;
     this.rng = new Rng(seed);
@@ -52,6 +58,7 @@ export class SimWorld {
     this.boxSys = new BoxSystem(this);
     this.powerups = new PowerupSystem(this);
     this.perkIds = Object.keys(defs.perks).sort();
+    this.infection = mode === GameMode.INFECTION ? new InfectionSystem(this) : null;
   }
 
   addPlayer(displayName: string): number {
@@ -66,7 +73,9 @@ export class SimWorld {
     const startId = this.constants.player.startWeapon;
     p.weapons.push(new WeaponState(startId, this.defs.weapons[startId]!));
     this.players.set(p.id, p);
-    if (this.zoneState === ZoneState.LOBBY) {
+    if (this.infection) {
+      this.infection.onJoin(p);
+    } else if (this.zoneState === ZoneState.LOBBY) {
       this.zoneState = ZoneState.INTERMISSION;
       this.director.start(this.time);
     }
@@ -90,6 +99,11 @@ export class SimWorld {
     this.time += this.dt;
     if (this.zoneState === ZoneState.GAME_OVER) return;
     for (const p of this.players.values()) this.playerSys.update(p);
+    if (this.infection) {
+      // no AI zombies, boxes, power-ups or waves: the round rules decide everything
+      this.infection.update();
+      return;
+    }
     this.boxSys.update();
     this.powerups.update();
     this.updateDirector();
@@ -119,6 +133,14 @@ export class SimWorld {
     p.hp -= amount;
     p.lastDamageTime = this.time;
     this.emit({ type: "player_damaged", pid: p.id, amount, source: sourceId });
+    if (p.hp <= 0 && this.infection) {
+      // infection: a soldier turns, an infected player falls and comes back
+      p.hp = 0;
+      const by = this.players.get(sourceId) ?? null;
+      if (p.team === Team.SOLDIER) this.infection.infect(p, by);
+      else this.infection.killZombie(p, by, false);
+      return;
+    }
     if (p.hp <= 0) {
       p.hp = 0;
       p.state = PlayerState.DOWNED;

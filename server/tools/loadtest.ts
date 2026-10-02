@@ -47,7 +47,7 @@ async function main(): Promise<void> {
     c.ws.on("message", (d: Buffer) => (bytes[idx] = bytes[idx]! + d.length));
     c.hello(`dev:bot${i}`);
     await c.waitFor("welcome");
-    c.send("quickPlay");
+    c.send("quickPlay", { mode: 0 });
     await c.waitFor("zoneJoined");
     clients.push(c);
   }

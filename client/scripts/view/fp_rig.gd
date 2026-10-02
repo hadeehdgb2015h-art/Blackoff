@@ -32,6 +32,9 @@ var _pending_weapon := ""
 var _shake: float = 0.0
 var _down: float = 0.0
 var _anim: AnimationPlayer
+var _claws: Node3D            ## infection: the infected player's hands instead of a weapon
+var _claws_on: bool = false
+var _claw_t: float = -1.0
 
 static var _weapon_mesh_cache := {}
 
@@ -159,6 +162,60 @@ func set_viewmodel_visible(on: bool) -> void:
 	_vm_root.visible = on
 
 
+## Infection mode: the infected see their own clawed hands instead of a gun.
+func set_claws(on: bool) -> void:
+	if on == _claws_on:
+		return
+	_claws_on = on
+	if _claws == null:
+		_claws = _build_claws()
+		_vm_root.add_child(_claws)
+	_claws.visible = on
+	_vm_holder.visible = not on
+	_flash.visible = false
+	_light.visible = false
+
+
+## A claw swing (the server decides whether it lands).
+func on_claw() -> void:
+	_claw_t = 0.0
+	_kick = 0.6
+
+
+static func _build_claws() -> Node3D:
+	var root := Node3D.new()
+	var mat := StandardMaterial3D.new()
+	mat.albedo_color = Color(0.42, 0.47, 0.36)
+	mat.roughness = 0.95
+	var nail := StandardMaterial3D.new()
+	nail.albedo_color = Color(0.12, 0.1, 0.08)
+	for side in [-1.0, 1.0]:
+		var arm := MeshInstance3D.new()
+		var cap := CapsuleMesh.new()
+		cap.radius = 0.045
+		cap.height = 0.42
+		arm.mesh = cap
+		arm.material_override = mat
+		arm.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		arm.position = Vector3(0.22 * side, -0.2, -0.32)
+		arm.rotation = Vector3(deg_to_rad(-70), deg_to_rad(12 * side), 0)
+		arm.name = "ArmL" if side < 0 else "ArmR"
+		root.add_child(arm)
+		for i in 3:
+			var c := MeshInstance3D.new()
+			var cone := CylinderMesh.new()
+			cone.top_radius = 0.0
+			cone.bottom_radius = 0.012
+			cone.height = 0.07
+			c.mesh = cone
+			c.material_override = nail
+			c.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+			c.position = Vector3(0.22 * side + (i - 1) * 0.03, -0.09, -0.5)
+			c.rotation = Vector3(deg_to_rad(-100), 0, 0)
+			root.add_child(c)
+	return root
+
+
 func set_downed(downed: bool) -> void:
 	_down = 1.0 if downed else 0.0
 	_vm_root.visible = not downed
@@ -191,6 +248,19 @@ func _animate(delta: float) -> void:
 			pos.y -= 0.25 * (1.0 - clampf((_switch_t - half) / half, 0.0, 1.0))
 			if _switch_t > half * 2.0:
 				_switch_t = -1.0
+	if _claws_on and _claws:
+		# swing: both hands lunge forward and down, then come back
+		if _claw_t >= 0.0:
+			_claw_t += delta
+			var k := clampf(_claw_t / 0.32, 0.0, 1.0)
+			var s := sin(k * PI)
+			_claws.position = Vector3(0, -0.12 * s, -0.22 * s)
+			_claws.rotation = Vector3(-0.5 * s, 0, 0)
+			if k >= 1.0:
+				_claw_t = -1.0
+		else:
+			_claws.position = Vector3(0, 0.01 * sin(_bob_t * 0.5), 0)
+			_claws.rotation = Vector3.ZERO
 	_vm_root.position = pos
 	_vm_root.rotation = rot
 	if _flash_t > 0.0:

@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "protocolVersion": 6,
+  "protocolVersion": 7,
   "endianness": "little",
   "frame": "u8 messageId followed by fields in declared order; one message per WebSocket binary frame. Decoders reject unknown ids, short frames and trailing bytes.",
   "primitives": {
@@ -61,11 +61,24 @@
       "playerRespawned": 23,
       "powerupDropped": 24,
       "powerupTaken": 25,
-      "powerupExpired": 26
+      "powerupExpired": 26,
+      "playerKilled": 27,
+      "infected": 28,
+      "roundStart": 29,
+      "roundEnd": 30
     },
-    "entityFlags": {"moving": 1, "attacking": 2, "downed": 4, "reloading": 8, "beingRevived": 16, "dead": 32},
+    "entityFlags": {
+      "moving": 1,
+      "attacking": 2,
+      "downed": 4,
+      "reloading": 8,
+      "beingRevived": 16,
+      "dead": 32,
+      "zombie": 64
+    },
     "selfFlags": {"reloading": 1, "switching": 2},
-    "shotHit": {"none": 0, "wall": 1, "zombie": 2}
+    "shotHit": {"none": 0, "wall": 1, "zombie": 2},
+    "gameMode": {"classic": 0, "infection": 1}
   },
   "types": {
     "inputButtons": "u8 bitmask: 1=fireHeld 2=reload 4=interact 8=revive 16=switchWeapon 32=firePressed (latched edge since last input)",
@@ -99,7 +112,7 @@
         "id": 1,
         "fields": [["protocolVersion", "u16"], ["initData", "str16"], ["resumeToken", "str8"]]
       },
-      "quickPlay": {"id": 2, "fields": []},
+      "quickPlay": {"id": 2, "fields": [["mode", "u8"]]},
       "input": {
         "id": 3,
         "fields": [
@@ -136,7 +149,10 @@
           ["voice", "bool"]
         ]
       },
-      "zoneJoined": {"id": 65, "fields": [["zoneId", "u32"], ["mapId", "str8"], ["entityId", "u16"]]},
+      "zoneJoined": {
+        "id": 65,
+        "fields": [["zoneId", "u32"], ["mapId", "str8"], ["entityId", "u16"], ["mode", "u8"]]
+      },
       "snapshot": {
         "id": 66,
         "fields": [
@@ -259,5 +275,6 @@
     "fireSale": "seconds left"
   },
   "_tonNote": "tonMicro = TON points in millionths (1000 = 0.001 TON). Earned per kill in online zones only; the server owns every number. Prizes are paid by the owner by hand from the weekly leaderboard.",
-  "_voiceNote": "Voice frames are opaque to the server: it relays each C2S voice frame to the other connected members of the zone that listen (voiceListen), stamped with the speaker's entityId. Format (client/web/voice.js): 40 ms of 16 kHz mono IMA ADPCM, 4-byte header + 320 bytes."
+  "_voiceNote": "Voice frames are opaque to the server: it relays each C2S voice frame to the other connected members of the zone that listen (voiceListen), stamped with the speaker's entityId. Format (client/web/voice.js): 40 ms of 16 kHz mono IMA ADPCM, 4-byte header + 320 bytes.",
+  "_infectionNote": "Infection mode (gameMode 1): no AI zombies. Player entities on the infected team carry entityFlags.zombie; selfState.flags bit 4 marks the local player infected. snapshot.wave is the round, remaining the soldiers left, timer tenths of a second left in the lobby countdown, round or result pause. Events: playerKilled (a victim, b killer, flags 1 head), infected (a victim, b by), roundStart (a round, b infected count, value seconds), roundEnd (a round, flags 1 soldiers win)."
 }

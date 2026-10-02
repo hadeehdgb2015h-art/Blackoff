@@ -40,7 +40,7 @@ ws.on("message", (data: Buffer) => {
   const { name: n, msg } = codec.decode("S2C", new Uint8Array(data.buffer, data.byteOffset, data.byteLength));
   if (n === "welcome") {
     if (!msg.voice) { console.error("server has voice chat off"); process.exit(2); }
-    send("quickPlay");
+    send("quickPlay", { mode: 0 });
   } else if (n === "zoneJoined") {
     talk = setInterval(() => {
       const s = new Float32Array(voice.FRAME);

@@ -38,7 +38,7 @@
     "maxLevel": 100
   },
   "net": {
-    "protocolVersion": 6,
+    "protocolVersion": 7,
     "maxMessageBytes": 4096,
     "interestRadius": 45,
     "reconnectGraceSec": 30,
@@ -83,5 +83,24 @@
     "vadHoldFrames": 8,
     "jitterMs": 80,
     "speakingHoldMs": 350
+  },
+  "infection": {
+    "_comment": "Infection mode (phase 13): real players only. Soldiers hold the start weapons; every soldier killed by an infected player turns infected on the spot; infected players killed by soldiers come back after zombieRespawnSec at a zombie entry. A round ends when no soldier is left (infected win) or when roundSec run out (soldiers win). Kills here earn no TON.",
+    "maxPlayers": 10,
+    "minPlayers": 2,
+    "lobbySec": 20,
+    "lobbyFullSec": 5,
+    "roundSec": 180,
+    "resultSec": 8,
+    "playersPerFirstInfected": 5,
+    "soldierHealth": 100,
+    "soldierWeapons": ["pistol", "rifle"],
+    "zombieHealth": 150,
+    "zombieSpeedMul": 1.25,
+    "zombieAttackDamage": 34,
+    "zombieAttackRange": 1.7,
+    "zombieAttackConeDeg": 100,
+    "zombieAttackCooldownSec": 0.8,
+    "zombieRespawnSec": 5
   }
 }

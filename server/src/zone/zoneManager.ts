@@ -5,7 +5,7 @@
  */
 import type { Codec } from "../net/codec.js";
 import type { SharedData } from "../shared/loadShared.js";
-import { ZoneState } from "../sim/simWorld.js";
+import { GameMode, ZoneState } from "../sim/simWorld.js";
 import { log } from "../log.js";
 import type { MatchSummary } from "../db/profileStore.js";
 import { Zone, type Member, type ZoneClient, type ZoneResult } from "./zone.js";
@@ -42,22 +42,28 @@ export class ZoneManager {
     this.tickMs = 1000 / shared.constants.sim.tickRate;
   }
 
-  /** Puts the client into the fullest joinable zone, or a new one. */
-  quickPlay(client: ZoneClient, accountId: string): { zone: Zone; member: Member } {
+  /** Players a zone of this mode holds. */
+  maxPlayers(mode: GameMode): number {
+    return mode === GameMode.INFECTION ? this.shared.constants.infection.maxPlayers : this.shared.constants.zone.maxPlayers;
+  }
+
+  /** Puts the client into the fullest joinable zone of that mode, or a new one. */
+  quickPlay(client: ZoneClient, accountId: string, mode: GameMode = GameMode.CLASSIC): { zone: Zone; member: Member } {
     const zc = this.shared.constants.zone;
+    const max = this.maxPlayers(mode);
     let best: Zone | null = null;
     for (const z of this.zones.values()) {
-      if (z.state === ZoneState.GAME_OVER || z.size >= zc.maxPlayers) continue;
-      if (zc.quickPlayJoinableUntilWave > 0 && z.world.director.wave > zc.quickPlayJoinableUntilWave) continue;
+      if (z.mode !== mode || z.state === ZoneState.GAME_OVER || z.size >= max) continue;
+      if (mode === GameMode.CLASSIC && zc.quickPlayJoinableUntilWave > 0 && z.world.director.wave > zc.quickPlayJoinableUntilWave) continue;
       if (!best || z.size > best.size) best = z;
     }
     if (!best) {
       const id = this.nextZoneId;
       this.nextZoneId = (this.nextZoneId % 0xffffffff) + 1;
-      best = new Zone(id, this.shared, this.codec, this.shared.constants.maps.default, (Math.random() * 0xffffffff) >>> 0, this.now());
+      best = new Zone(id, this.shared, this.codec, this.shared.constants.maps.default, (Math.random() * 0xffffffff) >>> 0, this.now(), mode);
       best.onResult = (r) => this.sink?.onResult(r);
       this.zones.set(id, best);
-      log.info("zone created", { zone: id, map: best.mapId });
+      log.info("zone created", { zone: id, map: best.mapId, mode: GameMode[mode] });
     }
     return { zone: best, member: best.join(client, accountId, this.now()) };
   }
@@ -105,7 +111,7 @@ export class ZoneManager {
     if (z.peakPlayers > 0) {
       this.sink?.onMatch({
         mapId: z.mapId, startedAt: z.startedAtDate, endedAt: new Date(),
-        wave: z.world.director.wave, players: z.peakPlayers, reason,
+        wave: z.mode === GameMode.INFECTION ? (z.world.infection?.round ?? 0) : z.world.director.wave, players: z.peakPlayers, reason,
       });
     }
   }
