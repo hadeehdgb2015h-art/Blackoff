@@ -10,7 +10,10 @@ html, body, #canvas { margin: 0; padding: 0; border: 0; }
 html, body { width: 100%; height: 100%; background: #08090a; }
 body { color: #e6e6e6; overflow: hidden; touch-action: none; user-select: none; -webkit-user-select: none;
   -webkit-touch-callout: none; overscroll-behavior: none; font-family: system-ui, -apple-system, 'Segoe UI', Roboto, 'Noto Sans Arabic', sans-serif; }
-#canvas { display: block; width: 100vw; height: 100vh; height: 100dvh; }
+/* The page sizes the canvas itself (resize policy "none"): on a phone held
+   upright the canvas is laid out landscape and turned 90 degrees, so the game
+   is always played in landscape without any rotation setting (see BlackoffRotate). */
+#canvas { display: block; position: fixed; left: 0; top: 0; transform-origin: 0 0; }
 #canvas:focus { outline: none; }
 #status { position: fixed; inset: 0; background: #08090a; display: flex; flex-direction: column;
   justify-content: center; align-items: center; gap: 18px; z-index: 2; }
@@ -18,10 +21,6 @@ body { color: #e6e6e6; overflow: hidden; touch-action: none; user-select: none; 
 #status-bar { width: min(60vw, 420px); height: 6px; background: #22262a; border-radius: 3px; overflow: hidden; }
 #status-fill { width: 0%; height: 100%; background: #c8302a; transition: width .15s; }
 #status-text { font-size: 13px; color: #8a9097; min-height: 1em; text-align: center; padding: 0 16px; }
-#rotate { position: fixed; inset: 0; display: none; z-index: 3; background: #08090a; color: #e6e6e6;
-  flex-direction: column; justify-content: center; align-items: center; gap: 12px; text-align: center; padding: 16px; }
-#rotate .icon { font-size: 52px; }
-@media (orientation: portrait) and (pointer: coarse) { #rotate { display: flex; } }
 </style>
 $GODOT_HEAD_INCLUDE
 </head>
@@ -33,7 +32,6 @@ $GODOT_HEAD_INCLUDE
   <div id="status-bar"><div id="status-fill"></div></div>
   <div id="status-text">Loading…</div>
 </div>
-<div id="rotate"><div class="icon">⟳</div><div dir="rtl">أدر الهاتف إلى الوضع الأفقي</div><div>Rotate your phone to landscape</div></div>
 
 <script>
 // ---- Telegram Mini App bridge (read by res://scripts/core/platform.gd) ----
@@ -88,7 +86,10 @@ window.BlackoffTG = (function () {
       if (!w || !w.initData) return { top: 0, right: 0, bottom: 0, left: 0 };
       const s = w.safeAreaInset || {}, c = w.contentSafeAreaInset || {};
       const n = (v) => (typeof v === 'number' && isFinite(v) ? v : 0);
-      return { top: n(s.top) + n(c.top), right: n(s.right) + n(c.right), bottom: n(s.bottom) + n(c.bottom), left: n(s.left) + n(c.left) };
+      const a = { top: n(s.top) + n(c.top), right: n(s.right) + n(c.right), bottom: n(s.bottom) + n(c.bottom), left: n(s.left) + n(c.left) };
+      // the turned canvas: the phone's top is the game's left, its right the game's top
+      if (window.BlackoffRotate && window.BlackoffRotate.state.rotated) return { top: a.right, right: a.bottom, bottom: a.left, left: a.top };
+      return a;
     },
     haptic: function (kind) {
       const w = wa();
@@ -98,6 +99,64 @@ window.BlackoffTG = (function () {
 })();
 </script>
 <script>
+// ---- Always landscape. A page cannot turn the phone, so when the window is
+// portrait (rotation locked, or Telegram's view) the canvas is laid out at
+// innerHeight x innerWidth and turned 90 degrees clockwise: the game's top edge
+// lies along the phone's right edge, upright once the phone is held sideways.
+// Touches are rewritten into the canvas's own coordinates; the engine never
+// knows (its resize policy is "none": the page owns the canvas size).
+window.BlackoffRotate = (function () {
+  const canvas = document.getElementById('canvas');
+  const state = { rotated: false, W: 0, H: 0 };
+  const realRect = canvas.getBoundingClientRect.bind(canvas);
+  function wantRotation() {
+    if (new URLSearchParams(location.search).get('norotate') === '1') return false;
+    return window.innerHeight > window.innerWidth && matchMedia('(pointer: coarse)').matches;
+  }
+  function layout() {
+    const W = window.innerWidth, H = window.innerHeight, dpr = window.devicePixelRatio || 1;
+    const rot = wantRotation();
+    state.rotated = rot; state.W = W; state.H = H;
+    const cw = rot ? H : W, ch = rot ? W : H;      // the canvas's own (landscape) size in CSS px
+    canvas.style.width = cw + 'px';
+    canvas.style.height = ch + 'px';
+    canvas.style.transform = rot ? 'translate(' + W + 'px, 0) rotate(90deg)' : '';
+    const pw = Math.round(cw * dpr), ph = Math.round(ch * dpr);
+    if (canvas.width !== pw || canvas.height !== ph) { canvas.width = pw; canvas.height = ph; }
+    document.documentElement.classList.toggle('rotated', rot);
+  }
+  // The engine scales touch positions by canvas.width / rect.width: give it the
+  // canvas's own box, not the turned one.
+  canvas.getBoundingClientRect = function () {
+    if (!state.rotated) return realRect();
+    return { x: 0, y: 0, left: 0, top: 0, width: state.H, height: state.W, right: state.H, bottom: state.W };
+  };
+  // screen point (portrait) -> canvas point: the game's top is on the right edge
+  function toCanvas(sx, sy) { return [sy, state.W - sx]; }
+  function rewrite(e) {
+    if (!state.rotated || e.__blackoffRotated || typeof Touch !== 'function' || typeof TouchEvent !== 'function') return;
+    e.preventDefault();
+    e.stopImmediatePropagation();
+    const conv = function (list) {
+      const out = [];
+      for (let i = 0; i < list.length; i++) {
+        const t = list[i], p = toCanvas(t.clientX, t.clientY);
+        out.push(new Touch({ identifier: t.identifier, target: canvas, clientX: p[0], clientY: p[1], pageX: p[0], pageY: p[1],
+          screenX: p[0], screenY: p[1], radiusX: t.radiusX, radiusY: t.radiusY, rotationAngle: t.rotationAngle, force: t.force }));
+      }
+      return out;
+    };
+    const ev = new TouchEvent(e.type, { touches: conv(e.touches), targetTouches: conv(e.targetTouches), changedTouches: conv(e.changedTouches),
+      bubbles: true, cancelable: true, composed: true });
+    ev.__blackoffRotated = true;
+    canvas.dispatchEvent(ev);
+  }
+  for (const t of ['touchstart', 'touchmove', 'touchend', 'touchcancel']) window.addEventListener(t, rewrite, { capture: true, passive: false });
+  window.addEventListener('resize', layout);
+  window.addEventListener('orientationchange', function () { setTimeout(layout, 50); });
+  layout();
+  return { state: state, layout: layout, toCanvas: toCanvas };
+})();
 // Godot handles the tap a frame later and only then asks for fullscreen; the
 // browser still counts the tap as a user gesture for a few seconds, so apply it
 // shortly after (same tap), instead of on the next one.

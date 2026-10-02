@@ -92,6 +92,8 @@ jobs:
           export NODE_PATH=/tmp/smoke/node_modules SMOKE_DPR=0.5
           SMOKE_EXPECT="[game] wave 1 started" node tools/smoke_web.cjs build/web build/smoke.png "?autostart=1&bot=1" 45
           SMOKE_TOUCH=1 node tools/smoke_web.cjs build/web build/touch.png "?autostart=1&debug=1" 5
+          # an upright phone: the page turns the game to landscape and rewrites the touches
+          SMOKE_PORTRAIT=1 SMOKE_TOUCH=1 node tools/smoke_web.cjs build/web build/portrait.png "?autostart=1&debug=1" 5
           SMOKE_CACHE=1 node tools/smoke_web.cjs build/web "" "" 2
       - name: Online end-to-end (real server + Godot bots + web build)
         run: |

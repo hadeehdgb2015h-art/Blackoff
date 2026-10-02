@@ -6,6 +6,8 @@
 // checks only the files whose names changed are downloaded;
 // SMOKE_URL=http://host/ tests a deployed site instead of serving <dir>;
 // SMOKE_TG_INITDATA=<signed initData> makes the page look like a Telegram Mini App.
+// SMOKE_PORTRAIT=1 opens the page in a portrait phone viewport: the game must come
+// out landscape (turned canvas) and touches must still land (with SMOKE_TOUCH=1).
 // SMOKE_VOICE=1 gives Chromium a fake microphone (a tone, then silence, looping)
 // and checks that voice frames are sent and that frames from others are played
 // (pair it with ?voice=1 and server/tools/voiceBot.ts on the same server).
@@ -41,13 +43,18 @@ const server = http.createServer((req, res) => {
 async function touchScenario(page) {
   const cdp = await page.context().newCDPSession(page);
   const vp = page.viewportSize();
-  const k = vp.height / 720;                  // canvas_items stretch, 720 base height
-  const vw = vp.width / k;                    // virtual width
+  // an upright phone: the page lays the canvas out landscape (height x width) and turns it
+  const portrait = vp.height > vp.width;
+  const cw = portrait ? vp.height : vp.width, ch = portrait ? vp.width : vp.height;
+  const k = ch / 720;                         // canvas_items stretch, 720 base height
+  const vw = cw / k;                          // virtual width
   const fire = { x: (vw - 155) * k, y: (720 - 165) * k };
   const stick = { x: 150 * k, y: (720 - 160) * k };
-  const aim = { x: vp.width * 0.62, y: vp.height * 0.35 };
+  const aim = { x: cw * 0.62, y: ch * 0.35 };
   const state = () => page.evaluate(() => window.__blackoff && { ...window.__blackoff });
-  const touch = (type, points) => cdp.send('Input.dispatchTouchEvent', { type, touchPoints: points });
+  // canvas point -> screen point (the turned canvas: game top along the right edge)
+  const toScreen = (p) => (portrait ? { x: vp.width - p.y, y: p.x, id: p.id } : p);
+  const touch = (type, points) => cdp.send('Input.dispatchTouchEvent', { type, touchPoints: points.map(toScreen) });
   // the menu shows a loading curtain before the game scene: wait for the game
   await page.waitForFunction(() => window.__blackoff, null, { timeout: 60000 }).catch(() => {});
   const before = await state();
@@ -108,7 +115,9 @@ function fakeMicWav() {
       ...(process.env.SMOKE_URL ? ['--unsafely-treat-insecure-origin-as-secure=' + new URL(process.env.SMOKE_URL).origin] : [])],
   });
   const scale = Number(process.env.SMOKE_DPR || 2);
-  const page = await browser.newPage({ viewport: { width: 844, height: 390 }, hasTouch: true, isMobile: true, deviceScaleFactor: scale });
+  // SMOKE_PORTRAIT=1: a phone held upright (the page must turn the game to landscape itself)
+  const viewport = process.env.SMOKE_PORTRAIT === '1' ? { width: 390, height: 844 } : { width: 844, height: 390 };
+  const page = await browser.newPage({ viewport, hasTouch: true, isMobile: true, deviceScaleFactor: scale });
   const errors = [];
   const logs = [];
   page.on('pageerror', (e) => errors.push(String(e)));

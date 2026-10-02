@@ -24,6 +24,9 @@ The team panel draws sound waves before the name of a teammate who is talking (`
 ## Look (`scripts/ui/ui_theme.gd`, phase 14)
 Dark fantasy: near-black stone panels and buttons drawn from small generated gradient textures (9-slice) with an old-brass edge, ember red for the calls to action, bone text, Cinzel (OFL) for titles and buttons, a diamond rule as the only ornament (no stars, sigils or symbols), a radial vignette and slow embers behind the menu, spaced capitals for subtitles. The menu shows a loading curtain before the game scene loads. Helpers: `title`, `label`, `button`, `big_button`, `gold_button`, `rule`, `vignette`, `embers`, `panel_box`.
 
+### Always landscape (phase 14)
+A page cannot turn the phone, so `BlackoffRotate` (shell) owns the canvas size (export resize policy "none"): when the window is portrait on a touch device the canvas is laid out at innerHeight × innerWidth and turned 90° clockwise (the game's top along the phone's right edge), and every touch is rewritten into canvas coordinates (`getBoundingClientRect` is overridden so the engine scales by the canvas's own box). Rotation lock, Telegram's view or a phone held upright all show the game in landscape; the player just holds the phone sideways. `?norotate=1` turns it off; `SMOKE_PORTRAIT=1 SMOKE_TOUCH=1` proves moving, aiming and firing in a portrait viewport.
+
 ### Safe area (Telegram)
 In Telegram's fullscreen the app draws its close and menu buttons over the page and phones add cut-outs and gesture bars. `BlackoffTG.safeArea()` (shell) adds `safeAreaInset` and `contentSafeAreaInset`; `Platform.safe_insets(view)` converts them to the game's virtual pixels. The menu's content container, the HUD (crosshair and vignette excepted) and the default touch layout keep clear of them (`TouchLayout.defaults(size, insets)`); the browser smoke test fakes a 56 px top bar and a 24 px right bar when `SMOKE_TG_INITDATA` is set.
 
