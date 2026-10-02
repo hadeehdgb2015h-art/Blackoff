@@ -41,11 +41,11 @@ func save() -> void:
 func quality_params() -> Dictionary:
 	match quality:
 		"low":
-			return {"scale": 0.6, "lights": false, "muzzle_light": false, "fog": false, "far": 55.0}
+			return {"scale": 0.6, "lights": false, "muzzle_light": false, "fog": false, "far": 55.0, "glow": false}
 		"high":
-			return {"scale": 1.0, "lights": true, "muzzle_light": true, "fog": true, "far": 90.0}
+			return {"scale": 1.0, "lights": true, "muzzle_light": true, "fog": true, "far": 90.0, "glow": true}
 		_:
-			return {"scale": 0.8, "lights": true, "muzzle_light": false, "fog": true, "far": 75.0}
+			return {"scale": 0.8, "lights": true, "muzzle_light": false, "fog": true, "far": 75.0, "glow": true}
 
 
 func _apply_audio() -> void:

@@ -362,7 +362,7 @@ def render(path):
 
 # ------------------------------------------------------------------ hard-surface helpers
 
-def bake_pointiness(ob, size, contrast=(0.48, 0.56)):
+def bake_pointiness(ob, size, contrast=(0.515, 0.58)):
     """Bakes a convex-edge mask (Cycles pointiness) for edge-wear painting.
     Returns a float32 (size, size) array in UV space."""
     import numpy as np
@@ -427,8 +427,7 @@ def pbr_material(name, albedo_img, orm_img=None, emissive=None):
     nt.links.new(t.outputs[0], bsdf.inputs["Base Color"])
     if orm_img is not None:
         o = nt.nodes.new("ShaderNodeTexImage")
-        o.image = orm_img
-        o.image.colorspace_settings.name = 'Non-Color'
+        o.image = orm_img  # created Non-Color by painter.to_image
         sep = nt.nodes.new("ShaderNodeSeparateColor")
         nt.links.new(o.outputs[0], sep.inputs[0])
         nt.links.new(sep.outputs["Green"], bsdf.inputs["Roughness"])

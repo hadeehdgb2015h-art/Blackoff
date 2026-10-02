@@ -19,7 +19,7 @@
 | `map_safe_area` | Marker3D, meta `min`, `max` | `safeArea` (spawn room; zombies never spawn inside, but they can enter) |
 | `map_light` | lights | toggled by the quality settings |
 
-At runtime `MapBatcher` merges all static meshes by material (about 10 draw calls).
+Art props are `Marker3D` nodes in group `map_prop` (`prop` meta = mesh name in `env_props.glb`). Each one that blocks movement also gets a hidden wall AABB, so it is part of the exported collision. At runtime `MapDecor` instances the prop meshes, then `MapBatcher` merges all static meshes by (material, 12 m chunk), which gives about 120 draw calls and keeps each merged mesh under the 8-lights-per-object limit.
 
 ## facility_01 (slice map)
 Safe room (spawn, ammo point) → two L-shaped corridors (west/east) → lab room (west, AR-7 wall-buy) and storage room (east) → outdoor yard. Four zombie entries: two yard gates, two room windows. Units are metres. North is −Z.

@@ -31,88 +31,11 @@ MAT_NAMES = ["metal", "poly", "accent", "glove", "sleeve", "emit", "brass", "len
 
 # ---------------------------------------------------------------- modelling kit (gun space: grip at origin)
 
-class Kit:
-    def __init__(self):
-        self.parts = []
-        self.mats = [lib.flat_material(n, "#808080") for n in MAT_NAMES]
+from kit import Kit as _Kit  # noqa: E402
 
-    def _finish(self, ob, node, mat, bevel, smooth_angle=35):
-        lib.activate(ob)
-        bpy.ops.object.transform_apply(location=False, rotation=True, scale=True)
-        if bevel > 0:
-            m = ob.modifiers.new("bev", 'BEVEL')
-            m.width = bevel
-            m.segments = 2
-            m.limit_method = 'ANGLE'
-            m.angle_limit = math.radians(30)
-            m.harden_normals = True
-            lib.apply_modifiers(ob)
-        ob.data.materials.clear()
-        for mm in self.mats:
-            ob.data.materials.append(mm)
-        for p in ob.data.polygons:
-            p.material_index = mat
-        lib.activate(ob)
-        bpy.ops.object.shade_smooth_by_angle(angle=math.radians(smooth_angle))
-        vg = ob.vertex_groups.new(name="node_" + node)
-        vg.add(list(range(len(ob.data.vertices))), 1.0, 'REPLACE')
-        self.parts.append(ob)
-        return ob
 
-    def box(self, node, mat, center, size, bevel=0.0015, rot=(0, 0, 0)):
-        bpy.ops.mesh.primitive_cube_add(size=1, location=center, rotation=[math.radians(r) for r in rot])
-        ob = bpy.context.active_object
-        ob.scale = size
-        return self._finish(ob, node, mat, bevel)
-
-    def cyl(self, node, mat, a, b, r, verts=16, bevel=0.001, r2=None):
-        """Cylinder from point a to point b (gun space)."""
-        a, b = Vector(a), Vector(b)
-        d = b - a
-        bpy.ops.mesh.primitive_cone_add(vertices=verts, radius1=r, radius2=r2 if r2 is not None else r, depth=d.length,
-                                        location=(a + b) / 2)
-        ob = bpy.context.active_object
-        ob.rotation_euler = d.to_track_quat('Z', 'Y').to_euler()
-        return self._finish(ob, node, mat, bevel, smooth_angle=50)
-
-    def sphere(self, node, mat, c, r, scale=(1, 1, 1), segs=12):
-        bpy.ops.mesh.primitive_uv_sphere_add(segments=segs, ring_count=max(6, segs // 2), radius=r, location=c)
-        ob = bpy.context.active_object
-        ob.scale = scale
-        return self._finish(ob, node, mat, 0, smooth_angle=80)
-
-    def prism(self, node, mat, profile, width, x=0.0, bevel=0.002):
-        """Side profile [(y, z), ...] (counter-clockwise) extruded along X."""
-        bm = bmesh.new()
-        lo = [bm.verts.new((x - width / 2, y, z)) for y, z in profile]
-        hi = [bm.verts.new((x + width / 2, y, z)) for y, z in profile]
-        bm.faces.new(list(reversed(lo)))
-        bm.faces.new(hi)
-        n = len(profile)
-        for i in range(n):
-            j = (i + 1) % n
-            bm.faces.new((lo[i], lo[j], hi[j], hi[i]))
-        bmesh.ops.recalc_face_normals(bm, faces=bm.faces)
-        me = bpy.data.meshes.new(node)
-        bm.to_mesh(me)
-        bm.free()
-        ob = lib.link(bpy.data.objects.new(node, me))
-        return self._finish(ob, node, mat, bevel)
-
-    def cut(self, target, cutters):
-        """Boolean difference; cutters are removed from the part list."""
-        lib.activate(target)
-        for c in cutters:
-            if c in self.parts:
-                self.parts.remove(c)
-            m = target.modifiers.new("cut", 'BOOLEAN')
-            m.operation = 'DIFFERENCE'
-            m.solver = 'EXACT'
-            m.object = c
-            lib.apply_modifiers(target)
-            bpy.data.objects.remove(c, do_unlink=True)
-        lib.activate(target)
-        bpy.ops.object.shade_smooth_by_angle(angle=math.radians(35))
+def Kit():
+    return _Kit(MAT_NAMES)
 
 
 # ---------------------------------------------------------------- arms
@@ -341,17 +264,17 @@ def paint(P, part, edges, seed):
     n1 = pt.fbm(P, 30, 4, seed)
     n2 = pt.fbm(P, 90, 3, seed + 5)
     scratch = pt.smooth(0.01, 0.0, np.abs(pt.fbm(P * np.array([1, 0.2, 1], np.float32), 60, 3, seed + 9) - 0.5))
-    wear = np.clip(edges * 1.4, 0, 1)
+    wear = pt.smooth(0.5, 0.95, edges)  # only the sharpest convex edges
     rough = np.full(len(P), 0.6, np.float32)
     metal = np.zeros(len(P), np.float32)
     col = np.zeros((len(P), 3), np.float32)
     # parkerized gunmetal: dark, slightly blue, edges worn to bright steel
     gm = pt.lerp(pt.hexc("#24272b"), pt.hexc("#16181b"), n1)
-    gm = pt.lerp(gm, pt.hexc("#8d939a"), np.clip(wear * 0.7 + scratch * 0.35, 0, 1))
+    gm = pt.lerp(gm, pt.hexc("#7d838a"), np.clip(wear * 0.6 + scratch * 0.25, 0, 1))
     m = part == METAL
     col[m] = gm[m]
-    rough[m] = (0.42 - wear[m] * 0.2 + n2[m] * 0.1)
-    metal[m] = 0.85
+    rough[m] = (0.62 - wear[m] * 0.2 + n2[m] * 0.08)
+    metal[m] = 0.4
     pl = pt.lerp(pt.hexc("#202122"), pt.hexc("#131414"), n1) * (0.92 + 0.08 * n2)[:, None]   # stippled polymer
     pl = pt.lerp(pl, pt.hexc("#4a4c4e"), wear * 0.35)
     m = part == POLY
@@ -392,6 +315,7 @@ def texture(ob, wid):
     bpy.ops.uv.pack_islands(rotate=True, margin=0.003, shape_method='CONCAVE')
     bpy.ops.object.mode_set(mode='OBJECT')
     edges = lib.bake_pointiness(ob, TEX)
+    print("    edge mask mean %.3f" % float(edges.mean()))
     ao = lib.bake_ao(ob, TEX)
     pos, nor, part, valid = pt.rasterize(ob, TEX)
     rgb = np.zeros((TEX, TEX, 3), np.float32)
@@ -400,7 +324,7 @@ def texture(ob, wid):
     rgb[valid] = c * (0.35 + 0.65 * ao[valid])[:, None]
     orm[valid] = np.stack([ao[valid], r, m], 1)
     alb = pt.to_image(bpy, "vm_%s_albedo" % wid, rgb, valid)
-    ormi = pt.to_image(bpy, "vm_%s_orm" % wid, orm, valid)
+    ormi = pt.to_image(bpy, "vm_%s_orm" % wid, orm, valid, non_color=True)
     mat = lib.pbr_material("vm_" + wid, alb, ormi)
     emit = lib.flat_material("sight_dot", "#ff2a1a", emission="#ff2a1a", strength=12.0)
     lens = lib.flat_material("lens", "#0f1a1a", roughness=0.05)

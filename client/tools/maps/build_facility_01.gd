@@ -95,19 +95,92 @@ func _walls() -> void:
 
 
 func _props() -> void:
-	# name, min (x,y,z), max (x,y,z), material — all block movement; height decides bullet blocking.
-	var props := [
-		["CrateStack", Vector3(-5.6, 0, -14.6), Vector3(-4.4, 1.0, -13.4), "crate"],
-		["CrateRow", Vector3(4.8, 0, -17.6), Vector3(7.2, 1.1, -16.4), "crate"],
-		["Container", Vector3(-2.5, 0, -12.1), Vector3(2.5, 2.4, -9.9), "container"],
-		["Barrier", Vector3(-14.3, 0, -18.5), Vector3(-13.7, 1.0, -15.5), "hazard"],
-		["Barrier2", Vector3(13.7, 0, -20.5), Vector3(14.3, 1.0, -17.5), "hazard"],
-		["LabBench", Vector3(-15, 0, -4.0), Vector3(-11, 0.95, -3.0), "metal"],
-		["Shelving", Vector3(11, 0, -4.0), Vector3(15, 2.2, -3.2), "metal"],
-		["AmmoCrate", Vector3(-0.6, 0, 10.15), Vector3(0.6, 0.8, 10.75), "ammo"],
+	# Gameplay blockers (exported). Ones dressed with art props are hidden boxes.
+	# name, min (x,y,z), max (x,y,z), material, visible
+	var blockers := [
+		["CrateStack", Vector3(-5.6, 0, -14.6), Vector3(-4.4, 1.0, -13.4), "crate", false],
+		["CrateRow", Vector3(4.8, 0, -17.6), Vector3(7.2, 1.1, -16.4), "crate", false],
+		["Container", Vector3(-2.5, 0, -12.1), Vector3(2.5, 2.4, -9.9), "container", true],
+		["Barrier", Vector3(-14.3, 0, -18.5), Vector3(-13.7, 1.0, -15.5), "hazard", true],
+		["Barrier2", Vector3(13.7, 0, -20.5), Vector3(14.3, 1.0, -17.5), "hazard", true],
+		["LabBench", Vector3(-15, 0, -4.0), Vector3(-11, 0.95, -3.0), "metal", false],
+		["Shelving", Vector3(11, 0, -4.0), Vector3(15, 2.2, -3.2), "metal", false],
+		["AmmoCrate", Vector3(-0.6, 0, 10.15), Vector3(0.6, 0.8, 10.75), "ammo", false],
 	]
-	for p in props:
-		_box(p[0], p[1], p[2], p[3], "map_wall")
+	for p in blockers:
+		var b := _box(p[0], p[1], p[2], p[3], "map_wall")
+		b.visible = p[4]
+	# --- art props: name, position, yaw [, blocker size (x, z), height]
+	var items := [
+		# safe room: lockers, terminal, ammo crate
+		["Lockers", Vector3(-3.2, 0, 17.55), 0.0, Vector2(1.56, 0.52), 1.9],
+		["Console", Vector3(3.2, 0, 17.5), 0.0, Vector2(0.95, 0.6), 1.3],
+		["Crate", Vector3(0, 0, 10.45), 0.0],
+		# lab: specimen tanks, benches, terminal, crystal growth
+		["Tank", Vector3(-16.6, 0, -5.3), 0.0, Vector2(1.0, 1.0), 2.4],
+		["Tank", Vector3(-9.5, 0, -5.3), 0.0, Vector2(1.0, 1.0), 2.4],
+		["LabTable", Vector3(-14.05, 0, -3.5), 0.0],
+		["LabTable", Vector3(-11.95, 0, -3.5), PI],
+		["Console", Vector3(-17.5, 0, 0.9), -PI / 2, Vector2(0.6, 0.95), 1.3],
+		["CrystalsSmall", Vector3(-9.0, 0, 1.2), 0.6],
+		# storage: shelving, crates, barrels
+		["Shelf", Vector3(12, 0, -3.6), 0.0],
+		["Shelf", Vector3(14, 0, -3.6), PI],
+		["Crate", Vector3(9.2, 0, -5.2), 0.0, Vector2(1.0, 0.6), 1.2],
+		["Crate", Vector3(9.2, 0.6, -5.2), 0.3],
+		["Barrel", Vector3(9.0, 0, 1.4), 0.0, Vector2(1.4, 0.85), 0.9],
+		["Barrel", Vector3(9.65, 0, 1.45), 1.2],
+		# corridors: rubble only, they must stay clear
+		["Rubble", Vector3(-12.7, 0, 8.0), 0.8],
+		["Rubble", Vector3(12.7, 0, 4.0), 2.2],
+		# yard: outbreak crystals, posts, generator, barricades, barrels, crates
+		["Crystals", Vector3(-7.5, 0, -20.0), 0.4, Vector2(1.6, 1.6), 2.0],
+		["CrystalsSmall", Vector3(6.6, 0, -8.2), 1.0],
+		["CrystalsSmall", Vector3(15.5, 0, -22.6), 2.0],
+		["CrystalsSmall", Vector3(-18.5, 0, -8.6), 3.0],
+		["LampPost", Vector3(-15, 0, -7.2), 0.0, Vector2(0.4, 0.4), 4.0],
+		["LampPost", Vector3(15, 0, -7.2), 0.0, Vector2(0.4, 0.4), 4.0],
+		["Generator", Vector3(17.5, 0, -12.5), PI / 2, Vector2(1.0, 1.7), 1.2],
+		["Sandbags", Vector3(-13.5, 0, -21.5), 0.0, Vector2(2.1, 0.55), 0.7],
+		["Sandbags", Vector3(13.5, 0, -21.5), 0.0, Vector2(2.1, 0.55), 0.7],
+		["BarrelChem", Vector3(-19.5, 0, -16.0), 0.0, Vector2(1.5, 1.3), 0.9],
+		["BarrelChem", Vector3(-18.9, 0, -15.4), 0.7],
+		["BarrelChem", Vector3(19.3, 0, -19.5), 0.0, Vector2(0.7, 0.7), 0.9],
+		["Barrel", Vector3(3.3, 0, -12.6), 0.0, Vector2(1.3, 1.3), 0.9],
+		["Barrel", Vector3(3.9, 0, -12.0), 2.0],
+		["Crate", Vector3(-5.0, 0, -14.25), 0.0],
+		["Crate", Vector3(-5.0, 0, -13.75), 0.0],
+		["Crate", Vector3(-5.0, 0.6, -14.0), PI / 2],
+		["Crate", Vector3(5.5, 0, -17.3), 0.0],
+		["Crate", Vector3(6.6, 0, -17.3), 0.0],
+		["Crate", Vector3(5.5, 0, -16.7), 0.0],
+		["Crate", Vector3(6.6, 0, -16.7), 0.0],
+		["Crate", Vector3(6.0, 0.6, -17.0), 0.15],
+		["Rubble", Vector3(-3.0, 0, -21.0), 1.3],
+		["Rubble", Vector3(10.0, 0, -9.0), 0.2],
+	]
+	for it in items:
+		_prop(it[0], it[1], it[2])
+		if it.size() >= 5:
+			var sz: Vector2 = it[3]
+			var c: Vector3 = it[1]
+			var blk := _box("Block_" + it[0], Vector3(c.x - sz.x / 2, 0, c.z - sz.y / 2), Vector3(c.x + sz.x / 2, it[4], c.z + sz.y / 2), "metal", "map_wall")
+			blk.visible = false
+	# pipes along the corridor walls, just under the ceiling
+	for z in [3.0, 5.0, 7.0, 9.0, 11.0]:
+		_prop("Pipe", Vector3(-13.68, 2.72, z), -PI / 2)
+		_prop("Pipe", Vector3(13.68, 2.72, z), PI / 2)
+
+
+## Art prop marker; the game instantiates the mesh from env_props.glb (MapDecor).
+func _prop(prop_name: String, pos: Vector3, yaw: float) -> void:
+	var m := Marker3D.new()
+	m.name = "Prop_%s_%d" % [prop_name, markers.get_child_count()]
+	m.position = pos
+	m.rotation.y = yaw
+	m.set_meta("prop", prop_name)
+	m.add_to_group("map_prop", true)
+	_add(markers, m)
 
 
 func _markers() -> void:
@@ -150,35 +223,77 @@ func _markers() -> void:
 	safe.set_meta("max", Vector2(5, 18))
 
 
+## Lighting: readable and fairly bright, with a dark-fantasy palette —
+## warm gold for safety, teal/amber in the halls, cold labs, violet outbreak.
+const WARM := Color(1.0, 0.86, 0.62)
+const AMBER := Color(1.0, 0.62, 0.3)
+const TEAL := Color(0.25, 0.95, 0.88)
+const VIOLET := Color(0.68, 0.36, 1.0)
+const COOL := Color(0.82, 0.9, 1.0)
+
+
 func _lights() -> void:
-	_omni("SafeLight", Vector3(0, 2.7, 14), Color(0.75, 0.85, 1.0), 1.1, 9.0)
-	_omni("CorrW_Red", Vector3(-13, 2.6, 7), Color(1, 0.15, 0.1), 1.6, 7.0)
-	_omni("CorrE_Red", Vector3(13, 2.6, 7), Color(1, 0.15, 0.1), 1.6, 7.0)
-	_omni("CorrW_Amber", Vector3(-9, 2.6, 14), Color(1, 0.55, 0.15), 1.2, 6.0)
-	_omni("CorrE_Amber", Vector3(9, 2.6, 14), Color(1, 0.55, 0.15), 1.2, 6.0)
-	_omni("LabLight", Vector3(-13, 2.7, -2), Color(1, 0.6, 0.25), 1.3, 10.0)
-	_omni("StorageLight", Vector3(13, 2.7, -2), Color(1, 0.6, 0.25), 1.3, 10.0)
-	_omni("YardLamp", Vector3(0, 5.0, -17), Color(1, 0.7, 0.35), 2.0, 16.0)
+	# safe room: two ceiling fixtures, warm and inviting
+	for z in [12.6, 15.6]:
+		_prop("CeilingLamp", Vector3(0, H, z), 0.0)
+		_omni("SafeLight%d" % int(z), Vector3(0, 2.7, z), WARM, 1.7, 8.5)
+	# corridors: wall lamps alternating teal and amber
+	var halls := [
+		[Vector3(-13.85, 2.3, 5.0), -PI / 2, "Teal", TEAL], [Vector3(-13.85, 2.3, 10.5), -PI / 2, "Warm", AMBER],
+		[Vector3(-9.0, 2.3, 14.85), 0.0, "Warm", AMBER], [Vector3(13.85, 2.3, 5.0), PI / 2, "Warm", AMBER],
+		[Vector3(13.85, 2.3, 10.5), PI / 2, "Teal", TEAL], [Vector3(9.0, 2.3, 14.85), 0.0, "Teal", TEAL],
+	]
+	for i in halls.size():
+		var hl: Array = halls[i]
+		_prop("WallLamp" + hl[2], hl[0], hl[1])
+		var out := Vector3(-sin(hl[1]), 0, -cos(hl[1])) * 0.45
+		_omni("Hall%d" % i, hl[0] + out, hl[3], 1.5, 6.5)
+	# lab: cold overhead light, teal tanks, violet crystal
+	_prop("CeilingLamp", Vector3(-13, H, -1.5), PI / 2)
+	_omni("LabLight", Vector3(-13, 2.7, -1.5), COOL, 1.5, 9.5)
+	_omni("TankA", Vector3(-16.6, 1.3, -4.6), TEAL, 1.4, 5.5)
+	_omni("TankB", Vector3(-9.5, 1.3, -4.6), TEAL, 1.4, 5.5, true)
+	_omni("LabCrystal", Vector3(-9.0, 0.7, 1.0), VIOLET, 0.9, 3.5, true)
+	# storage: two warm overheads
+	for x in [11.0, 15.0]:
+		_prop("CeilingLamp", Vector3(x, H, -2.0), PI / 2)
+		_omni("Store%d" % int(x), Vector3(x, 2.7, -2.0), Color(1.0, 0.78, 0.5), 1.5, 8.0)
+	# yard: violet outbreak glow, sodium lamp posts, cold moon
+	_omni("Breach", Vector3(-7.5, 1.6, -20.0), VIOLET, 3.2, 13.0)
+	_omni("PostW", Vector3(-15, 3.8, -7.92), AMBER, 3.0, 15.0)
+	_omni("PostE", Vector3(15, 3.8, -7.92), AMBER, 3.0, 15.0)
+	_omni("YardFill", Vector3(0, 4.0, -15.0), Color(0.55, 0.62, 0.95), 1.6, 16.0)
+	_omni("GenLight", Vector3(16.9, 0.9, -12.5), Color(1.0, 0.25, 0.2), 0.7, 3.0, true)
 	var moon := DirectionalLight3D.new()
 	moon.name = "Moon"
-	moon.light_color = Color(0.55, 0.65, 0.9)
-	moon.light_energy = 0.35
-	moon.rotation = Vector3(deg_to_rad(-50), deg_to_rad(30), 0)
+	moon.light_color = Color(0.6, 0.62, 0.95)
+	moon.light_energy = 1.15
+	moon.rotation = Vector3(deg_to_rad(-48), deg_to_rad(35), 0)
 	moon.shadow_enabled = false
+	moon.light_cull_mask = 2  # outdoor layer only (MapBatcher puts yard meshes on layer 2)
 	_add(lights, moon)
 
 
 func _environment() -> void:
 	var env := Environment.new()
 	env.background_mode = Environment.BG_COLOR
-	env.background_color = Color(0.015, 0.02, 0.03)
+	env.background_color = Color(0.05, 0.04, 0.09)
 	env.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
-	env.ambient_light_color = Color(0.24, 0.26, 0.31)
-	env.ambient_light_energy = 0.8
+	env.ambient_light_color = Color(0.64, 0.62, 0.7)
+	env.ambient_light_energy = 0.85
 	env.fog_enabled = true
-	env.fog_light_color = Color(0.09, 0.1, 0.13)
-	env.fog_density = 0.035
-	env.tonemap_mode = Environment.TONE_MAPPER_FILMIC
+	env.fog_light_color = Color(0.2, 0.16, 0.3)
+	env.fog_density = 0.012
+	env.tonemap_mode = Environment.TONE_MAPPER_ACES
+	env.tonemap_exposure = 1.15
+	env.glow_enabled = true
+	env.glow_intensity = 0.8
+	env.glow_strength = 1.0
+	env.glow_bloom = 0.04
+	env.glow_hdr_threshold = 1.0
+	env.adjustment_enabled = true
+	env.adjustment_saturation = 1.04
+	env.adjustment_contrast = 1.05
 	var we := WorldEnvironment.new()
 	we.name = "WorldEnvironment"
 	we.environment = env
@@ -190,11 +305,47 @@ func _environment() -> void:
 func _hwall(name: String, z: float, x0: float, x1: float, gaps: Array, h := H, mat := "wall") -> void:
 	for seg in _split(x0, x1, gaps):
 		_box("%s_%d" % [name, geo.get_child_count()], Vector3(seg.x - T / 2, 0, z - T / 2), Vector3(seg.y + T / 2, h, z + T / 2), mat, "map_wall")
+		_dress(seg.x - T / 2, seg.y + T / 2, z, false, h, mat)
+	if h == H and mat == "wall":
+		for g in gaps:
+			_prop("DoorFrame25" if g[1] > 2.2 else "DoorFrame2", Vector3(g[0], 0, z), 0.0)
 
 
 func _vwall(name: String, x: float, z0: float, z1: float, gaps: Array, h := H, mat := "wall") -> void:
 	for seg in _split(z0, z1, gaps):
 		_box("%s_%d" % [name, geo.get_child_count()], Vector3(x - T / 2, 0, seg.x - T / 2), Vector3(x + T / 2, h, seg.y + T / 2), mat, "map_wall")
+		_dress(seg.x - T / 2, seg.y + T / 2, x, true, h, mat)
+	if h == H and mat == "wall":
+		for g in gaps:
+			_prop("DoorFrame25" if g[1] > 2.2 else "DoorFrame2", Vector3(x, 0, g[0]), PI / 2)
+
+
+## Visual wall dressing (no collision): baseboard, cornice and pillars on both
+## faces of interior walls; posts on fences. `vertical` = wall runs along Z.
+func _dress(a: float, b: float, at: float, vertical: bool, h: float, mat: String) -> void:
+	var boxes := []
+	if mat == "wall" and h == H:
+		boxes.append([a, b, 0.0, 0.22, T / 2 + 0.03, "trim"])
+		boxes.append([a, b, H - 0.18, H, T / 2 + 0.05, "trim"])
+		var n := int((b - a) / 3.0)
+		for i in range(1, n + 1):
+			var c := a + (b - a) * i / (n + 1)
+			boxes.append([c - 0.13, c + 0.13, 0.0, H, T / 2 + 0.06, "pillar"])
+	elif mat == "fence":
+		var n := int((b - a) / 2.5)
+		for i in range(0, n + 2):
+			var c := clampf(a + (b - a) * i / (n + 1), a + 0.1, b - 0.1)
+			boxes.append([c - 0.1, c + 0.1, 0.0, h + 0.2, T / 2 + 0.05, "pillar"])
+	for bx in boxes:
+		var mn: Vector3
+		var mx: Vector3
+		if vertical:
+			mn = Vector3(at - bx[4], bx[2], bx[0])
+			mx = Vector3(at + bx[4], bx[3], bx[1])
+		else:
+			mn = Vector3(bx[0], bx[2], at - bx[4])
+			mx = Vector3(bx[1], bx[3], at + bx[4])
+		_box("Dress_%d" % geo.get_child_count(), mn, mx, bx[5], "map_visual")
 
 
 func _mirror_h(name: String, z: float, x0: float, x1: float, gaps: Array, h := H, mat := "wall") -> void:
@@ -266,7 +417,7 @@ func _label(name: String, pos: Vector3, text: String, yaw: float) -> void:
 	_add(geo, l)
 
 
-func _omni(name: String, pos: Vector3, color: Color, energy: float, rng: float) -> void:
+func _omni(name: String, pos: Vector3, color: Color, energy: float, rng: float, extra := false) -> void:
 	var o := OmniLight3D.new()
 	o.name = name
 	o.position = pos
@@ -276,6 +427,8 @@ func _omni(name: String, pos: Vector3, color: Color, energy: float, rng: float) 
 	o.omni_attenuation = 1.2
 	o.shadow_enabled = false
 	o.add_to_group("map_light", true)
+	if extra:
+		o.add_to_group("map_light_extra", true)  # switched off on low quality
 	_add(lights, o)
 
 
@@ -294,29 +447,40 @@ func _add(parent: Node, n: Node) -> void:
 func _make_materials() -> void:
 	var grime: Texture2D = load("res://assets/textures/grime.png")
 	var hazard: Texture2D = load("res://assets/textures/hazard.png")
+	# name: [albedo tint, texture base name or null, triplanar scale, metallic]
 	var defs := {
-		"wall": [Color(0.36, 0.38, 0.37), grime, 0.5],
-		"floor_concrete": [Color(0.3, 0.3, 0.31), grime, 0.35],
-		"ceiling": [Color(0.18, 0.19, 0.2), grime, 0.5],
-		"ground_yard": [Color(0.2, 0.21, 0.19), grime, 0.25],
-		"fence": [Color(0.28, 0.27, 0.25), grime, 0.6],
-		"crate": [Color(0.42, 0.33, 0.2), grime, 0.8],
-		"container": [Color(0.22, 0.32, 0.3), grime, 0.4],
-		"metal": [Color(0.42, 0.44, 0.46), grime, 0.7],
-		"hazard": [Color(1, 1, 1), hazard, 0.5],
-		"ammo": [Color(0.25, 0.32, 0.18), grime, 1.0],
-		"panel_buy": [Color(0.9, 0.7, 0.2), null, 1.0],
+		"wall": [Color(1, 1, 1), "wall_panels", 1.0 / 3.0, 0.0],
+		"floor_concrete": [Color(1, 1, 1), "floor_tiles", 0.25, 0.0],
+		"ceiling": [Color(1, 1, 1), "ceiling", 0.42, 0.0],
+		"ground_yard": [Color(1, 1, 1), "ground", 0.18, 0.0],
+		"fence": [Color(0.85, 0.85, 0.9), "metal_plate", 0.5, 0.4],
+		"trim": [Color(0.55, 0.55, 0.6), "metal_plate", 1.0, 0.5],
+		"pillar": [Color(0.72, 0.74, 0.82), "metal_plate", 0.5, 0.4],
+		"container": [Color(0.5, 0.78, 0.8), "metal_plate", 0.5, 0.3],
+		"crate": [Color(0.42, 0.33, 0.2), grime, 0.8, 0.0],
+		"metal": [Color(0.42, 0.44, 0.46), grime, 0.7, 0.0],
+		"hazard": [Color(1, 1, 1), hazard, 0.5, 0.0],
+		"ammo": [Color(0.25, 0.32, 0.18), grime, 1.0, 0.0],
+		"panel_buy": [Color(0.9, 0.7, 0.2), null, 1.0, 0.0],
 	}
 	for k in defs:
+		var d: Array = defs[k]
 		var m := StandardMaterial3D.new()
 		m.resource_name = k
-		m.albedo_color = defs[k][0]
-		if defs[k][1] != null:
-			m.albedo_texture = defs[k][1]
+		m.albedo_color = d[0]
+		m.roughness = 0.85
+		m.metallic = d[3]
+		if d[1] is String:
+			m.albedo_texture = load("res://assets/textures/%s_albedo.png" % d[1])
+			m.normal_enabled = true
+			m.normal_texture = load("res://assets/textures/%s_normal.png" % d[1])
+			m.normal_scale = 1.0
+		elif d[1] != null:
+			m.albedo_texture = d[1]
+		if d[1] != null:
 			m.uv1_triplanar = true
 			m.uv1_world_triplanar = true
-			m.uv1_scale = Vector3.ONE * defs[k][2]
-		m.roughness = 0.9
+			m.uv1_scale = Vector3.ONE * d[2]
 		if k == "panel_buy":
 			m.emission_enabled = true
 			m.emission = Color(1.0, 0.65, 0.15)

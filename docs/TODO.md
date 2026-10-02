@@ -7,7 +7,8 @@
 - [x] Pistol + rifle, walker + runner, infinite waves, credits, wall-buy, ammo point
 - [x] HUD, pause, game over; generated placeholder SFX
 - [x] Tests: 21 headless, bot playthrough, headless game run, browser bot + multi-touch
-- [ ] Art pass: needs CC0 assets from the owner (list in the phase 1 report)
+- [x] Art stages 1–3 (zombies + supply cache, weapons, environment), generated in-repo
+- [ ] Art stage 4: soldier character (needed once co-op shows other players)
 - [ ] Baked lighting (LightmapGI needs a GPU; try in CI with Xvfb/llvmpipe or in the editor later)
 - [ ] Arabic UI localisation (needs an Arabic font, e.g. Noto Sans Arabic OFL, which can be fetched from GitHub)
 

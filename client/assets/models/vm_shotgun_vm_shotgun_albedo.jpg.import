@@ -3,22 +3,24 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://cj2cj7btrm7t0"
-path="res://.godot/imported/vm_shotgun_vm_shotgun_albedo.jpg-9e8b0b0ca92b1c0792e27283245ebb87.ctex"
+path.s3tc="res://.godot/imported/vm_shotgun_vm_shotgun_albedo.jpg-9e8b0b0ca92b1c0792e27283245ebb87.s3tc.ctex"
+path.etc2="res://.godot/imported/vm_shotgun_vm_shotgun_albedo.jpg-9e8b0b0ca92b1c0792e27283245ebb87.etc2.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
+"vram_texture": true
 }
 generator_parameters={
-"md5": "39f26af7c44eafa9e24a91a8f81adcb2"
+"md5": "ccb8b7b30d29761d4d7a3406db278cfe"
 }
 
 [deps]
 
 source_file="res://assets/models/vm_shotgun_vm_shotgun_albedo.jpg"
-dest_files=["res://.godot/imported/vm_shotgun_vm_shotgun_albedo.jpg-9e8b0b0ca92b1c0792e27283245ebb87.ctex"]
+dest_files=["res://.godot/imported/vm_shotgun_vm_shotgun_albedo.jpg-9e8b0b0ca92b1c0792e27283245ebb87.s3tc.ctex", "res://.godot/imported/vm_shotgun_vm_shotgun_albedo.jpg-9e8b0b0ca92b1c0792e27283245ebb87.etc2.ctex"]
 
 [params]
 
-compress/mode=0
+compress/mode=2
 compress/high_quality=false
 compress/lossy_quality=0.7
 compress/uastc_level=0

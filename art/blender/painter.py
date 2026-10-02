@@ -138,10 +138,15 @@ def dilate(img, valid, iterations=8):
     return img
 
 
-def to_image(bpy, name, rgb, valid):
+def to_image(bpy, name, rgb, valid, non_color=False):
     size = rgb.shape[0]
     rgb = dilate(rgb, valid)
     rgba = np.concatenate([np.clip(rgb, 0, 1), np.ones((size, size, 1), np.float32)], 2)
     img = bpy.data.images.new(name, size, size)
+    # Colour space must be set before writing: changing it later reloads the
+    # generated image and silently wipes the pixels (black ORM maps).
+    if non_color:
+        img.colorspace_settings.name = 'Non-Color'
     img.pixels = rgba.reshape(-1).tolist()
+    img.pack()
     return img

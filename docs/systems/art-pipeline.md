@@ -12,6 +12,9 @@ python3 -m venv /opt/blender-venv && /opt/blender-venv/bin/pip install bpy==4.5.
 /opt/blender-venv/bin/python art/blender/build_zombies.py --preview /tmp/art   # zombie_walker.glb, zombie_runner.glb
 /opt/blender-venv/bin/python art/blender/build_props.py --preview /tmp/art     # supply_box.glb
 /opt/blender-venv/bin/python art/blender/build_weapons.py --preview /tmp/vm    # vm_pistol/rifle/shotgun/smg.glb (--only rifle)
+/opt/blender-venv/bin/python art/blender/build_environment.py --preview /tmp/env # env_props.glb (prop kit)
+/opt/blender-venv/bin/python art/textures/build_textures.py                     # tileable surface textures (numpy only)
+tools/build_maps.sh                                                             # place props/lights in facility_01
 ```
 Outputs go to `client/assets/models/`. They are committed, and CI does not rebuild art. `--preview` renders Cycles stills for review.
 
@@ -34,11 +37,21 @@ Outputs go to `client/assets/models/`. They are committed, and CI does not rebui
 - The same GLBs serve as world models in the supply cache (`Visuals.weapon_world_node`), with arms hidden.
 - Review: `?autostart=1&showcase=box&weapon=rifle` (any weapon id).
 
+## Environment (art stage 3)
+- **Look:** bright and readable first, with a restrained dark-fantasy tint: slate-violet walls, warm stone floors, bronze metal, violet/teal accent lights and glowing crystals, and a violet night sky with a strong moon. ACES tonemap, soft glow, light violet fog.
+- **Surfaces:** `art/textures/build_textures.py` makes seamless 512² albedo + normal pairs (`floor_tiles`, `wall_panels`, `metal_plate`, `ground`, `ceiling`). The map generator applies them with world triplanar mapping, so walls of any size tile without UV work.
+- **Props:** `build_environment.py` builds one `env_props.glb`, with one mesh per prop sharing a 2048² atlas + ORM (`kit.py` holds the hard-surface kit, shared with the weapons). Props: lockers, console, tank, lab table, shelf, crate, barrels, generator, sandbags, lamp post, wall and ceiling lamps, pipes, crystals, rubble, door frames. Emissive parts are separate materials.
+- **Placement:** `build_facility_01.gd` drops `map_prop` markers (name, position, yaw) plus a hidden blocker AABB, which goes into the map JSON so the sim and server collide with it. At runtime `MapDecor` instances the matching mesh at each marker, then `MapBatcher` merges everything by (material, 12 m chunk) to stay under the 8-lights-per-object limit of the Compatibility renderer.
+- **Lighting:** dynamic omni/spot lights with a palette (warm, amber, teal, violet, cool) at each fixture. Lights tagged `map_light_extra` switch off on the low quality tier. The moon lights only layer 2, which is given to yard meshes, so it never leaks indoors.
+- **Texture import:** `tools/fix_texture_imports.py` forces VRAM compression and size limits (ORM 512, env atlas 1024) before export; `export_web.sh` runs it.
+- Review: `?autostart=1&at=x,z,yaw_deg[,pitch]` puts the camera anywhere (e.g. `-12.5,1.5,30,-10` lab, `13,1.8,-20,-8` storage, `-12,-12,140,-4` yard).
+
 ## Budgets
 - Zombie: about 9–11k triangles, 1 texture, 2 materials. Godot generates LODs at import.
 - Supply box: about 3k triangles, 2 small textures.
 - Viewmodels: 7–13k triangles, one 1024² albedo + metallicRoughness each (only one is on screen at a time).
-- Web download today: wasm about 10 MB gzip + pck about 7.5 MB, about 18 MB total (target < 25 MB). The next saving is to drop the duplicate desktop VRAM texture formats (phase 6).
+- Environment: `env_props.glb` (≈ 21 prop meshes, 1 atlas), 5 surface texture pairs at 512².
+- Web download today: wasm about 10 MB gzip + pck about 12 MB, about 22 MB total (target < 25 MB). Desktop VRAM formats are already off; mobile ETC2 only.
 
 ## Game integration
 - `client/data/visuals.json` → `zombies.<id>.model`, `locomotion`, `locoSpeed` (playback speed follows real movement speed).

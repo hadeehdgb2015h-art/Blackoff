@@ -33,7 +33,9 @@ func _ready() -> void:
 	var map_id: String = defs.constants.maps.default
 	_map_root = (load(MAP_SCENES[map_id]) as PackedScene).instantiate()
 	add_child(_map_root)
-	MapBatcher.batch(_map_root)
+	MapDecor.decorate(_map_root)
+	var batches := MapBatcher.batch(_map_root)
+	print("[game] map batched into %d meshes" % batches)
 
 	_rig = FpRig.new()
 	add_child(_rig)
@@ -67,6 +69,14 @@ func _ready() -> void:
 	if forced != "" and defs.weapons.has(forced):
 		world.player_sys.give_weapon(p, forced)
 		_rig.set_weapon(forced)
+	var at := Platform.query_param("at")  # art review: ?at=x,z,yaw_deg[,pitch_deg]
+	if at != "":
+		var v := at.split(",")
+		if v.size() >= 3:
+			p.pos = Vector2(float(v[0]), float(v[1]))
+			p.prev_pos = p.pos
+			_controls.set_look(deg_to_rad(float(v[2])), deg_to_rad(float(v[3])) if v.size() > 3 else 0.0)
+			world.director.phase = WaveDirector.Phase.STOPPED
 	var showcase := Platform.query_param("showcase")
 	if showcase == "1":
 		_start_showcase()
@@ -293,9 +303,11 @@ func _apply_quality() -> void:
 	var we := _map_root.find_child("WorldEnvironment", true, false) as WorldEnvironment
 	if we:
 		we.environment.fog_enabled = q.fog
-		we.environment.ambient_light_energy = 0.8 if q.lights else 1.1
-	for n in get_tree().get_nodes_in_group("map_light"):
-		(n as Light3D).visible = q.lights or n.name.begins_with("Safe") or n.name.begins_with("Yard")
+		we.environment.ambient_light_energy = 0.85 if q.lights else 1.05
+	for n in get_tree().get_nodes_in_group("map_light_extra"):
+		(n as Light3D).visible = q.lights
+	if we:
+		we.environment.glow_enabled = q.glow
 
 
 func _to_menu() -> void:
