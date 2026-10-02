@@ -48,6 +48,8 @@ async function touchScenario(page) {
   const aim = { x: vp.width * 0.62, y: vp.height * 0.35 };
   const state = () => page.evaluate(() => window.__blackoff && { ...window.__blackoff });
   const touch = (type, points) => cdp.send('Input.dispatchTouchEvent', { type, touchPoints: points });
+  // the menu shows a loading curtain before the game scene: wait for the game
+  await page.waitForFunction(() => window.__blackoff, null, { timeout: 60000 }).catch(() => {});
   const before = await state();
   if (!before) throw new Error('no debug state (is ?debug=1 set?)');
   await touch('touchStart', [{ x: stick.x, y: stick.y, id: 1 }]);
