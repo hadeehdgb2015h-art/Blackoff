@@ -8,6 +8,7 @@ import type { Codec, Msg } from "../net/codec.js";
 import type { SharedData } from "../shared/loadShared.js";
 import { BTN_MASK, Btn, PlayerState, ZombieState, emptyIntent, type PlayerIntent, type SimEvent } from "../sim/entities.js";
 import { SimWorld, ZoneState } from "../sim/simWorld.js";
+import { Phase } from "../sim/waveDirector.js";
 
 /** What a zone needs from a connection (implemented by Session). */
 export interface ZoneClient {
@@ -23,11 +24,16 @@ export interface Member {
   client: ZoneClient | null;
   disconnectedAt: number;
   latest: PlayerIntent;
+  queue: PlayerIntent[];
   latched: number;
   lastSeq: number;
+  appliedSeq: number;
   known: Set<number>;
 }
 
+/** Inputs buffered per player; one is applied per tick so client prediction
+ *  (which also moves one step per input) replays exactly. Excess drops the oldest. */
+const MAX_QUEUE = 4;
 /** Buttons that are momentary: kept until the next tick applies them once. */
 const LATCH = Btn.FIRE_PRESSED | Btn.RELOAD | Btn.INTERACT | Btn.SWITCH | Btn.REVIVE;
 const EV: Record<string, number> = {};
@@ -65,7 +71,7 @@ export class Zone {
     const entityId = this.world.addPlayer(client.displayName);
     const m: Member = {
       entityId, name: client.displayName, accountId, client, disconnectedAt: 0,
-      latest: { ...emptyIntent(), yaw: this.world.players.get(entityId)!.yaw }, latched: 0, lastSeq: 0, known: new Set(),
+      latest: { ...emptyIntent(), yaw: this.world.players.get(entityId)!.yaw }, queue: [], latched: 0, lastSeq: 0, appliedSeq: 0, known: new Set(),
     };
     this.members.set(entityId, m);
     this.emptySince = null;
@@ -92,6 +98,7 @@ export class Zone {
     m.client = null;
     m.disconnectedAt = now;
     m.latest = { ...m.latest, move: { x: 0, y: 0 }, buttons: 0 };
+    m.queue = [];
     m.latched = 0;
   }
 
@@ -111,14 +118,24 @@ export class Zone {
     const ahead = (intent.seq - m.lastSeq + 65536) % 65536;
     if (m.lastSeq !== 0 && (ahead === 0 || ahead > 32768)) return;
     m.lastSeq = intent.seq;
-    m.latest = intent;
-    m.latched |= intent.buttons & LATCH;
+    m.queue.push(intent);
+    if (m.queue.length > MAX_QUEUE) {
+      const dropped = m.queue.shift()!;
+      m.latched |= dropped.buttons & LATCH; // never lose a tap
+    }
   }
 
   tick(now: number): void {
     const w = this.world;
     for (const m of this.members.values()) {
-      const buttons = ((m.latest.buttons & ~Btn.FIRE_PRESSED) | m.latched) & BTN_MASK;
+      const next = m.queue.shift();
+      if (next) {
+        m.latest = next;
+        m.appliedSeq = next.seq;
+        m.latched |= next.buttons & LATCH;
+      }
+      // With no new input the last one repeats (keeps walking), minus one-shot presses.
+      const buttons = ((m.latest.buttons & ~LATCH) | m.latched) & BTN_MASK;
       w.setInput(m.entityId, { ...m.latest, buttons });
       m.latched = 0;
     }
@@ -225,8 +242,11 @@ export class Zone {
       const ids = new Set(entities.map((e) => e.id as number));
       const removed = [...m.known].filter((id) => !ids.has(id)).slice(0, 255);
       m.known = ids;
+      const d = w.director;
       this.sendTo(m, "snapshot", {
-        tick: w.tick >>> 0, ackSeq: m.lastSeq, zoneState: w.zoneState, wave: u16(w.director.wave),
+        tick: w.tick >>> 0, ackSeq: m.appliedSeq, zoneState: w.zoneState, wave: u16(d.wave),
+        remaining: u16(d.phase === Phase.WAVE ? d.remaining() : 0),
+        timer: u16(d.phase === Phase.INTERMISSION ? Math.max(0, d.phaseEnd - w.time) * 10 : 0),
         entities: entities.slice(0, 255), removed,
       });
       this.sendTo(m, "selfState", {

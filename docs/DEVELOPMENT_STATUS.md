@@ -4,14 +4,15 @@ Read this first in a new session. Then read `docs/TECHNICAL_ARCHITECTURE.md`, `d
 
 ## Current phase
 
-**Phase 2 (authoritative server): done.** The owner approved the art and asked to continue with the next step. Phase 3 (client sync) is next. Online play can only be seen on the phone once the server is deployed (phase 4 needs the owner's server details).
+**Phase 3 (client sync): done.** Online play works end to end (Godot and web clients against the real server, in CI). Next is phase 4, deploying to the owner's server. The owner has a Linux server and domain that already host many games and bots (pm2 + nginx), and does not know how to set it up, so we guide them step by step. First step: they run the read-only `deploy/check.sh` and send the output.
 
 | Phase | State |
 |---|---|
 | 0 Foundation | done (owner tested: 60 FPS on their phone) |
 | 1 Local client | done (owner tested: 60–70 FPS) |
 | 2 Authoritative server | done (`docs/systems/server.md`) |
-| 3 Sync | next |
+| 3 Sync | done (`docs/systems/netcode.md`) |
+| 4 Telegram, DB, deploy | next: waiting for the owner's `deploy/check.sh` output |
 
 ## Live preview
 
@@ -27,7 +28,7 @@ URL flags: `?autostart=1` (skip menu), `?bot=1` (test bot plays), `?debug=1` (ex
 | Presentation | first-person rig, procedural zombie and weapon placeholders, tracers and impacts, generated SFX, map mesh batching, quality tiers (`docs/systems/presentation.md`). |
 | Input / UI | multi-touch stick, aim, fire-aim, reload, swap, use, pause; keyboard/mouse; HUD; pause; settings; game over; main menu (`docs/systems/input-and-hud.md`). |
 | Server | phase 2: authoritative TypeScript sim (port of the client rules), binary codec from `protocol.json`, Telegram initData HMAC, sessions with validation, rate limits and resume, zones with quick play, snapshots with interest radius, `/healthz` stats, load-test bots (`docs/systems/server.md`). |
-| Tests / CI | 30 headless client tests (incl. golden contract), bot playthrough, 2-minute headless game run, browser bot and multi-touch runs, 31 server tests (sim, codec, auth, WebSocket flow, perf), golden freshness check, 16-bot load test with a 2 ms tick budget, map sync check, Pages deploy and verification (`docs/systems/testing.md`). |
+| Tests / CI | 30 headless client tests (incl. golden contract), online end-to-end (2 Godot bots + web build vs a real server), bot playthrough, 2-minute headless game run, browser bot and multi-touch runs, 31 server tests (sim, codec, auth, WebSocket flow, perf), golden freshness check, 16-bot load test with a 2 ms tick budget, map sync check, Pages deploy and verification (`docs/systems/testing.md`). |
 
 ## Art stage (in progress, owner request)
 
@@ -41,7 +42,7 @@ Also added on request: the supply cache (random weapon box) and two box-only wea
 
 ## Known limitations
 
-- Zombies, supply cache, weapons and the map (props, surfaces, lighting) use generated art; the soldier character is still missing (art stage 4, only visible in co-op).
+- All characters, weapons and the map use generated art (soldier for other players added in phase 3).
 - No baked lighting yet: lights are dynamic without shadows.
 - UI text is English only. Arabic needs a bundled font.
 - Revive is not implemented yet (phase 5); solo play goes down → bleed-out → game over.
@@ -72,6 +73,14 @@ python3 tools/gen_sfx.py; python3 tools/gen_textures.py   # regenerate placehold
 - CC0 asset uploads to `assets/incoming/` (list given in the phase 1 report).
 - Before phase 4 (deploy): server SSH secrets (`DEPLOY_HOST`, `DEPLOY_USER`, `DEPLOY_SSH_KEY`, optional `DEPLOY_PORT`), the domain or subdomain and path, and a free local port. Telegram bot token (identity check is ready on the server). Postgres connection.
 
-## Next steps (phase 3)
+## Next steps (phase 4)
 
-See `docs/TODO.md` → Phase 3. Build the client `Net` autoload (WebSocket + `NetCodec`) and a `NetWorld` that exposes the SimWorld read API from snapshots and events, so the views stay unchanged. Then add interpolation, local prediction with reconciliation against `ackSeq`, and the soldier model. To try it end to end locally, run the server with `ALLOW_DEV_AUTH=1` and use `?server=ws://…` (to be added).
+1. The owner runs `curl -fsSL https://raw.githubusercontent.com/hadeehdgb2015h-art/Blackoff/claude/hopeful-cerf-elsmwp/deploy/check.sh | bash` on their server (read only) and sends the output, the domain, and a subdomain choice.
+2. From that, write `deploy/install.sh`. It must only add:
+   - its own directory;
+   - its own pm2 app `blackoff`;
+   - its own nginx file for the game subdomain (WebSocket proxy to a free port), checked with `nginx -t` before reload;
+   - certbot for that subdomain only.
+   Nothing else on the server may change.
+3. Set `client/data/net.json` → `server` to `wss://<subdomain>/ws`, then Telegram bot setup (Mini App URL = the Pages link or the subdomain), and Postgres profiles.
+Local end-to-end test: `cd server && ALLOW_DEV_AUTH=1 npm run dev`, then open the web build with `?server=ws://127.0.0.1:8787/ws`.

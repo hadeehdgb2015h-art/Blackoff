@@ -8,8 +8,16 @@
       "body": "#43474c",
       "accent": "#7a8086",
       "glove": "#1c1d1f",
-      "offset": [0.17, -0.15, -0.33],
-      "muzzle": [0.0, 0.035, -0.2],
+      "offset": [
+        0.17,
+        -0.15,
+        -0.33
+      ],
+      "muzzle": [
+        0.0,
+        0.035,
+        -0.2
+      ],
       "recoilKick": 0.05,
       "recoilPitch": 0.035,
       "sound": "pistol_shot"
@@ -20,8 +28,16 @@
       "body": "#3c4245",
       "accent": "#5f7060",
       "glove": "#1c1d1f",
-      "offset": [0.16, -0.15, -0.3],
-      "muzzle": [0.0, 0.03, -0.5],
+      "offset": [
+        0.16,
+        -0.15,
+        -0.3
+      ],
+      "muzzle": [
+        0.0,
+        0.03,
+        -0.5
+      ],
       "recoilKick": 0.035,
       "recoilPitch": 0.02,
       "sound": "rifle_shot"
@@ -32,8 +48,16 @@
       "body": "#3a3530",
       "accent": "#5a4632",
       "glove": "#1c1d1f",
-      "offset": [0.16, -0.15, -0.3],
-      "muzzle": [0.0, 0.03, -0.55],
+      "offset": [
+        0.16,
+        -0.15,
+        -0.3
+      ],
+      "muzzle": [
+        0.0,
+        0.03,
+        -0.55
+      ],
       "recoilKick": 0.09,
       "recoilPitch": 0.06,
       "sound": "shotgun_shot"
@@ -44,8 +68,16 @@
       "body": "#33373b",
       "accent": "#55595e",
       "glove": "#1c1d1f",
-      "offset": [0.15, -0.14, -0.3],
-      "muzzle": [0.0, 0.03, -0.36],
+      "offset": [
+        0.15,
+        -0.14,
+        -0.3
+      ],
+      "muzzle": [
+        0.0,
+        0.03,
+        -0.36
+      ],
       "recoilKick": 0.025,
       "recoilPitch": 0.012,
       "sound": "smg_shot"
@@ -76,6 +108,14 @@
     }
   },
   "players": {
-    "colors": ["#3d6fb4", "#b4553d", "#4fa35a", "#b49a3d", "#8a4fb4", "#3db4a8", "#b43d7a", "#7a7a7a"]
+    "soldier": {
+      "model": "res://assets/models/soldier.glb",
+      "runSpeed": 3.8,
+      "gunOffset": [
+        0.03,
+        -0.03,
+        0.05
+      ]
+    }
   }
 }

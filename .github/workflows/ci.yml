@@ -74,6 +74,28 @@ jobs:
           export NODE_PATH=/tmp/smoke/node_modules SMOKE_DPR=0.5
           SMOKE_EXPECT="[game] wave 1 started" node tools/smoke_web.cjs build/web build/smoke.png "?autostart=1&bot=1" 45
           SMOKE_TOUCH=1 node tools/smoke_web.cjs build/web build/touch.png "?autostart=1&debug=1" 5
+      - name: Online end-to-end (real server + Godot bots + web build)
+        run: |
+          (cd server && npm ci && npm run build)
+          (cd server && ALLOW_DEV_AUTH=1 PORT=8799 node dist/index.js > /tmp/server.log 2>&1 &)
+          for i in $(seq 1 30); do curl -sf http://127.0.0.1:8799/healthz >/dev/null && break; sleep 0.5; done
+          # two headless Godot clients (bots) play the same zone on the authoritative server
+          for i in 1 2; do
+            BLACKOFF_SERVER=ws://127.0.0.1:8799/ws BLACKOFF_BOT=1 BLACKOFF_NAME=Bot$i \
+              timeout 70 /opt/godot/godot --headless --path client --max-fps 60 res://scenes/game/game.tscn > /tmp/online$i.log 2>&1 &
+          done
+          wait || true
+          cat /tmp/online1.log | grep -E "\[net\]|\[game\]" | head -20
+          for i in 1 2; do
+            grep -q "\[game\] online: joined" /tmp/online$i.log
+            grep -q "\[net\] roster: 2 players" /tmp/online$i.log
+            ! grep -E "SCRIPT ERROR|Parse Error" /tmp/online$i.log
+          done
+          grep -q "\[game\] wave 1 cleared" /tmp/online1.log /tmp/online2.log
+          # the web export joins too (WebSocket from the browser)
+          export NODE_PATH=/tmp/smoke/node_modules SMOKE_DPR=0.5
+          SMOKE_EXPECT="[game] online: joined" node tools/smoke_web.cjs build/web build/online.png "?autostart=1&bot=1&server=ws://127.0.0.1:8799/ws&name=WebBot" 20
+          ! grep -E '"level":"error"' /tmp/server.log
       - uses: actions/upload-artifact@v4
         with:
           name: web-build

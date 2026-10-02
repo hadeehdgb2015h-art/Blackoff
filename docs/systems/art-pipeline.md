@@ -17,6 +17,7 @@ python3 -m venv /opt/blender-venv && /opt/blender-venv/bin/pip install bpy==4.5.
 (cd art/textures && python3 build_fx_textures.py)                              # veins, mist, moon face, bolt
 /opt/blender-venv/bin/python art/blender/build_dark_props.py --preview /tmp/dp   # dark_props.glb (skeleton, graves, gothic arch...)
 /opt/blender-venv/bin/python art/blender/build_backdrop.py --preview /tmp/bd     # backdrop.glb (mountains, castle, giant hand, pine)
+/opt/blender-venv/bin/python art/blender/build_soldier.py --preview /tmp/sold    # soldier.glb (other players)
 tools/build_maps.sh                                                             # place props/lights in facility_01
 ```
 Outputs go to `client/assets/models/`. They are committed, and CI does not rebuild art. `--preview` renders Cycles stills for review.

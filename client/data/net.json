@@ -1,0 +1,4 @@
+{
+  "_comment": "Online play. 'server' is the public WebSocket URL of the game server (wss://... in production); empty = online play hidden. ?server=<url> overrides it for testing.",
+  "server": ""
+}

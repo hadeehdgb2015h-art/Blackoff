@@ -8,10 +8,11 @@ import crypto from "node:crypto";
 import type { WebSocket } from "ws";
 import type { Env } from "../config/env.js";
 import type { SharedData } from "../shared/loadShared.js";
-import { BTN_MASK, type PlayerIntent } from "../sim/entities.js";
+import { BTN_MASK, Btn, type PlayerIntent } from "../sim/entities.js";
 import { clamp, limitLength } from "../sim/math.js";
 import { log } from "../log.js";
 import type { Zone, ZoneClient } from "../zone/zone.js";
+import { ZoneState } from "../sim/simWorld.js";
 import type { ZoneManager } from "../zone/zoneManager.js";
 import { CodecError, type Codec, type Msg } from "./codec.js";
 import { cleanName, validateInitData } from "./telegramAuth.js";
@@ -187,6 +188,7 @@ export class Session implements ZoneClient {
   }
 
   private onQuickPlay(): void {
+    if (this.zone && this.zone.state === ZoneState.GAME_OVER) this.leaveZone(); // play again
     if (this.zone) return; // already playing; quickPlay is idempotent
     const { zone, member } = this.hub.zones.quickPlay(this, this.account!.id);
     this.zone = zone;
@@ -215,7 +217,7 @@ export class Session implements ZoneClient {
     const opt = this.zone.world.interactOption(this.entityId);
     if (!opt || (opt.item !== msg.itemId && opt.id !== msg.itemId)) return;
     const m = this.zone.members.get(this.entityId);
-    if (m) m.latched |= 4; // INTERACT on the next tick
+    if (m) m.latched |= Btn.INTERACT; // on the next tick
   }
 
   private leaveZone(): void {

@@ -184,6 +184,12 @@ func update_state(p: SimPlayer, w: SimWorld, interact: Dictionary, delta: float)
 	_tick(delta)
 
 
+## Centre message for connection states ("Connecting...", errors); "" hides it.
+func show_status(text: String) -> void:
+	_banner.text = text
+	_banner.modulate.a = 1.0 if text != "" else 0.0
+
+
 func on_event(e: Dictionary, local_pid: int) -> void:
 	match e.type:
 		"zombie_hit":

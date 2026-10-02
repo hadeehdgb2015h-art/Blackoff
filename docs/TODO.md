@@ -8,7 +8,7 @@
 - [x] HUD, pause, game over; generated placeholder SFX
 - [x] Tests: 21 headless, bot playthrough, headless game run, browser bot + multi-touch
 - [x] Art stages 1–3 (zombies + supply cache, weapons, environment), generated in-repo
-- [ ] Art stage 4: soldier character (needed once co-op shows other players)
+- [x] Art stage 4: soldier character (phase 3)
 - [ ] Baked lighting (LightmapGI needs a GPU; try in CI with Xvfb/llvmpipe or in the editor later)
 - [ ] Arabic UI localisation (needs an Arabic font, e.g. Noto Sans Arabic OFL, which can be fetched from GitHub)
 

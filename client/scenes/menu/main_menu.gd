@@ -32,8 +32,10 @@ func _ready() -> void:
 	spacer.custom_minimum_size = Vector2(0, 20)
 	col.add_child(spacer)
 	col.add_child(UiTheme.button("SOLO PRACTICE", _play))
-	var quick := UiTheme.button("QUICK PLAY  (online soon)", func(): pass)
-	quick.disabled = true
+	var quick := UiTheme.button("QUICK PLAY  ONLINE", _play_online)
+	quick.disabled = not Net.is_online_available()
+	if quick.disabled:
+		quick.text = "QUICK PLAY  (server not set)"
 	col.add_child(quick)
 	col.add_child(UiTheme.button("SETTINGS", _settings))
 	col.add_child(UiTheme.button("DIAGNOSTICS", func(): get_tree().change_scene_to_file("res://scenes/boot/boot.tscn")))
@@ -53,10 +55,17 @@ func _ready() -> void:
 		err.position = Vector2(90, 20)
 		add_child(err)
 	if Platform.query_param("autostart") == "1":
-		_play.call_deferred()
+		(_play_online if Platform.query_param("server") != "" else _play).call_deferred()
 
 
 func _play() -> void:
+	Net.online_requested = false
+	Platform.request_fullscreen()
+	get_tree().change_scene_to_file(GAME)
+
+
+func _play_online() -> void:
+	Net.online_requested = true
 	Platform.request_fullscreen()
 	get_tree().change_scene_to_file(GAME)
 
