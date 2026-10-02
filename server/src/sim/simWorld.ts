@@ -116,8 +116,22 @@ export class SimWorld {
       p.state = PlayerState.DOWNED;
       p.downedTime = this.time;
       p.reloadEnd = 0;
+      p.reviveTarget = 0;
+      p.reviveTicks = 0;
+      p.downs += 1;
       this.emit({ type: "player_downed", pid: p.id });
     }
+  }
+
+  /** The player currently reviving `p`, or null. */
+  reviverOf(p: SimPlayer): SimPlayer | null {
+    for (const o of this.players.values()) if (o.reviveTarget === p.id && o.isAlive()) return o;
+    return null;
+  }
+
+  /** Seconds a downed player has left before bleeding out. */
+  bleedoutLeft(p: SimPlayer): number {
+    return Math.max(0, this.constants.player.downedBleedoutSec - (this.time - p.downedTime));
   }
 
   interactOption(pid: number): InteractOption | null {
@@ -138,6 +152,7 @@ export class SimWorld {
         d.nextSpawnTime = this.time;
         this.zoneState = ZoneState.WAVE;
         this.emit({ type: "wave_started", wave: d.wave, count: d.toSpawn });
+        this.respawnDead();
       }
     } else if (d.phase === Phase.WAVE) {
       this.zoneState = ZoneState.WAVE;
@@ -158,10 +173,29 @@ export class SimWorld {
     }
   }
 
+  /** Players who bled out come back at the start of the next wave. */
+  private respawnDead(): void {
+    let i = 0;
+    for (const p of this.players.values()) {
+      if (p.state !== PlayerState.DEAD) continue;
+      const spawn = this.map.playerSpawns[i % this.map.playerSpawns.length]!;
+      i += 1;
+      p.state = PlayerState.ALIVE;
+      p.hp = p.maxHp;
+      p.pos = { ...spawn.pos };
+      p.prevPos = { ...p.pos };
+      p.yaw = spawn.yaw;
+      p.reloadEnd = 0;
+      this.emit({ type: "player_respawned", pid: p.id });
+    }
+  }
+
   private checkGameOver(): void {
     if (this.players.size === 0) return;
     for (const p of this.players.values()) {
-      if (p.state === PlayerState.DOWNED && this.time - p.downedTime >= this.constants.player.downedBleedoutSec) {
+      if (p.state === PlayerState.DOWNED && this.reviverOf(p)) {
+        p.downedTime += this.dt; // the bleed-out clock pauses while someone revives
+      } else if (p.state === PlayerState.DOWNED && this.time - p.downedTime >= this.constants.player.downedBleedoutSec) {
         p.state = PlayerState.DEAD;
         this.emit({ type: "player_died", pid: p.id });
       }

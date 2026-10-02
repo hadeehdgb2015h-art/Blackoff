@@ -1,6 +1,6 @@
-/** Player movement, regen, weapons and interactions (mirror of player_system.gd).
- *  Every check is authoritative. */
-import { Btn, WeaponState, type PlayerIntent, type SimPlayer, type SimZombie } from "./entities.js";
+/** Player movement, regen, weapons, interactions and reviving downed teammates
+ *  (mirror of player_system.gd). Every check is authoritative. */
+import { Btn, PlayerState, WeaponState, type PlayerIntent, type SimPlayer, type SimZombie } from "./entities.js";
 import { rayCharacter } from "./hitTest.js";
 import { type V3, add, clamp, dir3, dist, dist2, forward, len2, limitLength, right, scale, wrapAngle } from "./math.js";
 import type { SimWorld } from "./simWorld.js";
@@ -17,6 +17,7 @@ export interface InteractOption {
   full: boolean;
   busy?: boolean;
   affordable: boolean;
+  target?: number;
 }
 
 export class PlayerSystem {
@@ -32,21 +33,73 @@ export class PlayerSystem {
     p.buttonsPrev = inp.buttons;
     if (!p.isAlive()) {
       p.moving = false;
+      p.reviveTarget = 0;
+      p.reviveTicks = 0;
       return;
     }
     p.yaw = wrapAngle(inp.yaw);
     p.pitch = clamp(inp.pitch, -1.4, 1.4);
-    this.move(p, inp);
+    const reviving = this.revive(p, inp);
+    if (reviving) p.moving = false;
+    else this.move(p, inp);
     this.regen(p);
     if (p.isReloading() && w.time >= p.reloadEnd) {
       p.weapon()!.finishReload();
       p.reloadEnd = 0;
       w.emit({ type: "reload_done", pid: p.id });
     }
+    if (reviving) return; // hands are busy: no switching, reloading, buying or firing
     if (pressed & Btn.SWITCH) this.switchWeapon(p);
     if (pressed & Btn.RELOAD) this.startReload(p);
     if (pressed & Btn.INTERACT) this.interact(p);
     this.fire(p, inp, (inp.buttons & Btn.FIRE_PRESSED) !== 0);
+  }
+
+  /** Nearest downed teammate within reviveRange, or null. */
+  reviveCandidate(p: SimPlayer): SimPlayer | null {
+    let best: SimPlayer | null = null;
+    let bestD = this.cp.reviveRange;
+    for (const o of this.w.players.values()) {
+      if (o === p || o.state !== PlayerState.DOWNED) continue;
+      const d = dist(p.pos, o.pos);
+      if (d <= bestD) {
+        best = o;
+        bestD = d;
+      }
+    }
+    return best;
+  }
+
+  /** Ticks a revive needs (counted in ticks so both sims finish on the same tick). */
+  reviveTicksNeeded(): number {
+    return Math.round(this.cp.reviveTimeSec / this.w.dt);
+  }
+
+  /** Holding REVIVE next to a downed teammate revives them after reviveTimeSec.
+   *  Returns true while reviving (the reviver stands still and cannot shoot). */
+  private revive(p: SimPlayer, inp: PlayerIntent): boolean {
+    const t = inp.buttons & Btn.REVIVE ? this.reviveCandidate(p) : null;
+    if (!t) {
+      p.reviveTarget = 0;
+      p.reviveTicks = 0;
+      return false;
+    }
+    if (p.reviveTarget !== t.id) {
+      p.reviveTarget = t.id;
+      p.reviveTicks = 0;
+    }
+    p.reviveTicks += 1;
+    if (p.reviveTicks >= this.reviveTicksNeeded()) {
+      t.state = PlayerState.ALIVE;
+      t.hp = t.maxHp * 0.5;
+      t.lastDamageTime = this.w.time;
+      p.revives += 1;
+      p.reviveTarget = 0;
+      p.reviveTicks = 0;
+      this.w.addCurrency(p, this.w.constants.economy.reviveReward, "revive");
+      this.w.emit({ type: "player_revived", pid: t.id, by: p.id });
+    }
+    return true;
   }
 
   private move(p: SimPlayer, inp: PlayerIntent): void {
@@ -177,6 +230,11 @@ export class PlayerSystem {
   interactOption(p: SimPlayer): InteractOption | null {
     const w = this.w;
     if (!p.isAlive()) return null;
+    const downed = this.reviveCandidate(p);
+    if (downed) {
+      return { id: "revive", kind: "revive", item: "", action: "revive", cost: 0, label: "Hold to revive " + downed.name,
+        full: false, affordable: true, target: downed.id };
+    }
     let best = null;
     let bestD = Infinity;
     for (const it of w.map.interactables) {
@@ -208,7 +266,7 @@ export class PlayerSystem {
   private interact(p: SimPlayer): void {
     const w = this.w;
     const opt = this.interactOption(p);
-    if (!opt) return;
+    if (!opt || opt.action === "revive") return;
     if (opt.full) {
       w.emit({ type: "purchase_denied", pid: p.id, reason: "full" });
       return;

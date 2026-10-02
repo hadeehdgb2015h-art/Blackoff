@@ -73,6 +73,7 @@ func set_state(p: SimPlayer) -> void:
 	_yaw = p.yaw
 	_moving = p.moving
 	_downed = p.state != SimPlayer.State.ALIVE
+	visible = p.state != SimPlayer.State.DEAD  # back at the next wave
 	_name.text = p.name
 	var wid := p.weapon().id if p.weapon() else ""
 	if wid != _weapon_id:

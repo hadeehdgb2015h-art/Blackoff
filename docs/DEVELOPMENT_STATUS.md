@@ -4,7 +4,7 @@ Read this first in a new session. Then read `docs/TECHNICAL_ARCHITECTURE.md`, `d
 
 ## Current phase
 
-**Phase 4 (Telegram, DB, deploy): built and rehearsed in CI; waiting for the owner to run the installer.** The owner's server (from `deploy/check.sh`): Ubuntu 22.04, 2 CPUs, 3.9 GB RAM (1.5 GB free), 3.4 GB disk free, Node 20.20, pm2 7.0.1 with ~25 apps, nginx 1.18 with 8 sites, certbot 1.21, Postgres on 5432, public IP 93.115.22.64, free port 8787. They run one command (`deploy/install.sh`, see `docs/systems/deploy.md`); the default address `blackoff.93-115-22-64.sslip.io` needs no DNS work. Then they create a bot with @BotFather and paste the token when asked.
+**Phase 5 (revive, buy, final HUD): done.** Phase 6 (performance tiers, anti-cheat logging) is next. **Phase 4 (Telegram, DB, deploy): built and rehearsed in CI; waiting for the owner to run the installer.** The owner's server (from `deploy/check.sh`): Ubuntu 22.04, 2 CPUs, 3.9 GB RAM (1.5 GB free), 3.4 GB disk free, Node 20.20, pm2 7.0.1 with ~25 apps, nginx 1.18 with 8 sites, certbot 1.21, Postgres on 5432, public IP 93.115.22.64, free port 8787. They run one command (`deploy/install.sh`, see `docs/systems/deploy.md`); the default address `blackoff.93-115-22-64.sslip.io` needs no DNS work. Then they create a bot with @BotFather and paste the token when asked.
 
 | Phase | State |
 |---|---|
@@ -13,6 +13,7 @@ Read this first in a new session. Then read `docs/TECHNICAL_ARCHITECTURE.md`, `d
 | 2 Authoritative server | done (`docs/systems/server.md`) |
 | 3 Sync | done (`docs/systems/netcode.md`) |
 | 4 Telegram, DB, deploy | built (`docs/systems/deploy.md`); owner runs the installer |
+| 5 Revive, buy, final HUD | done (`docs/systems/simulation.md`, `input-and-hud.md`) |
 
 ## Live preview
 
@@ -29,7 +30,7 @@ URL flags: `?autostart=1` (skip menu), `?bot=1` (test bot plays), `?debug=1` (ex
 | Input / UI | multi-touch stick, aim, fire-aim, reload, swap, use, pause; keyboard/mouse; HUD; pause; settings; game over; main menu (`docs/systems/input-and-hud.md`). |
 | Server | phase 2: authoritative TypeScript sim (port of the client rules), binary codec from `protocol.json`, Telegram initData HMAC, sessions with validation, rate limits and resume, zones with quick play, snapshots with interest radius, `/healthz` stats, load-test bots (`docs/systems/server.md`). |
 | Deploy | release bundle + GitHub release `edge`, `deploy/install.sh` (own pm2 apps, own nginx site, own certificate, own DB), self-updater with health-check rollback, uninstall (`docs/systems/deploy.md`). Player profiles in Postgres (games, kills, best wave) shown in the menu. |
-| Tests / CI | 30 headless client tests (incl. golden contract), online end-to-end (2 Godot bots + web build vs a real server), bot playthrough, 2-minute headless game run, browser bot and multi-touch runs, 34 server tests (sim, codec, auth, WebSocket flow, perf, profiles incl. real Postgres), deploy rehearsal (installer on a clean runner, Telegram Mini App login through nginx, restart, update, uninstall), golden freshness check, 16-bot load test with a 2 ms tick budget, map sync check, Pages deploy and verification (`docs/systems/testing.md`). |
+| Tests / CI | 33 headless client tests (incl. golden contract), online end-to-end (2 Godot bots + web build vs a real server), bot playthrough, 2-minute headless game run, browser bot and multi-touch runs, 38 server tests (sim incl. revive/respawn, codec, auth, WebSocket flow incl. revive and scoreboard, perf, profiles incl. real Postgres), deploy rehearsal (installer on a clean runner, Telegram Mini App login through nginx, restart, update, uninstall), golden freshness check, 16-bot load test with a 2 ms tick budget, map sync check, Pages deploy and verification (`docs/systems/testing.md`). |
 
 ## Art stage (in progress, owner request)
 
@@ -46,7 +47,7 @@ Also added on request: the supply cache (random weapon box) and two box-only wea
 - All characters, weapons and the map use generated art (soldier for other players added in phase 3).
 - No baked lighting yet: lights are dynamic without shadows.
 - UI text is English only. Arabic needs a bundled font.
-- Revive is not implemented yet (phase 5); solo play goes down → bleed-out → game over.
+- Solo play has nobody to revive you: down → game over.
 - In headless Chromium (software GL) the game runs at 2–9 FPS. That is not representative; real phones must be tested by the owner.
 
 ## How to build and test

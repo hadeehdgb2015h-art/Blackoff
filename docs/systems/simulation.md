@@ -19,7 +19,11 @@
 - Fire rate: shots are scheduled inside each tick window. A semi-auto weapon needs `FIRE_PRESSED`, a latched edge, so quick taps between ticks are never lost. Idle time never banks extra shots.
 - Rewards: `economy.hitReward` per non-lethal hit; on a kill, the zombie's `killReward` plus `headshotKillBonus` for a head kill.
 - Waves: count = round((base + perWave·(w−1))^exponent · (1 + perExtraPlayer·(players−1))), capped by `count.max`. At most `zone.maxAliveZombies` alive at once.
-- Down → bleed out → dead. When nobody is alive, it is game over (revive arrives in phase 5).
+- Down → bleed out (`player.downedBleedoutSec`) → dead. When nobody is alive (everyone down or dead), it is game over.
+- Revive (phase 5): an alive player holding `REVIVE` within `player.reviveRange` of a downed teammate revives them after `reviveTimeSec`, counted in ticks so the client and server sims finish on the same tick. The reviver stands still and cannot shoot, reload, switch or buy. Letting go, or the teammate leaving range, resets the progress. The downed player's bleed-out clock pauses while they are being revived. They come back at half health, and the reviver earns `economy.reviveReward`. Near a downed teammate, the USE prompt becomes "Hold to revive".
+- Respawn: players who bled out come back at a spawn point with full health when the next wave starts, as long as someone survived.
+- Stats per player: kills, headshots, downs, revives (the game-over table; also sent by the server as `scoreboard`).
+- Buying (done since phase 1): wall weapons (buying an owned one refills its ammo at `ammoPrice`), the ammo point, and the supply cache.
 - Views read state and per-tick `events` only. Nothing else writes to the sim except `set_input`.
 
 ## Supply cache

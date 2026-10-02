@@ -34,6 +34,10 @@ var _last_currency: int = -1
 var corrections: int = 0       ## reconciliations that moved the player > 5 cm (stats)
 var max_error: float = 0.0
 var _dead := {}              ## killed zombie id -> time (older snapshots still list it)
+var _revived := {}           ## downed player id -> true while a teammate revives them
+var _self_revive: float = 0.0  ## server's revive progress for the local player (0..1)
+var _self_bleed: float = 0.0   ## server's bleed-out seconds for the local player
+var _scores: Array = []      ## final table from the server's scoreboard message
 
 
 func _init(shared_defs: Dictionary, map_id: String) -> void:
@@ -108,10 +112,14 @@ func _predict_local() -> void:
 	p.yaw = SimMath.wrap_angle(_current.yaw)
 	p.pitch = clampf(_current.pitch, -1.4, 1.4)
 	var shots := 0
-	if p.is_alive():
+	# The server freezes a reviver in place and keeps their gun down; predict the same.
+	var reviving := _current.buttons & PlayerIntent.REVIVE != 0 and player_sys.revive_candidate(p) != null
+	if p.is_alive() and not reviving:
 		p.pos = _move(p.pos, _current)
 		p.moving = _current.move.limit_length(1.0).length_squared() > 0.01
 		shots = _predict_fire(p, _current)
+	elif reviving:
+		p.moving = false
 	_pending.append({"seq": _current.seq, "intent": _current, "shots": shots})
 	if _pending.size() > 120:
 		_pending.pop_front()
@@ -258,13 +266,45 @@ func _place_player(id: int, e: Dictionary, pos: Vector2, yaw: float) -> void:
 	p.pos = pos
 	p.yaw = yaw
 	p.moving = int(e.flags) & 1 != 0
-	p.state = SimPlayer.State.DOWNED if int(e.flags) & 4 != 0 else SimPlayer.State.ALIVE
+	p.state = _state_from_flags(int(e.flags))
+	if int(e.flags) & 16 != 0:
+		_revived[id] = true
+	else:
+		_revived.erase(id)
 	p.hp = float(e.hp)
 	p.reload_end = time + 1.0 if int(e.flags) & 8 != 0 else 0.0
 	var wid: String = _weapon_ids[clampi(int(e.sub), 0, _weapon_ids.size() - 1)]
 	if p.weapons.is_empty() or p.weapons[0].id != wid:
 		p.weapons = [WeaponState.create(wid, defs.weapons[wid])]
 		p.slot = 0
+
+
+static func _state_from_flags(flags: int) -> SimPlayer.State:
+	if flags & 32 != 0:
+		return SimPlayer.State.DEAD
+	return SimPlayer.State.DOWNED if flags & 4 != 0 else SimPlayer.State.ALIVE
+
+
+# ------------------------------------------------------------------ HUD read API (server values)
+
+func revive_progress(p: SimPlayer) -> float:
+	return _self_revive if p.id == local_pid else 0.0
+
+
+func is_being_revived(p: SimPlayer) -> bool:
+	if p.id == local_pid:
+		return p.state == SimPlayer.State.DOWNED and _self_revive > 0.0
+	return _revived.has(p.id)
+
+
+func bleedout_left(p: SimPlayer) -> float:
+	if p.id == local_pid:
+		return _self_bleed
+	return super(p)
+
+
+func scores() -> Array:
+	return _scores if not _scores.is_empty() else super()
 
 
 func _new_player(id: int) -> SimPlayer:
@@ -298,6 +338,11 @@ func _handle(msg_name: String, m: Dictionary) -> void:
 			print("[net] roster: %d players" % roster.size())
 		"snapshot":
 			_on_snapshot(m)
+		"scoreboard":
+			_scores = []
+			for r in m.players:
+				_scores.append({"id": int(r.id), "name": str(r.name), "kills": int(r.kills), "headshots": int(r.headshots),
+					"downs": int(r.downs), "revives": int(r.revives)})
 		"selfState":
 			_on_self(m)
 		"event":
@@ -340,7 +385,7 @@ func _on_snapshot(m: Dictionary) -> void:
 	var p: SimPlayer = players.get(local_pid)
 	if p == null:
 		p = _new_player(local_pid)
-	p.state = SimPlayer.State.DOWNED if me.flags & 4 != 0 else SimPlayer.State.ALIVE
+	p.state = _state_from_flags(int(me.flags))
 	if not ready_to_play:
 		ready_to_play = true
 		p.pos = me.pos
@@ -356,6 +401,8 @@ func _on_self(m: Dictionary) -> void:
 		return
 	p.hp = float(m.hp)
 	p.state = int(m.state) as SimPlayer.State
+	_self_revive = float(m.revive) / 255.0
+	_self_bleed = float(m.bleedout)
 	var cur := int(m.currency)
 	if _last_currency >= 0 and cur != _last_currency:
 		emit({"type": "currency", "pid": local_pid, "amount": cur - _last_currency, "reason": "server"})
@@ -417,8 +464,26 @@ func _on_event(m: Dictionary) -> void:
 			if p:
 				p.state = SimPlayer.State.DOWNED
 				p.downed_time = time
+				p.downs += 1
 			emit({"type": "player_downed", "pid": a})
-		"playerDied": emit({"type": "player_died", "pid": a})
+		"playerDied":
+			var p: SimPlayer = players.get(a)
+			if p:
+				p.state = SimPlayer.State.DEAD
+			emit({"type": "player_died", "pid": a})
+		"playerRevived":
+			var p: SimPlayer = players.get(a)
+			if p:
+				p.state = SimPlayer.State.ALIVE
+			var by: SimPlayer = players.get(b)
+			if by:
+				by.revives += 1
+			emit({"type": "player_revived", "pid": a, "by": b})
+		"playerRespawned":
+			var p: SimPlayer = players.get(a)
+			if p:
+				p.state = SimPlayer.State.ALIVE
+			emit({"type": "player_respawned", "pid": a})
 		"playerJoined": emit({"type": "player_joined", "pid": a})
 		"playerLeft": emit({"type": "player_left", "pid": a})
 		"waveStart": emit({"type": "wave_started", "wave": a, "count": v})

@@ -19,7 +19,7 @@ The client plays online through the same game scene as offline practice. Only th
   - The held weapon is the first-person model placed per hold class (`visuals.json` → `players.soldier.holds`), and the arms are solved onto it at build time.
   - A name tag shows above the head.
 - Server URL: `?server=ws://…` first, then `window.BLACKOFF_CONFIG.server` from the site's optional `config.js` (written by the deploy updater), then `client/data/net.json`. `?name=` sets the dev name. The menu's QUICK PLAY ONLINE button is enabled only when a server is set, and outside Telegram (live server) it reads "open in Telegram".
-- Inside Telegram the menu logs in at once and shows the player's stats (`welcome` carries games, kills, best wave; a `profile` message refreshes them after each match). Protocol version 2.
+- Inside Telegram the menu logs in at once and shows the player's stats (`welcome` carries games, kills, best wave; a `profile` message refreshes them after each match). Protocol version 3: `selfState` adds `revive` (0–255 progress of the revive you are doing or receiving) and `bleedout` (seconds left while downed); entity flag 16 = being revived and 32 = dead; event `playerRespawned`; message `scoreboard` at game over. While holding REVIVE next to a downed teammate the client predicts no movement or shots, matching the server.
 
 ## Local player: prediction and reconciliation
 1. Every local tick (20 Hz) the input is quantized exactly like the wire format (move i8/127, yaw u16, pitch i16) and sent with a wrapping `seq`.

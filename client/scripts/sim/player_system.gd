@@ -1,7 +1,8 @@
 class_name PlayerSystem
 extends RefCounted
-## Player movement, health regen, weapons (fire/reload/switch) and
-## interactions (buy weapon, buy ammo). All checks are authoritative.
+## Player movement, health regen, weapons (fire/reload/switch),
+## interactions (buy weapon, buy ammo) and reviving downed teammates.
+## All checks are authoritative.
 
 var w: SimWorld
 var c_player: Dictionary
@@ -21,15 +22,23 @@ func update(p: SimPlayer) -> void:
 	p.buttons_prev = inp.buttons
 	if not p.is_alive():
 		p.moving = false
+		p.revive_target = 0
+		p.revive_ticks = 0
 		return
 	p.yaw = SimMath.wrap_angle(inp.yaw)
 	p.pitch = clampf(inp.pitch, -1.4, 1.4)
-	_move(p, inp)
+	var reviving := _revive(p, inp)
+	if reviving:
+		p.moving = false
+	else:
+		_move(p, inp)
 	_regen(p)
 	if p.is_reloading() and w.time >= p.reload_end:
 		p.weapon().finish_reload()
 		p.reload_end = 0.0
 		w.emit({"type": "reload_done", "pid": p.id})
+	if reviving:
+		return  # hands are busy: no switching, reloading, buying or firing
 	if pressed & PlayerIntent.SWITCH:
 		_switch(p)
 	if pressed & PlayerIntent.RELOAD:
@@ -37,6 +46,49 @@ func update(p: SimPlayer) -> void:
 	if pressed & PlayerIntent.INTERACT:
 		_interact(p)
 	_fire(p, inp, (inp.buttons & PlayerIntent.FIRE_PRESSED) != 0)
+
+
+## Nearest downed teammate within reviveRange, or null.
+func revive_candidate(p: SimPlayer) -> SimPlayer:
+	var best: SimPlayer = null
+	var best_d := float(c_player.reviveRange)
+	for o in w.players.values():
+		if o == p or o.state != SimPlayer.State.DOWNED:
+			continue
+		var d: float = p.pos.distance_to(o.pos)
+		if d <= best_d:
+			best = o
+			best_d = d
+	return best
+
+
+## Ticks a revive needs (counted in ticks so both sims finish on the same tick).
+func revive_ticks_needed() -> int:
+	return int(round(float(c_player.reviveTimeSec) / w.dt))
+
+
+## Holding REVIVE next to a downed teammate revives them after reviveTimeSec.
+## Returns true while reviving (the reviver stands still and cannot shoot).
+func _revive(p: SimPlayer, inp: PlayerIntent) -> bool:
+	var t: SimPlayer = revive_candidate(p) if inp.buttons & PlayerIntent.REVIVE else null
+	if t == null:
+		p.revive_target = 0
+		p.revive_ticks = 0
+		return false
+	if p.revive_target != t.id:
+		p.revive_target = t.id
+		p.revive_ticks = 0
+	p.revive_ticks += 1
+	if p.revive_ticks >= revive_ticks_needed():
+		t.state = SimPlayer.State.ALIVE
+		t.hp = t.max_hp * 0.5
+		t.last_damage_time = w.time
+		p.revives += 1
+		p.revive_target = 0
+		p.revive_ticks = 0
+		w.add_currency(p, int(c_econ.reviveReward), "revive")
+		w.emit({"type": "player_revived", "pid": t.id, "by": p.id})
+	return true
 
 
 func _move(p: SimPlayer, inp: PlayerIntent) -> void:
@@ -169,6 +221,10 @@ func give_weapon(p: SimPlayer, id: String) -> void:
 func interact_option(p: SimPlayer) -> Dictionary:
 	if not p.is_alive():
 		return {}
+	var downed := revive_candidate(p)
+	if downed != null:
+		return {"id": "revive", "kind": "revive", "item": "", "action": "revive", "cost": 0,
+			"label": "Hold to revive " + downed.name, "full": false, "affordable": true, "target": downed.id}
 	var best: Dictionary = {}
 	var best_d := INF
 	for it in w.map.interactables:
@@ -199,7 +255,7 @@ func interact_option(p: SimPlayer) -> Dictionary:
 
 func _interact(p: SimPlayer) -> void:
 	var opt := interact_option(p)
-	if opt.is_empty():
+	if opt.is_empty() or opt.action == "revive":
 		return
 	if opt.full:
 		w.emit({"type": "purchase_denied", "pid": p.id, "reason": "full"})

@@ -113,7 +113,43 @@ func damage_player(p: SimPlayer, amount: float, source_id: int) -> void:
 		p.state = SimPlayer.State.DOWNED
 		p.downed_time = time
 		p.reload_end = 0.0
+		p.revive_target = 0
+		p.revive_ticks = 0
+		p.downs += 1
 		emit({"type": "player_downed", "pid": p.id})
+
+
+## The player currently reviving `p`, or null.
+func reviver_of(p: SimPlayer) -> SimPlayer:
+	for o in players.values():
+		if o.revive_target == p.id and o.is_alive():
+			return o
+	return null
+
+
+## 0..1 progress of the revive `p` is doing, or (when downed) receiving.
+func revive_progress(p: SimPlayer) -> float:
+	var doer: SimPlayer = p if p.is_alive() and p.revive_target != 0 else (reviver_of(p) if p.state == SimPlayer.State.DOWNED else null)
+	if doer == null:
+		return 0.0
+	return clampf(float(doer.revive_ticks) / float(player_sys.revive_ticks_needed()), 0.0, 1.0)
+
+
+func is_being_revived(p: SimPlayer) -> bool:
+	return p.state == SimPlayer.State.DOWNED and reviver_of(p) != null
+
+
+## Final stats per player (the game-over table).
+func scores() -> Array:
+	var out := []
+	for p in players.values():
+		out.append({"id": p.id, "name": p.name, "kills": p.kills, "headshots": p.headshots, "downs": p.downs, "revives": p.revives})
+	return out
+
+
+## Seconds a downed player has left before bleeding out.
+func bleedout_left(p: SimPlayer) -> float:
+	return maxf(0.0, float(constants.player.downedBleedoutSec) - (time - p.downed_time))
 
 
 ## Describes what the player could interact with right now (for HUD prompts).
@@ -135,6 +171,7 @@ func _update_director() -> void:
 				d.next_spawn_time = time
 				zone_state = ZoneState.WAVE
 				emit({"type": "wave_started", "wave": d.wave, "count": d.to_spawn})
+				_respawn_dead()
 		WaveDirector.Phase.WAVE:
 			zone_state = ZoneState.WAVE
 			var cap := int(constants.zone.maxAliveZombies)
@@ -152,11 +189,29 @@ func _update_director() -> void:
 				emit({"type": "wave_cleared", "wave": d.wave})
 
 
+## Players who bled out come back at the start of the next wave.
+func _respawn_dead() -> void:
+	var i := 0
+	for p in players.values():
+		if p.state == SimPlayer.State.DEAD:
+			var spawn: Dictionary = map.player_spawns[i % map.player_spawns.size()]
+			i += 1
+			p.state = SimPlayer.State.ALIVE
+			p.hp = p.max_hp
+			p.pos = spawn.pos
+			p.prev_pos = p.pos
+			p.yaw = spawn.yaw
+			p.reload_end = 0.0
+			emit({"type": "player_respawned", "pid": p.id})
+
+
 func _check_game_over() -> void:
 	if players.is_empty():
 		return
 	for p in players.values():
-		if p.state == SimPlayer.State.DOWNED and time - p.downed_time >= float(constants.player.downedBleedoutSec):
+		if p.state == SimPlayer.State.DOWNED and reviver_of(p) != null:
+			p.downed_time += dt  # the bleed-out clock pauses while someone revives
+		elif p.state == SimPlayer.State.DOWNED and time - p.downed_time >= float(constants.player.downedBleedoutSec):
 			p.state = SimPlayer.State.DEAD
 			emit({"type": "player_died", "pid": p.id})
 	if alive_players().is_empty():

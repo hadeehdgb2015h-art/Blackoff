@@ -53,12 +53,18 @@ export class SimPlayer {
   switchEnd = 0;
   lastDamageTime = -999;
   downedTime = 0;
+  /** downed teammate this player is reviving (0 = none) */
+  reviveTarget = 0;
+  /** ticks the revive has been held */
+  reviveTicks = 0;
   buttonsPrev = 0;
   moving = false;
   input: PlayerIntent = emptyIntent();
   kills = 0;
   headshots = 0;
   shotsFired = 0;
+  downs = 0;
+  revives = 0;
 
   constructor(readonly id: number, public name: string) {}
 

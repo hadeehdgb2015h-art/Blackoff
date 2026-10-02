@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "protocolVersion": 2,
+  "protocolVersion": 3,
   "endianness": "little",
   "frame": "u8 messageId followed by fields in declared order; one message per WebSocket binary frame. Decoders reject unknown ids, short frames and trailing bytes.",
   "primitives": {
@@ -71,13 +71,16 @@
       "purchaseDenied": 19,
       "gameOver": 20,
       "playerDamaged": 21,
-      "zombieSpawned": 22
+      "zombieSpawned": 22,
+      "playerRespawned": 23
     },
     "entityFlags": {
       "moving": 1,
       "attacking": 2,
       "downed": 4,
-      "reloading": 8
+      "reloading": 8,
+      "beingRevived": 16,
+      "dead": 32
     },
     "selfFlags": {
       "reloading": 1,
@@ -153,7 +156,33 @@
         "str8"
       ]
     ],
-    "entitySub": "u8: zombieType index for zombies, held weapon index for players"
+    "entitySub": "u8: zombieType index for zombies, held weapon index for players",
+    "scoreEntry": [
+      [
+        "id",
+        "u16"
+      ],
+      [
+        "name",
+        "str8"
+      ],
+      [
+        "kills",
+        "u16"
+      ],
+      [
+        "headshots",
+        "u16"
+      ],
+      [
+        "downs",
+        "u8"
+      ],
+      [
+        "revives",
+        "u8"
+      ]
+    ]
   },
   "messages": {
     "C2S": {
@@ -344,6 +373,14 @@
           [
             "flags",
             "u8"
+          ],
+          [
+            "revive",
+            "u8"
+          ],
+          [
+            "bleedout",
+            "u8"
           ]
         ]
       },
@@ -452,6 +489,19 @@
             "u16"
           ]
         ]
+      },
+      "scoreboard": {
+        "id": 74,
+        "fields": [
+          [
+            "wave",
+            "u16"
+          ],
+          [
+            "players",
+            "array8:scoreEntry"
+          ]
+        ]
       }
     }
   },
@@ -485,7 +535,8 @@
     "purchaseDenied": "a=player id, flags 0=funds 1=full",
     "gameOver": "a=wave reached",
     "playerDamaged": "a=player id, b=source entity id, value=damage (rounded)",
-    "zombieSpawned": "a=zombie id, b=zombieType index, value=entry index"
+    "zombieSpawned": "a=zombie id, b=zombieType index, value=entry index",
+    "playerRespawned": "a=player id"
   },
   "snapshotFields": {
     "ackSeq": "seq of the last input the server applied for this player (client prediction replays inputs after it)",

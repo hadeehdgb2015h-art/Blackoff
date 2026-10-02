@@ -171,9 +171,12 @@ func _process(delta: float) -> void:
 	for v in _pviews.values():
 		v.update_view(alpha, delta)
 	var opt := world.interact_option(pid)
-	_controls.interact_label = "" if opt.is_empty() else str(opt.label)
+	var revive: bool = not opt.is_empty() and opt.action == "revive"
+	_controls.revive_available = revive
+	_controls.interact_label = "" if opt.is_empty() or revive else str(opt.label)
 	_controls.interact_ok = not opt.is_empty() and opt.affordable and not opt.full
 	_hud.update_state(p, world, opt, delta)
+	_hud.set_markers(_downed_markers(p))
 	_ambient_groans(delta)
 	if not _showcase_soldiers.is_empty():
 		_update_soldier_showcase(delta)
@@ -304,6 +307,17 @@ func _on_event(e: Dictionary) -> void:
 		"player_downed":
 			if local:
 				_rig.set_downed(true)
+			print("[game] player %d down" % e.pid)
+		"player_revived", "player_respawned":
+			if local:
+				_rig.set_downed(false)
+				_controls.release_all()
+			if e.type == "player_revived":
+				print("[game] player %d revived by %d" % [e.pid, e.by])
+				if local or e.by == pid:
+					_sfx.play("buy", -4.0)
+			else:
+				print("[game] player %d respawned" % e.pid)
 		"reload_started":
 			if local:
 				_rig.on_reload(float(e.duration))
@@ -347,8 +361,34 @@ func _on_event(e: Dictionary) -> void:
 			_controls.enabled = false
 			_controls.release_all()
 			Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
-			_hud.show_game_over(int(e.wave), world.players[pid])
+			_hud.show_game_over(int(e.wave), world.players[pid], world.scores())
 	_hud.on_event(e, pid)
+
+
+## Screen positions of downed teammates for the HUD (edge-pinned when off screen).
+func _downed_markers(me: SimPlayer) -> Array:
+	var out := []
+	var cam := _rig.camera
+	var rect := get_viewport().get_visible_rect()
+	var inner := rect.grow(-48.0)
+	for o in world.players.values():
+		if o == me or o.state != SimPlayer.State.DOWNED:
+			continue
+		var at := Vector3(o.pos.x, 0.9, o.pos.y)
+		var sp := cam.unproject_position(at)
+		var behind := cam.is_position_behind(at)
+		if behind:
+			sp = rect.size - sp  # mirror so the arrow points the right way
+		var on_screen := not behind and inner.has_point(sp)
+		if not on_screen:
+			var c := rect.size / 2.0
+			var d := sp - c
+			if d.length() < 1.0:
+				d = Vector2(0, 1)
+			var k := minf(absf((inner.size.x / 2.0) / maxf(0.001, absf(d.x))), absf((inner.size.y / 2.0) / maxf(0.001, absf(d.y))))
+			sp = c + d * minf(k, 1.0)
+		out.append({"pos": sp, "on_screen": on_screen, "dist": me.pos.distance_to(o.pos), "revived": world.is_being_revived(o)})
+	return out
 
 
 func _ambient_groans(delta: float) -> void:

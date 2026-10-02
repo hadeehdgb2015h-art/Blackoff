@@ -6,7 +6,7 @@
  */
 import type { Codec, Msg } from "../net/codec.js";
 import type { SharedData } from "../shared/loadShared.js";
-import { BTN_MASK, Btn, PlayerState, ZombieState, emptyIntent, type PlayerIntent, type SimEvent } from "../sim/entities.js";
+import { BTN_MASK, Btn, PlayerState, ZombieState, emptyIntent, type PlayerIntent, type SimEvent, type SimPlayer } from "../sim/entities.js";
 import { SimWorld, ZoneState } from "../sim/simWorld.js";
 import { Phase } from "../sim/waveDirector.js";
 import type { MatchResult } from "../db/profileStore.js";
@@ -224,7 +224,11 @@ export class Zone {
       case "player_left": return this.event("playerLeft", n("pid"));
       case "wave_started": return this.event("waveStart", n("wave"), 0, n("count"));
       case "wave_cleared": return this.event("waveEnd", n("wave"));
-      case "game_over": return this.event("gameOver", n("wave"));
+      case "game_over":
+        this.event("gameOver", n("wave"));
+        return this.broadcast("scoreboard", this.scoreboard());
+      case "player_revived": return this.event("playerRevived", n("pid"), n("by"));
+      case "player_respawned": return this.event("playerRespawned", n("pid"));
       case "reload_started": return this.event("reloadStarted", n("pid"), 0, Math.round(n("duration") * 100));
       case "reload_done": return this.event("reloadDone", n("pid"));
       case "weapon_switched": return this.event("weaponSwitched", n("pid"), wIdx("weapon"));
@@ -240,13 +244,30 @@ export class Zone {
     }
   }
 
+  /** Final stats of everyone still in the zone (sent at game over). */
+  scoreboard(): Msg {
+    const players = [...this.world.players.values()].map((p) => ({
+      id: p.id, name: p.name, kills: u16(p.kills), headshots: u16(p.headshots), downs: Math.min(255, p.downs), revives: Math.min(255, p.revives),
+    }));
+    return { wave: u16(this.world.director.wave), players: players.slice(0, 255) };
+  }
+
+  /** 0-255 progress of the revive this player is doing, or (when downed) receiving. */
+  private reviveProgress(p: SimPlayer): number {
+    const w = this.world;
+    const doer = p.isAlive() ? (p.reviveTarget ? p : null) : w.reviverOf(p);
+    if (!doer) return 0;
+    return Math.max(0, Math.min(255, Math.round((doer.reviveTicks / w.playerSys.reviveTicksNeeded()) * 255)));
+  }
+
   private sendSnapshots(): void {
     const w = this.world;
     const r2 = this.shared.constants.net.interestRadius ** 2;
     const players = [...w.players.values()].map((p) => ({
       id: p.id, kind: 0, sub: this.weaponIdx.get(p.weapon()?.id ?? "") ?? 0, x: p.pos.x, y: p.pos.y, floor: 0, yaw: p.yaw,
       hp: pct(p.hp, p.maxHp),
-      flags: (p.moving ? 1 : 0) | (p.state === PlayerState.DOWNED ? 4 : 0) | (p.isReloading() ? 8 : 0),
+      flags: (p.moving ? 1 : 0) | (p.state === PlayerState.DOWNED ? 4 : 0) | (p.isReloading() ? 8 : 0)
+        | (p.state === PlayerState.DOWNED && w.reviverOf(p) ? 16 : 0) | (p.state === PlayerState.DEAD ? 32 : 0),
     }));
     for (const m of this.members.values()) {
       if (!m.client) continue;
@@ -275,6 +296,8 @@ export class Zone {
         slot: self.slot,
         weapons: self.weapons.map((wp) => ({ weapon: this.weaponIdx.get(wp.id) ?? 0, mag: Math.min(255, wp.mag), reserve: u16(wp.reserve) })),
         flags: (self.isReloading() ? 1 : 0) | (w.time < self.switchEnd ? 2 : 0),
+        revive: this.reviveProgress(self),
+        bleedout: self.state === PlayerState.DOWNED ? Math.min(255, Math.ceil(w.bleedoutLeft(self))) : 0,
       });
     }
   }

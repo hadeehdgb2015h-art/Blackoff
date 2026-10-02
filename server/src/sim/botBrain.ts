@@ -47,6 +47,12 @@ export class BotBrain {
       }
       if (Math.sqrt(best) < 3.5) it.move = { x: 0, y: -1 };
     }
+    // A downed teammate in reach and no zombie close: revive them.
+    if (w.playerSys.reviveCandidate(p) && (!target || Math.sqrt(best) > 5)) {
+      it.buttons = Btn.REVIVE;
+      it.move = { x: 0, y: 0 };
+      return it;
+    }
     if (wp.mag === 0 && wp.reserve > 0 && !p.isReloading()) it.buttons |= Btn.RELOAD;
     if (wp.mag === 0 && wp.reserve === 0 && p.weapons.length > 1) it.buttons |= Btn.SWITCH;
     return it;

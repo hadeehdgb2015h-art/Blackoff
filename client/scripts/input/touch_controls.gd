@@ -77,6 +77,8 @@ func sample() -> PlayerIntent:
 		b |= PlayerIntent.FIRE_HELD
 	for name in _held_buttons:
 		b |= _bit(name)
+	if Input.is_key_pressed(KEY_E) or Input.is_key_pressed(KEY_F):
+		b |= PlayerIntent.REVIVE  # keyboard: hold E (or F) next to a downed teammate
 	it.buttons = b
 	_latched = 0
 	return it

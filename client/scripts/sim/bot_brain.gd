@@ -54,6 +54,11 @@ func think(w: SimWorld) -> PlayerIntent:
 					it.buttons |= PlayerIntent.FIRE_PRESSED
 		if sqrt(best) < 3.5:
 			it.move = Vector2(0, -1)  # back off
+	# A downed teammate in reach and no zombie close: revive them.
+	if w.player_sys.revive_candidate(p) != null and (target == null or sqrt(best) > 5.0):
+		it.buttons = PlayerIntent.REVIVE
+		it.move = Vector2.ZERO
+		return it
 	if wp.mag == 0 and wp.reserve > 0 and not p.is_reloading():
 		it.buttons |= PlayerIntent.RELOAD
 	if wp.mag == 0 and wp.reserve == 0 and p.weapons.size() > 1:

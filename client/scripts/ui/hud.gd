@@ -1,7 +1,8 @@
 class_name Hud
 extends Control
 ## In-game HUD: health, ammo, wave, credits, interaction prompt, crosshair,
-## hit markers, damage vignette, banners, downed and game-over states.
+## hit markers, damage vignette, banners, team list, markers over downed
+## teammates, revive progress, downed/bleed-out state and the game-over table.
 ## Reads state only; never changes gameplay.
 
 signal retry_pressed
@@ -26,6 +27,12 @@ var _downed: Label
 var _cross: Crosshair
 var _game_over: PanelContainer
 var _go_stats: Label
+var _go_table: GridContainer
+var _team: TeamPanel
+var _markers: Markers
+var _revive_back: ColorRect
+var _revive_bar: ColorRect
+var _revive_label: Label
 
 var _banner_t: float = 0.0
 var _toast_t: float = 0.0
@@ -58,6 +65,58 @@ class Crosshair extends Control:
 			var r := 10.0 if not hit_kill else 14.0
 			for d in [Vector2(1, 1), Vector2(-1, 1), Vector2(1, -1), Vector2(-1, -1)]:
 				draw_line(c + d * r * 0.6, c + d * r * 1.4, hc, 3.0)
+
+
+## Teammates under the health bar: name, health, DOWN with bleed-out, or DEAD.
+class TeamPanel extends Control:
+	var rows: Array = []  ## [{name, hp_k, state, bleed, revived}]
+	var font: Font
+
+	func _draw() -> void:
+		var y := 0.0
+		for r in rows:
+			var col := Color(0.85, 0.85, 0.82)
+			var text: String = r.name
+			if r.state == SimPlayer.State.DOWNED:
+				col = UiTheme.ACCENT
+				text += "  REVIVING" if r.revived else "  DOWN %d" % ceili(r.bleed)
+			elif r.state == SimPlayer.State.DEAD:
+				col = Color(0.5, 0.5, 0.5)
+				text += "  DEAD"
+			draw_rect(Rect2(0, y + 4, 150, 8), Color(0, 0, 0, 0.55))
+			if r.state == SimPlayer.State.ALIVE:
+				draw_rect(Rect2(1, y + 5, 148.0 * r.hp_k, 6), col)
+			draw_string(font, Vector2(160, y + 14), text, HORIZONTAL_ALIGNMENT_LEFT, -1, 18, col)
+			y += 26.0
+
+
+## Red cross over downed teammates, with distance; pinned to the screen edge
+## with an arrow when they are behind the camera or off screen.
+class Markers extends Control:
+	var items: Array = []  ## [{pos: Vector2, on_screen: bool, dist: float, revived: bool}]
+	var font: Font
+	var _t: float = 0.0
+
+	func _process(delta: float) -> void:
+		_t += delta
+		queue_redraw()
+
+	func _draw() -> void:
+		var pulse := 0.65 + 0.35 * sin(_t * 6.0)
+		for m in items:
+			var col := Color(1, 1, 1, 0.95) if m.revived else Color(UiTheme.ACCENT.r, UiTheme.ACCENT.g, UiTheme.ACCENT.b, pulse)
+			var p: Vector2 = m.pos
+			draw_circle(p, 17, Color(0, 0, 0, 0.45))
+			draw_rect(Rect2(p.x - 4, p.y - 12, 8, 24), col)
+			draw_rect(Rect2(p.x - 12, p.y - 4, 24, 8), col)
+			var label := "%d m" % roundi(m.dist)
+			draw_string(font, p + Vector2(-20, 34), label, HORIZONTAL_ALIGNMENT_CENTER, 40, 16, col)
+			if not m.on_screen:
+				var c := size / 2.0
+				var d: Vector2 = (p - c).normalized()
+				var tip := p + d * 26.0
+				var side := Vector2(-d.y, d.x) * 9.0
+				draw_colored_polygon(PackedVector2Array([tip, p + d * 14.0 + side, p + d * 14.0 - side]), col)
 
 
 func _ready() -> void:
@@ -127,6 +186,32 @@ func _ready() -> void:
 	_fps.position = Vector2(24, 52)
 	add_child(_fps)
 
+	_team = TeamPanel.new()
+	_team.font = ThemeDB.fallback_font
+	_team.position = Vector2(24, 84)
+	_team.size = Vector2(420, 120)
+	_team.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(_team)
+
+	_markers = Markers.new()
+	_markers.font = _team.font
+	_markers.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	_markers.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(_markers)
+
+	# Revive progress (under the crosshair)
+	_revive_back = ColorRect.new()
+	_revive_back.color = Color(0, 0, 0, 0.6)
+	_revive_back.size = Vector2(320, 14)
+	_revive_back.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(_revive_back)
+	_revive_bar = ColorRect.new()
+	_revive_bar.color = Color(0.95, 0.95, 0.9)
+	_revive_bar.size = Vector2(0, 8)
+	_revive_bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(_revive_bar)
+	_revive_label = _centered(22, UiTheme.TEXT, 64)
+
 	_build_game_over()
 
 
@@ -174,11 +259,37 @@ func update_state(p: SimPlayer, w: SimWorld, interact: Dictionary, delta: float)
 		_prompt.add_theme_color_override("font_color", UiTheme.TEXT if interact.affordable and not interact.full else UiTheme.MUTED)
 	_cross.spread = 1.6 if p.moving else 1.0
 	_cross.visible = p.is_alive()
+	var mates := 0
+	var rows := []
+	for o in w.players.values():
+		if o == p:
+			continue
+		if o.is_alive():
+			mates += 1
+		rows.append({"name": o.name, "hp_k": clampf(o.hp / maxf(1.0, o.max_hp), 0.0, 1.0), "state": o.state,
+			"bleed": w.bleedout_left(o), "revived": w.is_being_revived(o)})
+	_team.rows = rows
+	_team.queue_redraw()
+	var prog := w.revive_progress(p)
 	if p.state == SimPlayer.State.DOWNED:
-		var left := float(w.constants.player.downedBleedoutSec) - (w.time - p.downed_time)
-		_downed.text = "YOU ARE DOWN\n%d" % ceili(maxf(0.0, left))
+		var line := "BEING REVIVED" if w.is_being_revived(p) else ("Hold on, a teammate can revive you" if mates > 0 else "No one left to revive you")
+		_downed.text = "YOU ARE DOWN  %d\n%s" % [ceili(w.bleedout_left(p)), line]
+	elif p.state == SimPlayer.State.DEAD:
+		_downed.text = "YOU BLED OUT\nBack at the next wave" if mates > 0 else ""
 	else:
 		_downed.text = ""
+	var show_bar := prog > 0.0
+	_revive_back.visible = show_bar
+	_revive_bar.visible = show_bar
+	if show_bar:
+		var c := size / 2.0 + Vector2(0, 50)
+		_revive_back.position = c - Vector2(160, 7)
+		_revive_bar.position = c - Vector2(157, 4)
+		_revive_bar.size.x = 314.0 * prog
+		var target: SimPlayer = w.players.get(p.revive_target)
+		_revive_label.text = ("REVIVING " + target.name) if p.is_alive() and target else ("" if p.is_alive() else "")
+	else:
+		_revive_label.text = ""
 	_fps.visible = Settings.show_fps
 	_fps.text = "%d FPS" % Engine.get_frames_per_second()
 	_tick(delta)
@@ -221,10 +332,37 @@ func on_event(e: Dictionary, local_pid: int) -> void:
 		"box_offer":
 			if e.pid == local_pid:
 				_show_toast("Take it before it's gone!")
+		"player_revived":
+			if e.pid == local_pid:
+				_show_toast("You were revived")
+			elif e.by == local_pid:
+				_show_toast("Teammate revived")
+		"player_respawned":
+			if e.pid == local_pid:
+				_show_banner("BACK IN THE FIGHT")
 
 
-func show_game_over(wave: int, p: SimPlayer) -> void:
-	_go_stats.text = "Reached wave %d\nKills %d   Headshots %d" % [wave, p.kills, p.headshots]
+## Positions of downed teammates on screen (computed by the game from its camera).
+func set_markers(items: Array) -> void:
+	_markers.items = items
+
+
+func show_game_over(wave: int, p: SimPlayer, scores: Array = []) -> void:
+	_go_stats.text = "Reached wave %d" % wave
+	for c in _go_table.get_children():
+		c.queue_free()
+	if scores.is_empty():
+		scores = [{"id": p.id, "name": p.name, "kills": p.kills, "headshots": p.headshots, "downs": p.downs, "revives": p.revives}]
+	scores.sort_custom(func(a, b): return int(a.kills) > int(b.kills))
+	for h in ["PLAYER", "KILLS", "HEADSHOTS", "DOWNS", "REVIVES"]:
+		_go_table.add_child(UiTheme.label(h, 18, UiTheme.MUTED))
+	for r in scores:
+		var col := UiTheme.ACCENT if int(r.id) == p.id else UiTheme.TEXT
+		_go_table.add_child(UiTheme.label(str(r.name), 22, col))
+		for k in ["kills", "headshots", "downs", "revives"]:
+			var l := UiTheme.label(str(int(r[k])), 22, col)
+			l.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+			_go_table.add_child(l)
 	_game_over.visible = true
 
 
@@ -310,6 +448,11 @@ func _build_game_over() -> void:
 	_go_stats = UiTheme.label("", 26)
 	_go_stats.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	v.add_child(_go_stats)
+	_go_table = GridContainer.new()
+	_go_table.columns = 5
+	_go_table.add_theme_constant_override("h_separation", 28)
+	_go_table.add_theme_constant_override("v_separation", 6)
+	v.add_child(_go_table)
 	var row := HBoxContainer.new()
 	row.add_theme_constant_override("separation", 16)
 	row.alignment = BoxContainer.ALIGNMENT_CENTER

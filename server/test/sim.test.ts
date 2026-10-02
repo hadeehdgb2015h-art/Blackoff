@@ -256,3 +256,77 @@ describe("bot playthrough", () => {
     expect(total / ticks).toBeLessThan(2.0);
   });
 });
+
+describe("revive and respawn", () => {
+  const setup = () => {
+    const w = world(7);
+    const a = w.players.get(w.addPlayer("A"))!;
+    const b = w.players.get(w.addPlayer("B"))!;
+    b.pos = { x: a.pos.x + 1.0, y: a.pos.y };
+    w.damagePlayer(b, 500, 0);
+    return { w, a, b };
+  };
+  const need = () => Math.round(defs().constants.player.reviveTimeSec * defs().constants.sim.tickRate);
+
+  it("holding REVIVE next to a downed teammate revives on the exact tick, with reward", () => {
+    const { w, a, b } = setup();
+    expect(b.downs).toBe(1);
+    expect(w.interactOption(a.id)?.action).toBe("revive");
+    const cash = a.currency;
+    const start = { ...a.pos };
+    w.setInput(a.id, intent(Btn.REVIVE | Btn.FIRE_HELD, { move: { x: 0, y: 1 } }));
+    for (let i = 0; i < need() - 1; i++) w.step();
+    expect(b.state).toBe(1); // still downed
+    expect(w.reviverOf(b)).toBe(a);
+    expect(a.pos).toEqual(start); // reviver stands still...
+    expect(a.shotsFired).toBe(0); // ...and does not shoot
+    w.step();
+    expect(b.state).toBe(0);
+    expect(b.hp).toBe(b.maxHp * 0.5);
+    expect(a.revives).toBe(1);
+    expect(a.currency).toBe(cash + defs().constants.economy.reviveReward);
+    expect(w.events.some((e) => e.type === "player_revived" && e.pid === b.id && e.by === a.id)).toBe(true);
+  });
+
+  it("letting go or stepping away restarts the revive; bleed-out pauses meanwhile", () => {
+    const { w, a, b } = setup();
+    w.setInput(a.id, intent(Btn.REVIVE));
+    for (let i = 0; i < 20; i++) w.step();
+    const left = w.bleedoutLeft(b);
+    for (let i = 0; i < 20; i++) w.step();
+    expect(w.bleedoutLeft(b)).toBeCloseTo(left, 5); // paused while revived
+    w.setInput(a.id, intent(0));
+    w.step();
+    expect(a.reviveTarget).toBe(0);
+    expect(a.reviveTicks).toBe(0);
+    w.setInput(a.id, intent(Btn.REVIVE));
+    for (let i = 0; i < need() - 1; i++) w.step();
+    expect(b.state).toBe(1);
+    b.pos = { x: a.pos.x + 5, y: a.pos.y }; // out of range
+    w.step();
+    expect(b.state).toBe(1);
+    expect(a.reviveTicks).toBe(0);
+  });
+
+  it("bled-out players respawn at the next wave while a teammate lives; all down ends the game", () => {
+    const { w, a, b } = setup();
+    for (let i = 0; i < (defs().constants.player.downedBleedoutSec + 1) * defs().constants.sim.tickRate; i++) w.step();
+    expect(b.state).toBe(2); // dead
+    // skip to the next wave start
+    for (const z of [...w.zombies.values()]) w.zombies.delete(z.id);
+    w.director.spawned = w.director.toSpawn;
+    let respawned = false;
+    for (let i = 0; i < 40 * defs().constants.sim.tickRate && !respawned; i++) {
+      w.step();
+      for (const z of [...w.zombies.values()]) w.zombies.delete(z.id);
+      respawned = w.events.some((e) => e.type === "player_respawned" && e.pid === b.id);
+    }
+    expect(respawned).toBe(true);
+    expect(b.state).toBe(0);
+    expect(b.hp).toBe(b.maxHp);
+    w.damagePlayer(a, 500, 0);
+    w.damagePlayer(b, 500, 0);
+    w.step();
+    expect(w.zoneState).toBe(ZoneState.GAME_OVER);
+  });
+});

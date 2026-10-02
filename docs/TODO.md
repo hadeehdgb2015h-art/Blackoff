@@ -31,7 +31,11 @@
 - [x] Release bundle + `edge` release from CI, `deploy/install.sh` / `update.sh` / `uninstall.sh`, rehearsed in CI
 - [ ] Owner runs the installer on their server and opens the game from their bot
 
-## Phase 5: revive, buy, final HUD
+## Phase 5: revive, buy, final HUD ✅ done
+- [x] Revive (hold, tick-exact on both sims, reward, bleed-out pause), respawn at the next wave, downs/revives stats
+- [x] Buying: wall weapons + ammo refills, ammo point, supply cache (since phase 1)
+- [x] HUD: team list, downed-teammate markers (edge-pinned), revive bar, downed screen, game-over table (server `scoreboard`)
+- [x] Bots revive teammates (headless/online tests)
 ## Phase 6: performance tiers + anti-cheat logging
 
 ## Open questions for the owner

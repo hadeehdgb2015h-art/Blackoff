@@ -21,6 +21,8 @@ var reload_end: float = 0.0     ## 0 = not reloading
 var switch_end: float = 0.0
 var last_damage_time: float = -999.0
 var downed_time: float = 0.0
+var revive_target: int = 0   ## downed teammate this player is reviving (0 = none)
+var revive_ticks: int = 0    ## ticks the revive has been held
 var buttons_prev: int = 0
 var moving: bool = false
 var input := PlayerIntent.new()
@@ -28,6 +30,8 @@ var input := PlayerIntent.new()
 var kills: int = 0
 var headshots: int = 0
 var shots_fired: int = 0
+var downs: int = 0
+var revives: int = 0
 
 
 func weapon() -> WeaponState:
