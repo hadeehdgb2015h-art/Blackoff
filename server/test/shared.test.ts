@@ -14,11 +14,12 @@ describe("shared data", () => {
     expect(s.zombies.walker).toBeDefined();
     expect(s.zombies.runner).toBeDefined();
     expect(s.constants.sim.tickRate).toBe(20);
+    expect(s.maps.facility_01?.zombieEntries.length).toBe(4);
   });
 
   it("rejects an unknown zombie referenced by waves", () => {
     const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "shared-"));
-    for (const f of fs.readdirSync(sharedDir)) fs.copyFileSync(path.join(sharedDir, f), path.join(tmp, f));
+    fs.cpSync(sharedDir, tmp, { recursive: true });
     const waves = JSON.parse(fs.readFileSync(path.join(tmp, "waves.json"), "utf8"));
     waves.mix[0].weights = { ghost: 1 };
     fs.writeFileSync(path.join(tmp, "waves.json"), JSON.stringify(waves));

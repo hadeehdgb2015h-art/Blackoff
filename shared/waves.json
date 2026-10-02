@@ -2,22 +2,12 @@
   "schemaVersion": 1,
   "firstWaveDelaySec": 8,
   "intermissionSec": 12,
-  "count": {
-    "base": 6,
-    "perWave": 3,
-    "perExtraPlayer": 0.6,
-    "exponent": 1.08,
-    "max": 400
-  },
-  "spawnIntervalSec": {
-    "start": 2.0,
-    "perWave": -0.08,
-    "min": 0.4
-  },
+  "count": {"base": 6, "perWave": 3, "perExtraPlayer": 0.6, "exponent": 1.08, "max": 400},
+  "spawnIntervalSec": {"start": 2.0, "perWave": -0.08, "min": 0.4},
   "mix": [
-    { "fromWave": 1, "weights": { "walker": 1.0 } },
-    { "fromWave": 3, "weights": { "walker": 0.85, "runner": 0.15 } },
-    { "fromWave": 6, "weights": { "walker": 0.7, "runner": 0.3 } },
-    { "fromWave": 10, "weights": { "walker": 0.55, "runner": 0.45 } }
+    {"fromWave": 1, "weights": {"walker": 1.0}},
+    {"fromWave": 3, "weights": {"walker": 0.85, "runner": 0.15}},
+    {"fromWave": 6, "weights": {"walker": 0.7, "runner": 0.3}},
+    {"fromWave": 10, "weights": {"walker": 0.55, "runner": 0.45}}
   ]
 }

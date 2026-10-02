@@ -4,5 +4,5 @@ set -euo pipefail
 root="$(cd "$(dirname "$0")/.." && pwd)"
 rm -rf "$root/client/shared"
 mkdir -p "$root/client/shared"
-cp "$root"/shared/*.json "$root/client/shared/"
-echo "synced $(ls "$root/client/shared" | wc -l) shared files into client/shared"
+cp -r "$root"/shared/*.json "$root"/shared/maps "$root/client/shared/"
+echo "synced $(find "$root/client/shared" -name "*.json" | wc -l) shared files into client/shared"

@@ -2,8 +2,8 @@ import fs from "node:fs";
 import path from "node:path";
 import type { z } from "zod";
 import {
-  ConstantsSchema, ProtocolSchema, WavesSchema, WeaponsSchema, ZombiesSchema,
-  type Constants, type ProtocolDef, type WavesDef, type WeaponDef, type ZombieDef,
+  ConstantsSchema, MapSchema, ProtocolSchema, WavesSchema, WeaponsSchema, ZombiesSchema,
+  type Constants, type MapDef, type ProtocolDef, type WavesDef, type WeaponDef, type ZombieDef,
 } from "./schemas.js";
 
 export interface SharedData {
@@ -12,6 +12,7 @@ export interface SharedData {
   weapons: Record<string, WeaponDef>;
   zombies: Record<string, ZombieDef>;
   waves: WavesDef;
+  maps: Record<string, MapDef>;
 }
 
 function readJson<S extends z.ZodTypeAny>(dir: string, file: string, schema: S): z.infer<S> {
@@ -37,6 +38,13 @@ export function loadShared(dir: string): SharedData {
   const weapons = readJson(dir, "weapons.json", WeaponsSchema).weapons;
   const zombies = readJson(dir, "zombies.json", ZombiesSchema).zombies;
   const waves = readJson(dir, "waves.json", WavesSchema);
+  const maps: Record<string, MapDef> = {};
+  const mapDir = path.join(dir, "maps");
+  const mapFiles = fs.existsSync(mapDir) ? fs.readdirSync(mapDir).filter((f) => f.endsWith(".json")) : [];
+  for (const f of mapFiles) {
+    const m = readJson(mapDir, f, MapSchema);
+    maps[m.id] = m;
+  }
 
   const errors: string[] = [];
   if (!weapons[constants.player.startWeapon]) errors.push(`player.startWeapon '${constants.player.startWeapon}' not in weapons.json`);
@@ -51,6 +59,12 @@ export function loadShared(dir: string): SharedData {
       if (!zombies[zid]) errors.push(`waves.mix fromWave ${entry.fromWave}: unknown zombie '${zid}'`);
     }
   }
+  if (!maps[constants.maps.default]) errors.push(`maps.default '${constants.maps.default}' has no shared/maps file`);
+  for (const m of Object.values(maps)) {
+    for (const it of m.interactables) {
+      if (it.kind === "weapon" && (!it.item || !weapons[it.item])) errors.push(`map ${m.id}: interactable ${it.id} unknown weapon`);
+    }
+  }
   if (waves.mix[0]?.fromWave !== 1) errors.push("waves.mix must start at fromWave 1");
   const ids = new Set<number>();
   for (const dirKey of ["C2S", "S2C"] as const) {
@@ -61,5 +75,5 @@ export function loadShared(dir: string): SharedData {
   }
   if (errors.length) throw new Error(`shared data cross-check failed: ${errors.join("; ")}`);
 
-  return { constants, protocol, weapons, zombies, waves };
+  return { constants, protocol, weapons, zombies, waves, maps };
 }

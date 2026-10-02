@@ -1,11 +1,6 @@
 {
   "schemaVersion": 1,
-  "sim": {
-    "tickRate": 20,
-    "snapshotRate": 15,
-    "floorHeight": 3.0,
-    "gravity": 0
-  },
+  "sim": {"tickRate": 20, "snapshotRate": 15, "floorHeight": 3.0, "gravity": 0},
   "zone": {
     "maxPlayers": 4,
     "maxPlayersHardCap": 8,
@@ -29,14 +24,11 @@
     "interactRange": 1.8,
     "startCurrency": 500,
     "startWeapon": "pistol",
-    "maxWeaponSlots": 2
+    "maxWeaponSlots": 2,
+    "weaponSwitchSec": 0.45,
+    "stepHeight": 0.4
   },
-  "economy": {
-    "hitReward": 10,
-    "killReward": 60,
-    "headshotKillBonus": 40,
-    "reviveReward": 100
-  },
+  "economy": {"hitReward": 10, "headshotKillBonus": 40, "reviveReward": 100},
   "progression": {
     "xpPerKill": 10,
     "xpPerHeadshot": 5,
@@ -54,9 +46,6 @@
     "inputRate": 20,
     "maxInputsPerSecond": 40
   },
-  "anticheat": {
-    "speedToleranceFactor": 1.25,
-    "fireRateToleranceMs": 15,
-    "logOnly": true
-  }
+  "anticheat": {"speedToleranceFactor": 1.25, "fireRateToleranceMs": 15, "logOnly": true},
+  "maps": {"default": "facility_01", "navCellSize": 0.5, "navAgentRadius": 0.3}
 }

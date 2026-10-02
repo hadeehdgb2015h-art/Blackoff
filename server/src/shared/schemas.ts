@@ -17,9 +17,10 @@ export const ConstantsSchema = z.object({
     maxHealth: pos, radius: pos, height: pos, eyeHeight: pos, headCenterHeight: pos, headRadius: pos,
     moveSpeed: pos, healthRegenDelaySec: pos, healthRegenPerSec: pos, downedBleedoutSec: pos,
     reviveTimeSec: pos, reviveRange: pos, interactRange: pos, startCurrency: z.number().int().nonnegative(),
-    startWeapon: z.string(), maxWeaponSlots: z.number().int().positive(),
+    startWeapon: z.string(), maxWeaponSlots: z.number().int().positive(), weaponSwitchSec: pos, stepHeight: pos,
   }),
-  economy: z.object({ hitReward: pos, killReward: pos, headshotKillBonus: pos, reviveReward: pos }),
+  economy: z.object({ hitReward: pos, headshotKillBonus: pos, reviveReward: pos }),
+  maps: z.object({ default: z.string(), navCellSize: num.positive(), navAgentRadius: pos }),
   progression: z.object({
     xpPerKill: pos, xpPerHeadshot: pos, xpPerWaveReached: pos, levelXpBase: pos, levelXpGrowth: num.min(1),
     maxLevel: z.number().int().positive(),
@@ -45,7 +46,7 @@ export const WeaponsSchema = z.object({ schemaVersion: z.literal(1), weapons: z.
 export const ZombieSchema = z.object({
   displayName: z.string(),
   baseHealth: num.positive(), healthPerWave: pos, moveSpeed: num.positive(), moveSpeedPerWave: pos, maxMoveSpeed: num.positive(),
-  attackDamage: pos, attackRange: num.positive(), attackCooldownSec: num.positive(),
+  attackDamage: pos, attackRange: num.positive(), attackCooldownSec: num.positive(), attackWindupSec: pos,
   radius: num.positive(), height: num.positive(), headCenterHeight: num.positive(), headRadius: num.positive(),
   killReward: pos, xp: pos,
 });
@@ -79,3 +80,21 @@ export type WeaponDef = z.infer<typeof WeaponSchema>;
 export type ZombieDef = z.infer<typeof ZombieSchema>;
 export type WavesDef = z.infer<typeof WavesSchema>;
 export type ProtocolDef = z.infer<typeof ProtocolSchema>;
+
+const v2 = z.tuple([num, num]);
+const v3 = z.tuple([num, num, num]);
+export const MapSchema = z.object({
+  schemaVersion: z.literal(1),
+  id: z.string(),
+  floorHeight: num.positive(),
+  bounds: z.object({ min: v2, max: v2 }),
+  walkable: z.array(z.object({ min: v2, max: v2 })).min(1),
+  walls: z.array(z.object({ min: v3, max: v3 })),
+  playerSpawns: z.array(z.object({ pos: v2, yaw: num })).min(1),
+  zombieEntries: z.array(z.object({ id: z.string(), pos: v2, inside: v2 })).min(1),
+  interactables: z.array(z.object({
+    id: z.string(), kind: z.enum(["weapon", "ammo"]), item: z.string().optional(), pos: v2, radius: num.positive(),
+  })),
+  safeArea: z.object({ min: v2, max: v2 }),
+});
+export type MapDef = z.infer<typeof MapSchema>;
