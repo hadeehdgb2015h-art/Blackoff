@@ -91,6 +91,24 @@ window.BlackoffTG = (function () {
       if (window.BlackoffRotate && window.BlackoffRotate.state.rotated) return { top: a.right, right: a.bottom, bottom: a.left, left: a.top };
       return a;
     },
+    // the invite carried by a t.me/<bot>?startapp=<param> link (phase 19)
+    startParam: function () {
+      const w = wa();
+      const p = (w && w.initDataUnsafe && w.initDataUnsafe.start_param) || new URLSearchParams(location.search).get('startapp') || '';
+      return /^[A-Za-z0-9_-]{1,64}$/.test(p) ? p : '';
+    },
+    // Telegram's own share sheet (pick a chat); in a browser the system share
+    // sheet or the clipboard. Returns what happened, for the game's toast.
+    share: function (url, text) {
+      const w = wa();
+      const tg = 'https://t.me/share/url?url=' + encodeURIComponent(url) + '&text=' + encodeURIComponent(text);
+      try {
+        if (w && w.initData && w.openTelegramLink) { w.openTelegramLink(tg); return 'telegram'; }
+        if (navigator.share) { navigator.share({ url: url, text: text }).catch(function () {}); return 'system'; }
+        if (navigator.clipboard) { navigator.clipboard.writeText(text + ' ' + url).catch(function () {}); return 'copied'; }
+      } catch (e) {}
+      return 'none';
+    },
     haptic: function (kind) {
       const w = wa();
       try { if (w && atLeast('6.1')) w.HapticFeedback.impactOccurred(kind || 'light'); } catch (e) {}

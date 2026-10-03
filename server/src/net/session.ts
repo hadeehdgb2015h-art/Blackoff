@@ -33,9 +33,39 @@ export class SessionHub implements ZoneSink {
   private nextPlayerId = 1;
 
   private readonly pending = new Set<Promise<unknown>>();
+  /** Invite code -> account, for accounts seen since the server started (a
+   *  friend can only join someone who is playing, so memory is enough). */
+  readonly invites = new Map<string, string>();
+  private readonly inviteKey: Buffer;
+  botUsername: string;
 
   constructor(readonly env: Env, readonly shared: SharedData, readonly codec: Codec, readonly zones: ZoneManager, readonly store: ProfileStore) {
     zones.sink = this;
+    // stable across restarts when a bot token exists, so shared links keep working
+    this.inviteKey = crypto.createHash("sha256").update("blackoff-invite:" + (env.TELEGRAM_BOT_TOKEN || crypto.randomBytes(16).toString("hex"))).digest();
+    this.botUsername = env.TELEGRAM_BOT_USERNAME;
+  }
+
+  /** The account's invite code: 10 characters, derived (HMAC) from the account id. */
+  inviteCodeFor(accountId: string): string {
+    const code = crypto.createHmac("sha256", this.inviteKey).update(accountId).digest("base64url").replace(/[-_]/g, "").slice(0, 10);
+    this.invites.set(code, accountId);
+    return code;
+  }
+
+  /** Asks Telegram for the bot's @username (invite links) unless it is configured. */
+  async discoverBot(): Promise<void> {
+    if (this.botUsername || !this.env.TELEGRAM_BOT_TOKEN) return;
+    try {
+      const res = await fetch(`https://api.telegram.org/bot${this.env.TELEGRAM_BOT_TOKEN}/getMe`, { signal: AbortSignal.timeout(8000) });
+      const body = (await res.json()) as { ok?: boolean; result?: { username?: string } };
+      if (body.ok && body.result?.username && /^[A-Za-z0-9_]{1,64}$/.test(body.result.username)) {
+        this.botUsername = body.result.username;
+        log.info("bot username", { bot: this.botUsername });
+      }
+    } catch (err) {
+      log.warn("getMe failed; invite links are off until TELEGRAM_BOT_USERNAME is set", { error: (err as Error).message });
+    }
   }
 
   /** A member left a zone: TON points for the kills, anti-cheat flags from the
@@ -265,6 +295,7 @@ export class Session implements ZoneClient {
       playerId: account.playerId, displayName: account.name, resumeToken: token,
       tickRate: this.hub.shared.constants.sim.tickRate, ...profileMsg(account.profile, account.weekly, this.hub.env.TON_MICRO_PER_KILL),
       voice: this.hub.env.VOICE_CHAT,
+      inviteCode: this.hub.inviteCodeFor(account.id), botUsername: this.hub.botUsername,
     });
     const zone = slot ? this.hub.zones.zones.get(slot.zoneId) : undefined;
     if (zone && slot && zone.attach(slot.entityId, this)) {
@@ -286,10 +317,22 @@ export class Session implements ZoneClient {
     const mode = msg.mode === GameMode.INFECTION ? GameMode.INFECTION : GameMode.CLASSIC;
     if (this.zone && (this.zone.state === ZoneState.GAME_OVER || this.zone.mode !== mode)) this.leaveZone(); // play again / other mode
     if (this.zone) return; // already playing; quickPlay is idempotent
-    const { zone, member } = this.hub.zones.quickPlay(this, this.account!.id, mode);
-    this.zone = zone;
-    this.entityId = member.entityId;
-    log.info("joined zone", { account: this.account!.id, zone: zone.id, mode: GameMode[mode], players: zone.size });
+    const placed = this.joinFriend(String(msg.friend ?? "")) ?? this.hub.zones.quickPlay(this, this.account!.id, mode,
+      msg.friend ? { status: 2, name: "" } : undefined);
+    this.zone = placed.zone;
+    this.entityId = placed.member.entityId;
+    log.info("joined zone", { account: this.account!.id, zone: placed.zone.id, mode: GameMode[placed.zone.mode], players: placed.zone.size, invite: !!msg.friend });
+  }
+
+  /** An invite code (from a friend's link): their zone, if they are playing
+   *  and it has room. Never the player's own code. */
+  private joinFriend(code: string): ReturnType<ZoneManager["quickPlay"]> | null {
+    if (!/^[A-Za-z0-9]{10}$/.test(code)) return null;
+    const friendId = this.hub.invites.get(code);
+    if (!friendId || friendId === this.account!.id) return null;
+    const friend = this.hub.byAccount.get(friendId);
+    if (!friend?.zone || !friend.account) return null;
+    return this.hub.zones.joinFriend(this, this.account!.id, friend.zone, friend.account.name);
   }
 
   /** A voice frame: relayed as-is to the other members of the zone. The

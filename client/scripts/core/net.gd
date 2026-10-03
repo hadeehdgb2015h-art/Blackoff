@@ -23,6 +23,11 @@ var profile: Dictionary = {}  ## lifetime stats from the server: games, kills, b
 var ton_per_kill: int = 0     ## TON points (millionths) the server pays per kill; 0 = off
 var leaderboard: Dictionary = {}  ## last weekly leaderboard received
 var tick_rate: int = 20
+var invite_code: String = ""      ## this player's invite code (from welcome)
+var bot_username: String = ""     ## the bot's @username, for t.me links ("" = invites off)
+var friend_code: String = ""      ## a friend's invite code to join on the next quick play (from the launch link)
+var joined_friend: int = 0        ## last zoneJoined: 0 alone, 1 in a friend's game, 2 the invite could not be honoured
+var joined_friend_name: String = ""
 var voice_available: bool = false  ## server relays voice and this page can capture/play audio
 var voice_mic: bool = false        ## microphone on (always off at start)
 var voice_speaker: bool = true     ## hear other players
@@ -76,7 +81,24 @@ func connect_to_server(join_zone: bool = true) -> void:
 func quick_play() -> void:
 	_want_zone = true
 	if status == "ready":
-		send("quickPlay", {"mode": mode})
+		send("quickPlay", {"mode": mode, "friend": friend_code})
+
+
+## The link that brings a friend into this player's game ("" when the server
+## has no bot username): t.me/<bot>?startapp=sq<code>.
+func invite_link() -> String:
+	if invite_code == "" or bot_username == "":
+		return ""
+	return "https://t.me/%s?startapp=sq%s" % [bot_username, invite_code]
+
+
+## Reads a friend's invite from the launch link (t.me/<bot>?startapp=sq<code>).
+func take_launch_invite() -> bool:
+	var p := Platform.start_param()
+	if p.begins_with("sq") and p.length() == 12:
+		friend_code = p.substr(2)
+		return true
+	return false
 
 
 func leave() -> void:
@@ -166,6 +188,8 @@ func _on_packet(data: PackedByteArray) -> void:
 			tick_rate = int(msg.tickRate)
 			profile = _profile_of(msg)
 			ton_per_kill = int(msg.get("tonPerKill", 0))
+			invite_code = str(msg.get("inviteCode", ""))
+			bot_username = str(msg.get("botUsername", ""))
 			_setup_voice(bool(msg.get("voice", false)))
 			print("[net] logged in as %s (games %d, best wave %d, TON %.3f)" % [display_name, profile.games, profile.bestWave, profile.tonMicro / 1000000.0])
 			var resumed := _resume_token != "" and _resume_token == str(msg.resumeToken)
@@ -173,8 +197,12 @@ func _on_packet(data: PackedByteArray) -> void:
 			_retry_until = 0.0
 			_set_status("ready")
 			if _want_zone and not resumed:
-				send("quickPlay", {"mode": mode})
+				send("quickPlay", {"mode": mode, "friend": friend_code})
 		"zoneJoined":
+			joined_friend = int(msg.get("friend", 0))
+			joined_friend_name = str(msg.get("friendName", ""))
+			if joined_friend != 0:
+				friend_code = ""  # an invite is used once
 			_set_status("in_zone")
 		"profile":
 			profile = _profile_of(msg)

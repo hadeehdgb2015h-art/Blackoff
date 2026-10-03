@@ -7,6 +7,7 @@ extends Control
 
 signal retry_pressed
 signal menu_pressed
+signal challenge_pressed  ## game over: share the result with the invite link
 
 var _hp_bar: ColorRect
 var _hp_back: ColorRect
@@ -28,6 +29,7 @@ var _cross: Crosshair
 var _game_over: PanelContainer
 var _go_stats: Label
 var _go_table: GridContainer
+var _go_challenge: Button
 var _team: TeamPanel
 var _markers: Markers
 var _revive_back: ColorRect
@@ -491,6 +493,7 @@ func show_game_over(wave: int, p: SimPlayer, scores: Array = []) -> void:
 			var l := UiTheme.label(str(int(r[k])), 22, col)
 			l.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 			_go_table.add_child(l)
+	_go_challenge.visible = Social.can_invite()
 	_game_over.visible = true
 
 
@@ -525,9 +528,15 @@ func _show_banner(text: String) -> void:
 	_banner_t = 2.2
 
 
-func _show_toast(text: String) -> void:
+func _show_toast(text: String, sec := 1.6) -> void:
 	_toast.text = text
-	_toast_t = 1.6
+	_toast_t = sec
+
+
+## A short message under the crosshair (the game scene's voice and invite notes).
+func show_toast(text: String, sec := 2.4) -> void:
+	if text != "":
+		_show_toast(text, sec)
 
 
 func _top_centered(size: int, color: Color, top: float) -> Label:
@@ -593,6 +602,8 @@ func _build_game_over() -> void:
 	row.add_theme_constant_override("separation", 16)
 	row.alignment = BoxContainer.ALIGNMENT_CENTER
 	row.add_child(UiTheme.big_button("PLAY AGAIN", func(): retry_pressed.emit()))
+	_go_challenge = UiTheme.gold_button("CHALLENGE FRIENDS", func(): challenge_pressed.emit())
+	row.add_child(_go_challenge)
 	row.add_child(UiTheme.button("MAIN MENU", func(): menu_pressed.emit()))
 	v.add_child(row)
 	add_child(_game_over)

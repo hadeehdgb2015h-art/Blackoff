@@ -32,7 +32,7 @@ const initData = signInitData(
 const c = await TestClient.connect(url, codec);
 c.hello(initData);
 const welcome = await c.waitFor("welcome", () => true, 8000);
-c.send("quickPlay", { mode: 0 });
+c.send("quickPlay", { mode: 0, friend: "" });
 const joined = await c.waitFor("zoneJoined", () => true, 8000);
 await c.waitFor("snapshot", () => true, 8000);
 if (holdSec > 0) {

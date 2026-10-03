@@ -8,7 +8,7 @@ import type { SharedData } from "../shared/loadShared.js";
 import { GameMode, ZoneState } from "../sim/simWorld.js";
 import { log } from "../log.js";
 import type { MatchSummary } from "../db/profileStore.js";
-import { Zone, type Member, type ZoneClient, type ZoneResult } from "./zone.js";
+import { Zone, type FriendJoin, type Member, type ZoneClient, type ZoneResult } from "./zone.js";
 
 export const GAME_OVER_LINGER_MS = 10_000;
 
@@ -47,8 +47,15 @@ export class ZoneManager {
     return mode === GameMode.INFECTION ? this.shared.constants.infection.maxPlayers : this.shared.constants.zone.maxPlayers;
   }
 
+  /** Puts the client into a friend's zone (an invite link): any wave, the
+   *  friend's mode, while it has room and is not over. Null when it cannot. */
+  joinFriend(client: ZoneClient, accountId: string, zone: Zone, friendName: string): { zone: Zone; member: Member } | null {
+    if (!this.zones.has(zone.id) || zone.state === ZoneState.GAME_OVER || zone.size >= this.maxPlayers(zone.mode)) return null;
+    return { zone, member: zone.join(client, accountId, this.now(), { status: 1, name: friendName }) };
+  }
+
   /** Puts the client into the fullest joinable zone of that mode, or a new one. */
-  quickPlay(client: ZoneClient, accountId: string, mode: GameMode = GameMode.CLASSIC): { zone: Zone; member: Member } {
+  quickPlay(client: ZoneClient, accountId: string, mode: GameMode = GameMode.CLASSIC, friend?: FriendJoin): { zone: Zone; member: Member } {
     const zc = this.shared.constants.zone;
     const max = this.maxPlayers(mode);
     let best: Zone | null = null;
@@ -65,7 +72,7 @@ export class ZoneManager {
       this.zones.set(id, best);
       log.info("zone created", { zone: id, map: best.mapId, mode: GameMode[mode] });
     }
-    return { zone: best, member: best.join(client, accountId, this.now()) };
+    return { zone: best, member: best.join(client, accountId, this.now(), friend) };
   }
 
   start(): void {

@@ -17,6 +17,7 @@ async function main(): Promise<void> {
     store = new MemoryProfileStore();
   }
   const app = createApp(env, shared, store);
+  void app.hub.discoverBot(); // invite links need the bot's @username
   app.server.listen(env.PORT, env.HOST, () => {
     log.info("server listening", { host: env.HOST, port: env.PORT, ws: env.WS_PATH, store: store.kind });
   });

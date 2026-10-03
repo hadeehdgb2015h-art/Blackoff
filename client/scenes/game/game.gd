@@ -46,6 +46,7 @@ var _room_t: float = 0.0
 var _machines := {} ## perk id -> PerkMachineView
 var _acc: float = 0.0
 var _paused: bool = false
+var _last_wave: int = 0  ## the wave the game ended on (the challenge message)
 var _pause_menu: Control
 var _groan_t: float = 2.0
 var _game_over_shown: bool = false
@@ -93,6 +94,9 @@ func _ready() -> void:
 	ui.add_child(_hud)
 	_hud.retry_pressed.connect(_retry)
 	_hud.menu_pressed.connect(_to_menu)
+	_hud.challenge_pressed.connect(func():
+		var me: SimPlayer = world.players.get(pid) if world else null
+		_hud.show_toast(Social.challenge(_last_wave, me.kills if me else 0)))
 	_controls = TouchControls.new()
 	ui.add_child(_controls)
 	_controls.pause_requested.connect(_toggle_pause)
@@ -180,6 +184,12 @@ func _process(delta: float) -> void:
 			_on_player_ready()
 			print("[game] online: joined zone %d as entity %d (%s)" % [nw.zone_id, pid, "infection" if nw.mode == 1 else "zombies"])
 			_sync_voice_buttons()
+			if Net.joined_friend == 1:
+				print("[game] invite: joined %s's game" % Net.joined_friend_name)
+				_hud.show_toast("You joined %s's squad" % Net.joined_friend_name, 4.0)
+			elif Net.joined_friend == 2:
+				_hud.show_toast("Your friend's game was full or over: here is a new one", 4.0)
+			Net.joined_friend = 0
 			if Platform.query_param("voice") == "1":  # browser tests: talk right away
 				Net.set_voice_mic(true)
 		return
@@ -573,6 +583,7 @@ func _on_event(e: Dictionary) -> void:
 			_controls.enabled = false
 			_controls.release_all()
 			Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+			_last_wave = int(e.wave)
 			_hud.show_game_over(int(e.wave), world.players[pid], world.scores())
 	_hud.on_event(e, pid)
 
@@ -730,6 +741,7 @@ func _toggle_pause() -> void:
 		_hud.add_child(_pause_menu)
 		_pause_menu.resume.connect(_toggle_pause)
 		_pause_menu.quit.connect(_to_menu)
+		_pause_menu.invite.connect(func(): _hud.show_toast(Social.invite()))
 	elif _pause_menu:
 		_pause_menu.queue_free()
 		_pause_menu = null

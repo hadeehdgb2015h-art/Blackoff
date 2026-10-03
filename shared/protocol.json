@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "protocolVersion": 7,
+  "protocolVersion": 8,
   "endianness": "little",
   "frame": "u8 messageId followed by fields in declared order; one message per WebSocket binary frame. Decoders reject unknown ids, short frames and trailing bytes.",
   "primitives": {
@@ -112,7 +112,7 @@
         "id": 1,
         "fields": [["protocolVersion", "u16"], ["initData", "str16"], ["resumeToken", "str8"]]
       },
-      "quickPlay": {"id": 2, "fields": [["mode", "u8"]]},
+      "quickPlay": {"id": 2, "fields": [["mode", "u8"], ["friend", "str8"]]},
       "input": {
         "id": 3,
         "fields": [
@@ -146,12 +146,14 @@
           ["weekKills", "u32"],
           ["weekRank", "u16"],
           ["tonPerKill", "u32"],
-          ["voice", "bool"]
+          ["voice", "bool"],
+          ["inviteCode", "str8"],
+          ["botUsername", "str8"]
         ]
       },
       "zoneJoined": {
         "id": 65,
-        "fields": [["zoneId", "u32"], ["mapId", "str8"], ["entityId", "u16"], ["mode", "u8"]]
+        "fields": [["zoneId", "u32"], ["mapId", "str8"], ["entityId", "u16"], ["mode", "u8"], ["friend", "u8"], ["friendName", "str8"]]
       },
       "snapshot": {
         "id": 66,

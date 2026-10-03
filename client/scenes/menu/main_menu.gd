@@ -5,6 +5,8 @@ extends Control
 ## ?autostart=1 jumps straight into solo practice (browser smoke test with
 ## ?bot=1); with ?server=… or ?online=1 it starts quick play online instead.
 ## ?screen=layout|settings|howto|hunt opens that screen at once (screenshot tests).
+## Opened from a friend's invite (t.me/<bot>?startapp=sq<code>, or ?startapp= in
+## a browser with ?server=) it goes straight into that friend's game.
 
 const GAME := "res://scenes/game/game.tscn"
 const MAP_PATH := "res://scenes/maps/facility_01.tscn"
@@ -17,6 +19,8 @@ var _play: Button
 var _play_inf: Button
 var _overlay: Control
 var _board_button: Button
+var _invite: Button
+static var _invite_checked := false  ## the launch link's invite is honoured once per session
 var _content: Control   ## everything but the backdrop, inset from the host's buttons (Telegram)
 
 
@@ -72,6 +76,15 @@ func _ready() -> void:
 		MapCache.prepare(MAP_PATH)
 		_prewarm()
 		cover.queue_free()
+	# opened from a friend's invite link: straight into their game, once per session
+	if not _invite_checked and Net.take_launch_invite():
+		_invite_checked = true
+		if Net.is_online_available() and (Platform.is_telegram or Platform.query_param("server") != ""):
+			Net.online_requested = true
+			Platform.request_fullscreen()
+			_enter("JOINING YOUR FRIEND")
+			return
+	_invite_checked = true
 	if Platform.query_param("autostart") == "1":
 		var online := Platform.query_param("server") != "" or Platform.query_param("online") == "1"
 		var inf := Platform.query_param("mode") == "infection"
@@ -207,6 +220,12 @@ func _build_profile_card() -> void:
 	_profile_hint = UiTheme.label("", 15, UiTheme.MUTED)
 	_profile_hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	v.add_child(_profile_hint)
+	_invite = UiTheme.gold_button("INVITE FRIENDS", func():
+		var note := Social.invite()
+		if note != "":
+			_profile_hint.text = note)
+	_invite.visible = false
+	v.add_child(_invite)
 
 
 func _build_footer() -> void:
@@ -281,6 +300,7 @@ func _show_profile() -> void:
 		ton += "   ·   this week #%d with %d kills" % [p.weekRank, p.weekKills]
 	_profile_hint.text = ton if Net.ton_per_kill > 0 else "Online and ready."
 	_board_button.disabled = false
+	_invite.visible = Social.can_invite()
 
 
 # ------------------------------------------------------------------ actions

@@ -144,6 +144,12 @@ jobs:
           # the web export joins too (WebSocket from the browser)
           export NODE_PATH=/tmp/smoke/node_modules SMOKE_DPR=0.5
           SMOKE_EXPECT="[game] online: joined" node tools/smoke_web.cjs build/web build/online.png "?autostart=1&bot=1&server=ws://127.0.0.1:8799/ws&name=WebBot" 20
+          # an invite link: a Node host starts a game; the browser opens ?startapp=sq<code>
+          # (what t.me/<bot>?startapp= hands the Mini App) and must land in that game
+          (cd server && npx tsx tools/inviteHost.ts ws://127.0.0.1:8799/ws InviteHost 40 > /tmp/invitehost.json 2>&1 &)
+          for i in $(seq 1 40); do grep -q inviteCode /tmp/invitehost.json && break; sleep 0.5; done
+          CODE=$(python3 -c "import json; print(json.loads(open('/tmp/invitehost.json').readline())['inviteCode'])")
+          SMOKE_EXPECT="[game] invite: joined InviteHost's game" node tools/smoke_web.cjs build/web build/invite.png "?bot=1&server=ws://127.0.0.1:8799/ws&name=InviteGuest&startapp=sq$CODE" 12
           # voice chat on a fresh server (its own zone): the browser talks through a fake
           # microphone, a Node bot talks back; both must hear each other
           (cd server && ALLOW_DEV_AUTH=1 PORT=8798 node dist/index.js > /tmp/server-voice.log 2>&1 &)

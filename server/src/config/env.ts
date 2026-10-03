@@ -16,6 +16,8 @@ const EnvSchema = z.object({
   CLIENT_DIST_DIR: z.string().optional(),
   DATABASE_URL: z.string().optional(),
   TELEGRAM_BOT_TOKEN: z.string().optional(),
+  /** The bot's @username for invite links (t.me/<bot>?startapp=...). Unset: asked from Telegram (getMe) at start. */
+  TELEGRAM_BOT_USERNAME: z.string().regex(/^[A-Za-z0-9_]{0,64}$/).default(""),
   TELEGRAM_INIT_DATA_MAX_AGE_SEC: z.coerce.number().int().positive().default(86400),
   ALLOW_DEV_AUTH: z
     .enum(["0", "1", "true", "false"])

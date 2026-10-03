@@ -1,9 +1,11 @@
 class_name PauseMenu
 extends Control
-## Pause overlay for solo practice (online play will not pause the zone).
+## Pause overlay (online play does not pause the zone). Online it also offers
+## the squad invite.
 
 signal resume
 signal quit
+signal invite  ## online: share the squad invite link
 
 var _box: VBoxContainer
 
@@ -25,6 +27,8 @@ func _ready() -> void:
 	panel.add_child(_box)
 	_box.add_child(UiTheme.label("PAUSED", 36, UiTheme.ACCENT))
 	_box.add_child(UiTheme.button("Resume", func(): resume.emit()))
+	if Social.can_invite():
+		_box.add_child(UiTheme.gold_button("Invite friends", func(): invite.emit()))
 	_box.add_child(UiTheme.button("Settings", _open_settings))
 	_box.add_child(UiTheme.button("Quit to menu", func(): quit.emit()))
 

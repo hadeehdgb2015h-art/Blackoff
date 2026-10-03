@@ -145,6 +145,24 @@ func request_fullscreen() -> void:
 		_js("window.BlackoffTG && window.BlackoffTG.enterFullscreen()")
 
 
+## The invite parameter of a t.me/<bot>?startapp=... link ("" when none).
+## Also ?startapp= in a plain browser (tests).
+func start_param() -> String:
+	if not is_web:
+		return OS.get_environment("BLACKOFF_STARTAPP")
+	var v: Variant = _js("window.BlackoffTG ? window.BlackoffTG.startParam() : ''")
+	return str(v) if v != null else ""
+
+
+## Opens a share sheet for a link with a message: Telegram's chat picker in the
+## Mini App. Returns "telegram", "system", "copied" or "none".
+func share(url: String, text: String) -> String:
+	if not is_web:
+		return "none"
+	var v: Variant = _js("window.BlackoffTG ? window.BlackoffTG.share(%s, %s) : 'none'" % [JSON.stringify(url), JSON.stringify(text)])
+	return str(v) if v != null else "none"
+
+
 func haptic(kind: String = "light") -> void:
 	if is_telegram:
 		_js("window.BlackoffTG.haptic('%s')" % kind.replace("'", ""))

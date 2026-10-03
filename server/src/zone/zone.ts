@@ -56,6 +56,10 @@ const MAX_QUEUE = 4;
 const LATCH = Btn.FIRE_PRESSED | Btn.RELOAD | Btn.INTERACT | Btn.SWITCH | Btn.REVIVE;
 const EV: Record<string, number> = {};
 
+/** How an invite turned out for the player joining (zoneJoined.friend / friendName). */
+export interface FriendJoin { status: 0 | 1 | 2; name: string }
+export const NO_FRIEND: FriendJoin = { status: 0, name: "" };
+
 export class Zone {
   readonly world: SimWorld;
   readonly members = new Map<number, Member>();
@@ -94,7 +98,8 @@ export class Zone {
   /** Members holding a slot (connected or within the reconnect grace). */
   get size(): number { return this.members.size; }
 
-  join(client: ZoneClient, accountId: string, now = performance.now()): Member {
+  /** `friend`: 1 = joined a friend's game through an invite, 2 = the invite could not be honoured. */
+  join(client: ZoneClient, accountId: string, now = performance.now(), friend: FriendJoin = NO_FRIEND): Member {
     const entityId = this.world.addPlayer(client.displayName);
     const m: Member = {
       entityId, name: client.displayName, accountId, client, disconnectedAt: 0,
@@ -103,7 +108,7 @@ export class Zone {
     this.members.set(entityId, m);
     this.peakPlayers = Math.max(this.peakPlayers, this.members.size);
     this.emptySince = null;
-    this.welcomeMember(m);
+    this.welcomeMember(m, friend);
     return m;
   }
 
@@ -201,8 +206,8 @@ export class Zone {
 
   // ------------------------------------------------------------------ output
 
-  private welcomeMember(m: Member): void {
-    this.sendTo(m, "zoneJoined", { zoneId: this.id, mapId: this.mapId, entityId: m.entityId, mode: this.mode });
+  private welcomeMember(m: Member, friend: FriendJoin = NO_FRIEND): void {
+    this.sendTo(m, "zoneJoined", { zoneId: this.id, mapId: this.mapId, entityId: m.entityId, mode: this.mode, friend: friend.status, friendName: friend.name.slice(0, 32) });
     this.broadcastRoster();
   }
 
