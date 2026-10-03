@@ -13,7 +13,7 @@ const TURN_RATE = 8.0;
 export class ZombieSystem {
   constructor(private readonly w: SimWorld) {}
 
-  spawn(type: string, wave: number): boolean {
+  spawn(type: string, wave: number, hpMul = 1): boolean {
     const w = this.w;
     const entries = w.rng.shuffle([...w.map.zombieEntries]);
     let chosen = null;
@@ -31,7 +31,7 @@ export class ZombieSystem {
     z.pos = { x: chosen.pos.x + w.rng.range(-0.3, 0.3), y: chosen.pos.y + w.rng.range(-0.3, 0.3) };
     z.prevPos = { ...z.pos };
     z.yaw = yawTo(chosen.pos, chosen.inside);
-    z.maxHp = WaveDirector.healthFor(def, wave);
+    z.maxHp = WaveDirector.healthFor(def, wave) * hpMul;
     z.hp = z.maxHp;
     z.speed = WaveDirector.speedFor(def, wave) * w.rng.range(0.92, 1.08);
     z.nextRepathTime = w.time + w.rng.range(0, 0.3);

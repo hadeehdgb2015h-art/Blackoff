@@ -333,3 +333,28 @@ describe("revive and respawn", () => {
     expect(w.zoneState).toBe(ZoneState.GAME_OVER);
   });
 });
+
+describe("boss waves (phase 20)", () => {
+  it("every fifth wave adds the Warden after its delay, with health scaled by players", () => {
+    const c = defs().waves;
+    expect([1, 4, 5, 6, 10].map((n) => WaveDirector.bossesFor(c, n))).toEqual([0, 0, 1, 0, 1]);
+    expect(WaveDirector.bossHealthMul(c, 1)).toBe(1);
+    expect(WaveDirector.bossHealthMul(c, 3)).toBeCloseTo(1 + 2 * c.boss.healthPerExtraPlayer, 6);
+
+    const w = world(7);
+    w.addPlayer("a");
+    w.addPlayer("b");
+    w.director.wave = 4;
+    w.director.phaseEnd = w.time; // wave 5 starts on the next step
+    w.step();
+    expect(w.director.wave).toBe(5);
+    expect(w.director.toSpawn).toBe(WaveDirector.countFor(c, 5, 2) + 1);
+    const bossOf = () => [...w.zombies.values()].find((z) => z.type === c.boss.type);
+    expect(bossOf()).toBeUndefined();
+    for (let i = 0; i < Math.ceil(c.boss.delaySec * 20) + 2; i++) w.step();
+    const boss = bossOf()!;
+    expect(boss).toBeDefined();
+    expect(boss.maxHp).toBeCloseTo(WaveDirector.healthFor(defs().zombies.boss!, 5) * WaveDirector.bossHealthMul(c, 2), 6);
+    expect(w.director.bossLeft).toBe(0);
+  });
+});

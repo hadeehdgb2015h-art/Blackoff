@@ -1,6 +1,12 @@
 /** Minimal protocol client for integration tests and the load-test bots. */
 import WebSocket from "ws";
+import fs from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 import { Codec, type Msg } from "../src/net/codec.js";
+
+/** The protocol version in shared/protocol.json (tests speak the current one). */
+const PROTOCOL_VERSION = (JSON.parse(fs.readFileSync(path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../shared/protocol.json"), "utf8")) as { protocolVersion: number }).protocolVersion;
 
 export class TestClient {
   readonly inbox: { name: string; msg: Msg }[] = [];
@@ -32,7 +38,7 @@ export class TestClient {
     this.ws.send(this.codec.encode("C2S", name, msg));
   }
 
-  hello(initData: string, resumeToken = "", protocolVersion = 8): void {
+  hello(initData: string, resumeToken = "", protocolVersion = PROTOCOL_VERSION): void {
     this.send("hello", { protocolVersion, initData, resumeToken });
   }
 

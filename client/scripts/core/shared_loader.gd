@@ -51,6 +51,9 @@ static func _cross_check(d: Dictionary, errors: PackedStringArray) -> void:
 		errors.append("protocol version mismatch between constants and protocol")
 	if not d["maps"].has(c.maps.default):
 		errors.append("default map '%s' missing from shared/maps" % c.maps.default)
+	var boss: Dictionary = d["waves"].get("boss", {})
+	if boss.is_empty() or not d["zombies"].has(str(boss.get("type", ""))):
+		errors.append("waves.boss missing or names an unknown zombie")
 	for entry in d["waves"].get("mix", []):
 		for zid in entry.get("weights", {}).keys():
 			if not d["zombies"].has(zid):

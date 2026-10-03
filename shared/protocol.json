@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "protocolVersion": 8,
+  "protocolVersion": 9,
   "endianness": "little",
   "frame": "u8 messageId followed by fields in declared order; one message per WebSocket binary frame. Decoders reject unknown ids, short frames and trailing bytes.",
   "primitives": {

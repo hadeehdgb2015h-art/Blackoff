@@ -4,6 +4,7 @@
   "intermissionSec": 12,
   "count": {"base": 6, "perWave": 3, "perExtraPlayer": 0.6, "exponent": 1.08, "max": 400},
   "spawnIntervalSec": {"start": 2.0, "perWave": -0.08, "min": 0.4},
+  "boss": {"everyWaves": 5, "type": "boss", "count": 1, "delaySec": 6, "healthPerExtraPlayer": 0.75},
   "mix": [
     {"fromWave": 1, "weights": {"walker": 1.0}},
     {"fromWave": 3, "weights": {"walker": 0.85, "runner": 0.15}},

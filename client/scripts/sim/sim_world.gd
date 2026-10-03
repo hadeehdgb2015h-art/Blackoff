@@ -174,7 +174,9 @@ func _update_director() -> void:
 			if time >= d.phase_end:
 				d.wave += 1
 				d.phase = WaveDirector.Phase.WAVE
-				d.to_spawn = WaveDirector.count_for(defs.waves, d.wave, players.size())
+				d.boss_left = WaveDirector.bosses_for(defs.waves, d.wave)
+				d.boss_at = time + float(defs.waves.boss.delaySec)
+				d.to_spawn = WaveDirector.count_for(defs.waves, d.wave, players.size()) + d.boss_left
 				d.spawned = 0
 				d.killed = 0
 				d.next_spawn_time = time
@@ -184,7 +186,11 @@ func _update_director() -> void:
 		WaveDirector.Phase.WAVE:
 			zone_state = ZoneState.WAVE
 			var cap := int(constants.zone.maxAliveZombies)
-			if d.spawned < d.to_spawn and time >= d.next_spawn_time and zombies.size() < cap:
+			if d.boss_left > 0 and time >= d.boss_at and zombies.size() < cap:
+				if zombie_sys.spawn(str(defs.waves.boss.type), d.wave, WaveDirector.boss_health_mul(defs.waves, players.size())):
+					d.boss_left -= 1
+					d.spawned += 1
+			elif d.spawned + d.boss_left < d.to_spawn and time >= d.next_spawn_time and zombies.size() < cap:
 				if zombie_sys.spawn(WaveDirector.pick_type(defs.waves, d.wave, rng), d.wave):
 					d.spawned += 1
 					d.next_spawn_time = time + WaveDirector.spawn_interval_for(defs.waves, d.wave)

@@ -14,6 +14,9 @@ export class WaveDirector {
   spawned = 0;
   killed = 0;
   nextSpawnTime = 0;
+  /** Boss zombies still to come this wave (part of toSpawn) and when they come. */
+  bossLeft = 0;
+  bossAt = 0;
 
   constructor(readonly cfg: WavesDef) {}
 
@@ -30,6 +33,16 @@ export class WaveDirector {
     const raw = Math.pow(cc.base + cc.perWave * (wave - 1), cc.exponent);
     const scaled = raw * (1 + cc.perExtraPlayer * Math.max(0, players - 1));
     return Math.min(cc.max, Math.max(1, roundHalfAway(scaled)));
+  }
+
+  /** Boss zombies in this wave (every `boss.everyWaves`-th wave). */
+  static bossesFor(c: WavesDef, wave: number): number {
+    return wave > 0 && wave % c.boss.everyWaves === 0 ? c.boss.count : 0;
+  }
+
+  /** A boss's health multiplier: it scales with the players in the zone. */
+  static bossHealthMul(c: WavesDef, players: number): number {
+    return 1 + c.boss.healthPerExtraPlayer * Math.max(0, players - 1);
   }
 
   static spawnIntervalFor(c: WavesDef, wave: number): number {

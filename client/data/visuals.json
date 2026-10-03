@@ -1,236 +1,250 @@
 {
-  "schemaVersion": 1,
-  "_comment": "Client-only presentation data. 'model' is the art integration point (res:// .glb/.tscn); empty = procedural placeholder. Zombie models need an AnimationPlayer with idle, walk/run, attack (strike at 13/30 s), hit, death.",
-  "weapons": {
-    "pistol": {
-      "model": "res://assets/models/vm_pistol.glb",
-      "shape": "pistol",
-      "body": "#43474c",
-      "accent": "#7a8086",
-      "glove": "#1c1d1f",
-      "offset": [
-        0.17,
-        -0.15,
-        -0.33
-      ],
-      "muzzle": [
-        0.0,
-        0.035,
-        -0.2
-      ],
-      "recoilKick": 0.05,
-      "recoilPitch": 0.035,
-      "sound": "pistol_shot"
-    },
-    "rifle": {
-      "model": "res://assets/models/vm_rifle.glb",
-      "shape": "rifle",
-      "body": "#3c4245",
-      "accent": "#5f7060",
-      "glove": "#1c1d1f",
-      "offset": [
-        0.16,
-        -0.15,
-        -0.3
-      ],
-      "muzzle": [
-        0.0,
-        0.03,
-        -0.5
-      ],
-      "recoilKick": 0.035,
-      "recoilPitch": 0.02,
-      "sound": "rifle_shot"
-    },
-    "shotgun": {
-      "model": "res://assets/models/vm_shotgun.glb",
-      "shape": "shotgun",
-      "body": "#3a3530",
-      "accent": "#5a4632",
-      "glove": "#1c1d1f",
-      "offset": [
-        0.16,
-        -0.15,
-        -0.3
-      ],
-      "muzzle": [
-        0.0,
-        0.03,
-        -0.55
-      ],
-      "recoilKick": 0.09,
-      "recoilPitch": 0.06,
-      "sound": "shotgun_shot"
+ "schemaVersion": 1,
+ "_comment": "Client-only presentation data. 'model' is the art integration point (res:// .glb/.tscn); empty = procedural placeholder. Zombie models need an AnimationPlayer with idle, walk/run, attack (strike at 13/30 s), hit, death.",
+ "weapons": {
+  "pistol": {
+   "model": "res://assets/models/vm_pistol.glb",
+   "shape": "pistol",
+   "body": "#43474c",
+   "accent": "#7a8086",
+   "glove": "#1c1d1f",
+   "offset": [
+    0.17,
+    -0.15,
+    -0.33
+   ],
+   "muzzle": [
+    0.0,
+    0.035,
+    -0.2
+   ],
+   "recoilKick": 0.05,
+   "recoilPitch": 0.035,
+   "sound": "pistol_shot"
+  },
+  "rifle": {
+   "model": "res://assets/models/vm_rifle.glb",
+   "shape": "rifle",
+   "body": "#3c4245",
+   "accent": "#5f7060",
+   "glove": "#1c1d1f",
+   "offset": [
+    0.16,
+    -0.15,
+    -0.3
+   ],
+   "muzzle": [
+    0.0,
+    0.03,
+    -0.5
+   ],
+   "recoilKick": 0.035,
+   "recoilPitch": 0.02,
+   "sound": "rifle_shot"
+  },
+  "shotgun": {
+   "model": "res://assets/models/vm_shotgun.glb",
+   "shape": "shotgun",
+   "body": "#3a3530",
+   "accent": "#5a4632",
+   "glove": "#1c1d1f",
+   "offset": [
+    0.16,
+    -0.15,
+    -0.3
+   ],
+   "muzzle": [
+    0.0,
+    0.03,
+    -0.55
+   ],
+   "recoilKick": 0.09,
+   "recoilPitch": 0.06,
+   "sound": "shotgun_shot"
+  },
+  "smg": {
+   "model": "res://assets/models/vm_smg.glb",
+   "shape": "smg",
+   "body": "#33373b",
+   "accent": "#55595e",
+   "glove": "#1c1d1f",
+   "offset": [
+    0.15,
+    -0.14,
+    -0.3
+   ],
+   "muzzle": [
+    0.0,
+    0.03,
+    -0.36
+   ],
+   "recoilKick": 0.025,
+   "recoilPitch": 0.012,
+   "sound": "smg_shot"
+  },
+  "lmg": {
+   "model": "res://assets/models/vm_lmg.glb",
+   "shape": "rifle",
+   "body": "#2e3134",
+   "accent": "#4a5a4c",
+   "glove": "#1c1d1f",
+   "offset": [
+    0.16,
+    -0.15,
+    -0.3
+   ],
+   "muzzle": [
+    0.0,
+    0.03,
+    -0.55
+   ],
+   "recoilKick": 0.04,
+   "recoilPitch": 0.025,
+   "sound": "lmg_shot"
+  },
+  "sniper": {
+   "model": "res://assets/models/vm_sniper.glb",
+   "shape": "rifle",
+   "body": "#3a3b36",
+   "accent": "#6b5c3f",
+   "glove": "#1c1d1f",
+   "offset": [
+    0.16,
+    -0.15,
+    -0.3
+   ],
+   "muzzle": [
+    0.0,
+    0.03,
+    -0.7
+   ],
+   "recoilKick": 0.11,
+   "recoilPitch": 0.08,
+   "sound": "sniper_shot"
+  },
+  "arc": {
+   "model": "res://assets/models/vm_arc.glb",
+   "shape": "arc",
+   "body": "#2a2f3a",
+   "accent": "#55c8ff",
+   "glove": "#1c1d1f",
+   "offset": [
+    0.16,
+    -0.15,
+    -0.3
+   ],
+   "muzzle": [
+    0.0,
+    0.03,
+    -0.5
+   ],
+   "recoilKick": 0.05,
+   "recoilPitch": 0.03,
+   "sound": "arc_shot",
+   "fx": "bolt",
+   "tracer": "#7fe3ff"
+  },
+  "gale": {
+   "model": "res://assets/models/vm_gale.glb",
+   "shape": "gale",
+   "body": "#3b3a33",
+   "accent": "#b8a06a",
+   "glove": "#1c1d1f",
+   "offset": [
+    0.16,
+    -0.15,
+    -0.3
+   ],
+   "muzzle": [
+    0.0,
+    0.03,
+    -0.5
+   ],
+   "recoilKick": 0.14,
+   "recoilPitch": 0.1,
+   "sound": "gale_shot",
+   "fx": "blast"
+  }
+ },
+ "zombies": {
+  "walker": {
+   "model": "res://assets/models/zombie_walker.glb",
+   "skin": "#76806a",
+   "cloth": "#3b3f46",
+   "eyes": "#c27dff",
+   "scale": 1.0,
+   "lean": 0.05,
+   "sway": 0.09,
+   "locomotion": "walk",
+   "locoSpeed": 1.2
+  },
+  "runner": {
+   "model": "res://assets/models/zombie_runner.glb",
+   "skin": "#8c7466",
+   "cloth": "#5e2620",
+   "eyes": "#ff57d4",
+   "scale": 0.95,
+   "lean": 0.3,
+   "sway": 0.16,
+   "locomotion": "run",
+   "locoSpeed": 3.8
+  },
+  "boss": {
+   "model": "res://assets/models/zombie_walker.glb",
+   "skin": "#5a3a34",
+   "cloth": "#1e1416",
+   "eyes": "#ff2a14",
+   "scale": 1.7,
+   "modelScale": 1.72,
+   "tint": "#b0544a",
+   "lean": 0.12,
+   "sway": 0.05,
+   "locomotion": "walk",
+   "locoSpeed": 1.0,
+   "bossName": "THE WARDEN"
+  }
+ },
+ "players": {
+  "soldier": {
+   "model": "res://assets/models/soldier.glb",
+   "runSpeed": 3.8,
+   "_holds": "Weapon placement per hold class, Godot space relative to the player (Root of the weapon model reset = trigger grip). Must match HOLDS in art/blender/build_soldier.py (Blender x,y,z -> Godot x,z,-y).",
+   "holds": {
+    "long": {
+     "pos": [
+      0.17,
+      1.33,
+      -0.31
+     ],
+     "scale": 0.85
     },
     "smg": {
-      "model": "res://assets/models/vm_smg.glb",
-      "shape": "smg",
-      "body": "#33373b",
-      "accent": "#55595e",
-      "glove": "#1c1d1f",
-      "offset": [
-        0.15,
-        -0.14,
-        -0.3
-      ],
-      "muzzle": [
-        0.0,
-        0.03,
-        -0.36
-      ],
-      "recoilKick": 0.025,
-      "recoilPitch": 0.012,
-      "sound": "smg_shot"
+     "pos": [
+      0.16,
+      1.32,
+      -0.3
+     ],
+     "scale": 0.9
     },
-    "lmg": {
-      "model": "res://assets/models/vm_lmg.glb",
-      "shape": "rifle",
-      "body": "#2e3134",
-      "accent": "#4a5a4c",
-      "glove": "#1c1d1f",
-      "offset": [
-        0.16,
-        -0.15,
-        -0.3
-      ],
-      "muzzle": [
-        0.0,
-        0.03,
-        -0.55
-      ],
-      "recoilKick": 0.04,
-      "recoilPitch": 0.025,
-      "sound": "lmg_shot"
-    },
-    "sniper": {
-      "model": "res://assets/models/vm_sniper.glb",
-      "shape": "rifle",
-      "body": "#3a3b36",
-      "accent": "#6b5c3f",
-      "glove": "#1c1d1f",
-      "offset": [
-        0.16,
-        -0.15,
-        -0.3
-      ],
-      "muzzle": [
-        0.0,
-        0.03,
-        -0.7
-      ],
-      "recoilKick": 0.11,
-      "recoilPitch": 0.08,
-      "sound": "sniper_shot"
-    },
-    "arc": {
-      "model": "res://assets/models/vm_arc.glb",
-      "shape": "arc",
-      "body": "#2a2f3a",
-      "accent": "#55c8ff",
-      "glove": "#1c1d1f",
-      "offset": [
-        0.16,
-        -0.15,
-        -0.3
-      ],
-      "muzzle": [
-        0.0,
-        0.03,
-        -0.5
-      ],
-      "recoilKick": 0.05,
-      "recoilPitch": 0.03,
-      "sound": "arc_shot",
-      "fx": "bolt",
-      "tracer": "#7fe3ff"
-    },
-    "gale": {
-      "model": "res://assets/models/vm_gale.glb",
-      "shape": "gale",
-      "body": "#3b3a33",
-      "accent": "#b8a06a",
-      "glove": "#1c1d1f",
-      "offset": [
-        0.16,
-        -0.15,
-        -0.3
-      ],
-      "muzzle": [
-        0.0,
-        0.03,
-        -0.5
-      ],
-      "recoilKick": 0.14,
-      "recoilPitch": 0.1,
-      "sound": "gale_shot",
-      "fx": "blast"
+    "pistol": {
+     "pos": [
+      0.06,
+      1.34,
+      -0.42
+     ],
+     "scale": 0.95
     }
-  },
-  "zombies": {
-    "walker": {
-      "model": "res://assets/models/zombie_walker.glb",
-      "skin": "#76806a",
-      "cloth": "#3b3f46",
-      "eyes": "#c27dff",
-      "scale": 1.0,
-      "lean": 0.05,
-      "sway": 0.09,
-      "locomotion": "walk",
-      "locoSpeed": 1.2
-    },
-    "runner": {
-      "model": "res://assets/models/zombie_runner.glb",
-      "skin": "#8c7466",
-      "cloth": "#5e2620",
-      "eyes": "#ff57d4",
-      "scale": 0.95,
-      "lean": 0.3,
-      "sway": 0.16,
-      "locomotion": "run",
-      "locoSpeed": 3.8
-    }
-  },
-  "players": {
-    "soldier": {
-      "model": "res://assets/models/soldier.glb",
-      "runSpeed": 3.8,
-      "_holds": "Weapon placement per hold class, Godot space relative to the player (Root of the weapon model reset = trigger grip). Must match HOLDS in art/blender/build_soldier.py (Blender x,y,z -> Godot x,z,-y).",
-      "holds": {
-        "long": {
-          "pos": [
-            0.17,
-            1.33,
-            -0.31
-          ],
-          "scale": 0.85
-        },
-        "smg": {
-          "pos": [
-            0.16,
-            1.32,
-            -0.3
-          ],
-          "scale": 0.9
-        },
-        "pistol": {
-          "pos": [
-            0.06,
-            1.34,
-            -0.42
-          ],
-          "scale": 0.95
-        }
-      },
-      "weaponHold": {
-        "pistol": "pistol",
-        "smg": "smg",
-        "rifle": "long",
-        "shotgun": "long",
-        "lmg": "long",
-        "sniper": "long",
-        "arc": "long",
-        "gale": "long"
-      }
-    }
+   },
+   "weaponHold": {
+    "pistol": "pistol",
+    "smg": "smg",
+    "rifle": "long",
+    "shotgun": "long",
+    "lmg": "long",
+    "sniper": "long",
+    "arc": "long",
+    "gale": "long"
+   }
   }
+ }
 }

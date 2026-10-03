@@ -36,6 +36,24 @@
       "headRadius": 0.15,
       "killReward": 80,
       "xp": 15
+    },
+    "boss": {
+      "displayName": "The Warden",
+      "baseHealth": 2400,
+      "healthPerWave": 220,
+      "moveSpeed": 1.7,
+      "moveSpeedPerWave": 0.02,
+      "maxMoveSpeed": 2.3,
+      "attackDamage": 55,
+      "attackRange": 1.6,
+      "attackCooldownSec": 1.5,
+      "attackWindupSec": 0.65,
+      "radius": 0.5,
+      "height": 3.1,
+      "headCenterHeight": 2.78,
+      "headRadius": 0.28,
+      "killReward": 1500,
+      "xp": 200
     }
   }
 }

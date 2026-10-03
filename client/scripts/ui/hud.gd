@@ -52,6 +52,10 @@ var _fps_t: float = 0.0
 var _world: SimWorld
 var _banner_t: float = 0.0
 var _callout: Label
+var _boss_box: VBoxContainer   ## the boss's name and health bar, top centre, while one is alive
+var _boss_name: Label
+var _boss_fill: ColorRect
+var _boss_back: ColorRect
 var _callout_t: float = 0.0
 var _streak: int = 0
 var _streak_last: float = -100.0
@@ -216,6 +220,7 @@ func _ready() -> void:
 	_banner = _centered(56, UiTheme.ACCENT, -120, true)
 	_banner.add_theme_font_override("font", UiTheme.display_font())
 	_toast = _centered(24, Color(1, 0.55, 0.45), 200)
+	_build_boss_bar()
 	_callout = _centered(44, UiTheme.GOLD, -200, true)
 	_callout.add_theme_font_override("font", UiTheme.display_font())
 	_callout.add_theme_constant_override("outline_size", 8)
@@ -280,6 +285,7 @@ func _apply_safe_area() -> void:
 
 func update_state(p: SimPlayer, w: SimWorld, interact: Dictionary, delta: float) -> void:
 	_world = w
+	_update_boss_bar(w)
 	var hp_k := clampf(p.hp / p.max_hp, 0.0, 1.0)
 	_hp_bar.size.x = 294.0 * hp_k
 	_hp_bar.color = Color(0.85, 0.85, 0.82) if hp_k > 0.35 else UiTheme.ACCENT
@@ -619,6 +625,50 @@ func _centered(size: int, color: Color, y_from_center: float, from_middle := fal
 	l.offset_bottom = y_from_center + size * 2.6
 	add_child(l)
 	return l
+
+
+func _build_boss_bar() -> void:
+	_boss_box = VBoxContainer.new()
+	_boss_box.set_anchors_and_offsets_preset(Control.PRESET_CENTER_TOP)
+	_boss_box.offset_left = -270
+	_boss_box.offset_right = 270
+	_boss_box.offset_top = 112
+	_boss_box.add_theme_constant_override("separation", 4)
+	_boss_box.visible = false
+	add_child(_boss_box)
+	_boss_name = UiTheme.label("", 22, Color(1.0, 0.42, 0.34))
+	_boss_name.add_theme_font_override("font", UiTheme.display_font())
+	_boss_name.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_boss_box.add_child(_boss_name)
+	_boss_back = ColorRect.new()
+	_boss_back.color = Color(0.05, 0.02, 0.02, 0.85)
+	_boss_back.custom_minimum_size = Vector2(540, 14)
+	_boss_box.add_child(_boss_back)
+	_boss_fill = ColorRect.new()
+	_boss_fill.color = Color(0.78, 0.08, 0.06)
+	_boss_fill.size = Vector2(540, 14)
+	_boss_back.add_child(_boss_fill)
+
+
+## Shows the strongest living boss's health (or hides the bar).
+func _update_boss_bar(w: SimWorld) -> void:
+	var boss: SimZombie = null
+	for z in w.zombies.values():
+		if Visuals.zombie(z.type).has("bossName") and (boss == null or z.hp > boss.hp):
+			boss = z
+	_boss_box.visible = boss != null
+	if boss:
+		_boss_name.text = str(Visuals.zombie(boss.type).bossName)
+		_boss_fill.size.x = 540.0 * clampf(boss.hp / maxf(1.0, boss.max_hp), 0.0, 1.0)
+
+
+## A boss has come: a banner and a call-out.
+func boss_arrived(boss_name: String) -> void:
+	_show_banner("%s HAS RISEN" % boss_name)
+
+
+func boss_fell(boss_name: String) -> void:
+	_show_banner("%s FALLS" % boss_name)
 
 
 func _build_game_over() -> void:

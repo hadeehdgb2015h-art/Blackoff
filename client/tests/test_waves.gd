@@ -32,3 +32,28 @@ func test_alive_cap_and_progression() -> void:
 	check(max_alive <= int(defs().constants.zone.maxAliveZombies), "alive cap respected")
 	eq(waves_seen, 1, "wave 1 never clears without kills")
 	check(w.director.spawned == w.director.to_spawn, "all of wave 1 spawned")
+
+
+func test_boss_every_fifth_wave() -> void:
+	var c: Dictionary = defs().waves
+	eq(WaveDirector.bosses_for(c, 4), 0, "no boss on wave 4")
+	eq(WaveDirector.bosses_for(c, 5), int(c.boss.count), "boss on wave 5")
+	var w := SimWorld.new(defs(), "facility_01", 7)
+	var pid := w.add_player("t")
+	w.players[pid].hp = 1e9
+	w.players[pid].max_hp = 1e9
+	w.director.wave = 4
+	w.director.phase_end = w.time
+	w.set_input(pid, PlayerIntent.new())
+	w.step()
+	eq(w.director.wave, 5, "wave 5 started")
+	for i in int(ceil(float(c.boss.delaySec) * 20.0)) + 2:
+		w.set_input(pid, PlayerIntent.new())
+		w.step()
+	var boss: SimZombie = null
+	for z in w.zombies.values():
+		if z.type == str(c.boss.type):
+			boss = z
+	check(boss != null, "the Warden came after its delay")
+	if boss:
+		near(boss.max_hp, WaveDirector.health_for(defs().zombies[str(c.boss.type)], 5), 0.01, "solo boss health")

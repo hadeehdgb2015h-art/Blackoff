@@ -159,7 +159,7 @@ func _ready() -> void:
 			_controls.set_look(deg_to_rad(float(v[2])), deg_to_rad(float(v[3])) if v.size() > 3 else 0.0)
 			world.director.phase = WaveDirector.Phase.STOPPED
 	var showcase := Platform.query_param("showcase")
-	if showcase == "1":
+	if showcase == "1" or showcase == "boss":
 		_start_showcase()
 	elif showcase == "box":
 		_start_box_showcase()
@@ -449,8 +449,23 @@ func _on_event(e: Dictionary) -> void:
 			if local:
 				_sfx.play("zombie_hit", -6.0)
 				_sfx.play("hit_tick", -12.0, 0.02)
+		"zombie_spawned":
+			var bv := Visuals.zombie(str(e.get("ztype", "")))
+			if bv.has("bossName"):
+				_hud.boss_arrived(str(bv.bossName))
+				_sfx.play("zombie_groan4", 2.0, 0.0, 0.6)  # a slowed, deep roar
+				_sfx.play("thunder", -4.0, 0.0)
+				_rig.on_damage(30.0)  # the ground shakes
+				Platform.haptic("heavy")
+				print("[game] boss %s spawned (wave %d)" % [bv.bossName, world.director.wave])
 		"zombie_killed":
 			var v: ZombieView = _zviews.get(e.zid)
+			if v and v.vis.has("bossName"):
+				_hud.boss_fell(str(v.vis.bossName))
+				_sfx.play("wave_end", -2.0, 0.0, 0.8)
+				for i in 3:
+					_effects.gore(Vector3(e.pos.x + randf_range(-0.6, 0.6), 1.6, e.pos.y + randf_range(-0.6, 0.6)))
+				print("[game] boss killed")
 			if v:
 				v.on_death(e.pos, e.yaw)
 				_zviews.erase(e.zid)
@@ -678,9 +693,11 @@ func _ambient_groans(delta: float) -> void:
 ## zombie type spawned a few metres in front of the camera.
 func _start_showcase() -> void:
 	world.director.phase = WaveDirector.Phase.STOPPED
-	var spots := [Vector2(-1.1, 11.6), Vector2(1.2, 12.0)]
-	var types := ["walker", "runner"]
-	for i in 2:
+	var spots := [Vector2(-1.1, 11.6), Vector2(1.2, 12.0), Vector2(2.6, 11.4)]
+	var types := ["walker", "runner", "boss"]
+	if Platform.query_param("showcase") != "boss":
+		types.resize(2)  # ?showcase=boss adds the Warden behind them
+	for i in types.size():
 		if world.zombie_sys.spawn(types[i], 1):
 			var z: SimZombie = world.zombies.values()[world.zombies.size() - 1]
 			z.pos = spots[i]

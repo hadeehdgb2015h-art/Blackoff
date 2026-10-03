@@ -93,6 +93,8 @@ export const WavesSchema = z.object({
   intermissionSec: pos,
   count: z.object({ base: pos, perWave: pos, perExtraPlayer: pos, exponent: num.min(1), max: z.number().int().positive() }),
   spawnIntervalSec: z.object({ start: num.positive(), perWave: num, min: num.positive() }),
+  /** Every `everyWaves`-th wave adds `count` boss zombies of `type`, `delaySec` after the wave starts. */
+  boss: z.object({ everyWaves: z.number().int().positive(), type: z.string(), count: z.number().int().nonnegative(), delaySec: pos, healthPerExtraPlayer: pos }),
   mix: z
     .array(z.object({ fromWave: z.number().int().positive(), weights: z.record(z.string(), pos) }))
     .min(1),

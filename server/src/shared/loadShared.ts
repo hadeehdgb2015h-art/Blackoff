@@ -69,6 +69,7 @@ export function loadShared(dir: string): SharedData {
     }
   }
   if (waves.mix[0]?.fromWave !== 1) errors.push("waves.mix must start at fromWave 1");
+  if (!zombies[waves.boss.type]) errors.push(`waves.boss: unknown zombie '${waves.boss.type}'`);
   const ids = new Set<number>();
   for (const dirKey of ["C2S", "S2C"] as const) {
     for (const [name, m] of Object.entries(protocol.messages[dirKey])) {

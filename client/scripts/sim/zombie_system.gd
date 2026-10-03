@@ -14,7 +14,7 @@ func _init(world: SimWorld) -> void:
 	w = world
 
 
-func spawn(type: String, wave_n: int) -> bool:
+func spawn(type: String, wave_n: int, hp_mul := 1.0) -> bool:
 	var entries := w.map.zombie_entries.duplicate()
 	entries.shuffle()
 	var chosen: Dictionary = {}
@@ -38,7 +38,7 @@ func spawn(type: String, wave_n: int) -> bool:
 	z.pos = chosen.pos + Vector2(w.rng.randf_range(-0.3, 0.3), w.rng.randf_range(-0.3, 0.3))
 	z.prev_pos = z.pos
 	z.yaw = SimMath.yaw_to(chosen.pos, chosen.inside)
-	z.max_hp = WaveDirector.health_for(def, wave_n)
+	z.max_hp = WaveDirector.health_for(def, wave_n) * hp_mul
 	z.hp = z.max_hp
 	z.speed = WaveDirector.speed_for(def, wave_n) * w.rng.randf_range(0.92, 1.08)
 	z.next_repath_time = w.time + w.rng.randf_range(0.0, 0.3)

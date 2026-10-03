@@ -177,7 +177,9 @@ export class SimWorld {
       if (this.time >= d.phaseEnd) {
         d.wave += 1;
         d.phase = Phase.WAVE;
-        d.toSpawn = WaveDirector.countFor(this.defs.waves, d.wave, this.players.size);
+        d.bossLeft = WaveDirector.bossesFor(this.defs.waves, d.wave);
+        d.bossAt = this.time + this.defs.waves.boss.delaySec;
+        d.toSpawn = WaveDirector.countFor(this.defs.waves, d.wave, this.players.size) + d.bossLeft;
         d.spawned = 0;
         d.killed = 0;
         d.nextSpawnTime = this.time;
@@ -188,7 +190,13 @@ export class SimWorld {
     } else if (d.phase === Phase.WAVE) {
       this.zoneState = ZoneState.WAVE;
       const cap = this.constants.zone.maxAliveZombies;
-      if (d.spawned < d.toSpawn && this.time >= d.nextSpawnTime && this.zombies.size < cap) {
+      if (d.bossLeft > 0 && this.time >= d.bossAt && this.zombies.size < cap) {
+        const hpMul = WaveDirector.bossHealthMul(this.defs.waves, this.players.size);
+        if (this.zombieSys.spawn(this.defs.waves.boss.type, d.wave, hpMul)) {
+          d.bossLeft -= 1;
+          d.spawned += 1;
+        }
+      } else if (d.spawned + d.bossLeft < d.toSpawn && this.time >= d.nextSpawnTime && this.zombies.size < cap) {
         if (this.zombieSys.spawn(WaveDirector.pickType(this.defs.waves, d.wave, this.rng), d.wave)) {
           d.spawned += 1;
           d.nextSpawnTime = this.time + WaveDirector.spawnIntervalFor(this.defs.waves, d.wave);

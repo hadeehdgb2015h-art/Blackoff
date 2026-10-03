@@ -59,12 +59,12 @@ func _ready() -> void:
 		_started.append(0)
 
 
-func play(name: String, volume_db := 0.0, pitch_var := 0.05) -> void:
+func play(name: String, volume_db := 0.0, pitch_var := 0.05, pitch := 1.0) -> void:
 	var p: AudioStreamPlayer = _p2d.get(name)
 	if p == null:
 		return
 	p.volume_db = volume_db + Audio.sfx_offset_db()
-	p.pitch_scale = 1.0 + randf_range(-pitch_var, pitch_var)
+	p.pitch_scale = pitch + randf_range(-pitch_var, pitch_var)
 	p.play()
 
 

@@ -26,6 +26,7 @@ var _body: MeshInstance3D
 var _head: MeshInstance3D
 var _arms: Node3D
 var _model: Node3D
+var _base_overlay: Material  ## kept on the model between hit flashes (the boss's tint)
 var _anim: AnimationPlayer
 var _phase: float = 0.0
 var _speed: float = 0.0
@@ -54,6 +55,13 @@ func setup(zombie_id: int, type: String, zombie_def: Dictionary, pos: Vector2, y
 	_model = Visuals.try_model(vis.get("model", ""))
 	if _model:
 		add_child(_model)
+		# the boss reuses a zombie model: bigger, darker and redder (visuals.json)
+		_model.scale = Vector3.ONE * float(vis.get("modelScale", 1.0))
+		if vis.has("tint"):
+			_base_overlay = StandardMaterial3D.new()
+			_base_overlay.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+			_base_overlay.blend_mode = BaseMaterial3D.BLEND_MODE_MUL
+			_base_overlay.albedo_color = Color(str(vis.tint))
 		_anim = _model.find_child("AnimationPlayer", true, false) as AnimationPlayer
 		if _anim:
 			for n in LOOPING:
@@ -65,6 +73,8 @@ func setup(zombie_id: int, type: String, zombie_def: Dictionary, pos: Vector2, y
 		for mi in _model.find_children("*", "MeshInstance3D", true, false):
 			_meshes.append(mi)
 			_tint_eyes(mi as MeshInstance3D)
+		if _base_overlay:
+			_set_overlay(null)
 	else:
 		_build_placeholder()
 	var shadow := MeshInstance3D.new()
@@ -72,6 +82,7 @@ func setup(zombie_id: int, type: String, zombie_def: Dictionary, pos: Vector2, y
 	shadow.rotation.x = -PI / 2
 	shadow.position.y = 0.02
 	shadow.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	shadow.scale = Vector3.ONE * float(vis.get("modelScale", 1.0))
 	add_child(shadow)
 	_apply_transform(1.0)
 
@@ -214,6 +225,8 @@ func _play(anim: String, speed := 1.0) -> void:
 
 
 func _set_overlay(m: Material) -> void:
+	if m == null:
+		m = _base_overlay
 	for mi in _meshes:
 		mi.material_overlay = m
 	for mi in [_body, _head]:

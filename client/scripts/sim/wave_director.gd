@@ -14,6 +14,8 @@ var to_spawn: int = 0
 var spawned: int = 0
 var killed: int = 0
 var next_spawn_time: float = 0.0
+var boss_left: int = 0   ## boss zombies still to come this wave (part of to_spawn)
+var boss_at: float = 0.0
 
 
 func _init(waves_cfg: Dictionary, zombies: Dictionary) -> void:
@@ -29,6 +31,16 @@ func start(now: float) -> void:
 
 func remaining() -> int:
 	return to_spawn - killed
+
+
+## Boss zombies in this wave (every boss.everyWaves-th wave).
+static func bosses_for(c: Dictionary, wave_n: int) -> int:
+	return int(c.boss.count) if wave_n > 0 and wave_n % int(c.boss.everyWaves) == 0 else 0
+
+
+## A boss's health multiplier: it scales with the players in the zone.
+static func boss_health_mul(c: Dictionary, players: int) -> float:
+	return 1.0 + float(c.boss.healthPerExtraPlayer) * maxi(0, players - 1)
 
 
 static func count_for(c: Dictionary, wave_n: int, players: int) -> int:
