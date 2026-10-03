@@ -276,7 +276,7 @@ func _show_profile() -> void:
 		return
 	_profile_name.text = Net.display_name
 	_profile_stats.text = "Best wave %d  ·  %d kills  ·  %d games" % [p.bestWave, p.kills, p.games]
-	var ton := "TON %.3f" % (float(p.tonMicro) / 1000000.0)
+	var ton := "TON %s" % UiTheme.ton_text(int(p.tonMicro))
 	if p.weekRank > 0:
 		ton += "   ·   this week #%d with %d kills" % [p.weekRank, p.weekKills]
 	_profile_hint.text = ton if Net.ton_per_kill > 0 else "Online and ready."
@@ -398,11 +398,11 @@ func _show_leaderboard() -> void:
 			grid.add_child(UiTheme.label(str(int(e.rank)), 20))
 			grid.add_child(UiTheme.label(str(e.name), 20))
 			grid.add_child(UiTheme.label(str(int(e.kills)), 20))
-			grid.add_child(UiTheme.label("%.3f" % (float(e.tonMicro) / 1000000.0), 20))
+			grid.add_child(UiTheme.label(UiTheme.ton_text(int(e.tonMicro)), 20))
 		if b.get("entries", []).is_empty():
 			grid.add_child(UiTheme.label("No kills yet this week. Be the first.", 18))
 		if int(b.get("myRank", 0)) > 0:
-			me.text = "You: #%d  ·  %d kills  ·  TON %.3f this week" % [int(b.myRank), int(b.myKills), float(b.myTonMicro) / 1000000.0]
+			me.text = "You: #%d  ·  %d kills  ·  TON %s this week" % [int(b.myRank), int(b.myKills), UiTheme.ton_text(int(b.myTonMicro))]
 		else:
 			me.text = "You: no kills yet this week"
 	if not Net.leaderboard.is_empty():

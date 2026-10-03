@@ -737,7 +737,7 @@ func _toggle_pause() -> void:
 
 ## Only the nearest few lights are on: every lit pixel pays per light in the
 ## shader (up to 8 per object), and the scene holds over forty. Low keeps the
-## 4 nearest within reach, medium 8, high 16. Lights that views create later
+## 4 nearest within reach, medium 8, high 16 (10 on phones). Lights that views create later
 ## (power-ups, machines) are picked up on the next pass.
 func _cull_lights(p: SimPlayer, delta: float) -> void:
 	_light_t -= delta
@@ -751,9 +751,9 @@ func _cull_lights(p: SimPlayer, delta: float) -> void:
 		for n in get_tree().root.find_children("*", "OmniLight3D", true, false):
 			if n is Light3D and not n.is_in_group("rig_light"):
 				_map_lights.append(n)
-	var q := Settings.effective_quality()
-	var keep := 4 if q == "low" else (8 if q == "medium" else 16)
-	var extra_on: bool = Settings.quality_params().lights
+	var qp := Settings.quality_params()
+	var keep: int = qp.lights_n
+	var extra_on: bool = qp.lights
 	var ranked: Array = []
 	for l in _map_lights:
 		if not is_instance_valid(l):

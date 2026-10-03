@@ -77,14 +77,18 @@ func effective_quality() -> String:
 
 
 ## Per-tier rendering parameters, applied by the game scene.
+## Phones never get MSAA: the owner's phone drew black lines across the screen
+## and stalled on "high" (4x MSAA under the web renderer, phase 18), and the
+## extra light count there is capped at 10 (each lit pixel pays per light).
 func quality_params() -> Dictionary:
+	var phone := DisplayServer.is_touchscreen_available()
 	match effective_quality():
 		"low":
-			return {"msaa": 0, "scale": 0.6, "lights": false, "muzzle_light": false, "fog": false, "far": 480.0, "glow": false}
+			return {"msaa": 0, "scale": 0.6, "lights": false, "lights_n": 4, "muzzle_light": false, "fog": false, "far": 480.0, "glow": false}
 		"high":
-			return {"msaa": 4, "scale": 1.0, "lights": true, "muzzle_light": true, "fog": true, "far": 700.0, "glow": true}
+			return {"msaa": 0 if phone else 4, "scale": 1.0, "lights": true, "lights_n": 10 if phone else 16, "muzzle_light": true, "fog": true, "far": 700.0, "glow": true}
 		_:
-			return {"msaa": 2, "scale": 0.85, "lights": true, "muzzle_light": false, "fog": true, "far": 650.0, "glow": true}
+			return {"msaa": 0 if phone else 2, "scale": 0.85, "lights": true, "lights_n": 8, "muzzle_light": false, "fog": true, "far": 650.0, "glow": true}
 
 
 ## The frame cap in force: the chosen one, or under auto the measured one.

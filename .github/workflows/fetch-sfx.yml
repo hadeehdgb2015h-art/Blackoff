@@ -8,6 +8,7 @@ on:
   push:
     paths:
       - tools/sfx/fetch_sources.sh
+      - tools/sfx/fetch_music.py
 
 permissions:
   contents: write
@@ -18,18 +19,21 @@ jobs:
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
-      - name: Download CC0 sources
-        run: bash tools/sfx/fetch_sources.sh art/sfx_sources
-      - name: Show what was fetched
+      # the effect sources were fetched once (phase 17) and pruned by hand
+      # afterwards: fetching them again would bring the pruned packs back
+      - name: Download CC0 sound sources (first time only)
         run: |
-          cat art/sfx_sources/FETCH_LOG.txt
-          du -sh art/sfx_sources
+          if [ ! -e art/sfx_sources/FETCH_LOG.txt ]; then bash tools/sfx/fetch_sources.sh art/sfx_sources; fi
+      - name: Download CC0 music candidates
+        run: python3 tools/sfx/fetch_music.py art/music_sources
+      - name: Show what was fetched
+        run: du -sh art/sfx_sources art/music_sources
       - name: Commit to this branch
         run: |
           git config user.name "blackoff-ci"
           git config user.email "blackoff-ci@users.noreply.github.com"
-          git add art/sfx_sources
+          git add art/sfx_sources art/music_sources
           git diff --cached --quiet && { echo "nothing new"; exit 0; }
-          git commit -m "Sound sources (CC0) fetched by CI"
+          git commit -m "Sound and music sources (CC0) fetched by CI"
           git pull --rebase origin "$GITHUB_REF_NAME"
           git push origin "HEAD:$GITHUB_REF_NAME"

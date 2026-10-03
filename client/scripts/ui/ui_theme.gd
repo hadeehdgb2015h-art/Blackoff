@@ -169,6 +169,14 @@ static func knob_texture() -> ImageTexture:
 	return tex
 
 
+## A TON amount (given in millionths) with only the digits it needs:
+## 12 -> "0.000012", 1500 -> "0.0015", 2000000 -> "2".
+static func ton_text(micro: int) -> String:
+	var t := "%.6f" % (micro / 1000000.0)
+	t = t.rstrip("0")
+	return t.rstrip(".") if t.ends_with(".") else t
+
+
 # ------------------------------------------------------------------ widgets
 
 static func label(text: String, size := 22, color := TEXT) -> Label:

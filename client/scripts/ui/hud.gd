@@ -284,7 +284,7 @@ func update_state(p: SimPlayer, w: SimWorld, interact: Dictionary, delta: float)
 			_:
 				_wave_sub.text = ""
 	_credits.text = "" if infection else "$ %d" % p.currency
-	_ton.visible = not infection
+	_ton.visible = false
 	var wp := p.weapon()
 	if wp:
 		_ammo.text = "%d / %d" % [wp.mag, wp.reserve]
@@ -393,11 +393,10 @@ func on_event(e: Dictionary, local_pid: int) -> void:
 			if e.pid == local_pid:
 				_cross.hit_t = 0.18
 				_cross.hit_kill = true
+				# TON is counted quietly and shown once, at game over: a "+0.00001 TON"
+				# flash on every kill looked cheap (owner, phase 18)
 				if Net.ton_per_kill > 0 and Net.online_requested:
 					_ton_game += Net.ton_per_kill
-					_ton_pop.text = "+%.3f TON" % (Net.ton_per_kill / 1000000.0)
-					_ton_pop_t = 1.2
-					_ton.text = "TON %.3f" % (_ton_game / 1000000.0)
 		"player_damaged":
 			if e.pid == local_pid:
 				_damage = minf(1.0, _damage + float(e.amount) / 35.0)
@@ -477,7 +476,7 @@ func set_markers(items: Array) -> void:
 func show_game_over(wave: int, p: SimPlayer, scores: Array = []) -> void:
 	_go_stats.text = "Reached wave %d" % wave
 	if _ton_game > 0:
-		_go_stats.text += "\nTON earned this game: %.3f  (credited to your weekly hunt)" % (_ton_game / 1000000.0)
+		_go_stats.text += "\nTON earned this game: %s  (credited to your weekly hunt)" % UiTheme.ton_text(_ton_game)
 	for c in _go_table.get_children():
 		c.queue_free()
 	if scores.is_empty():
