@@ -151,5 +151,10 @@
 - [x] Profile card with insignia and XP bar, level-up banner, ranks beside teammates' names, XP at game over, rank on the result card and in the bot's stats
 - [ ] Owner: say if the level speed suits (shared/constants.json → progression)
 
+## Phase 27: players' report
+- [x] Lighter touch aim (base speed, slow-drag curve, softer and narrower aim slowdown, scope)
+- [x] Back button: Telegram's back / the phone's back key / Escape close the open panel; in a game they pause and resume
+- [ ] Owner: ask the players if the aim feels right now (the setting still scales it)
+
 ## Open questions for the owner
 - Own subdomain or the free sslip.io address (installer default)

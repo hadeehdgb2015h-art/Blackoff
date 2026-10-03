@@ -456,6 +456,12 @@ func _show_daily() -> void:
 	_content.add_child(panel)
 
 
+func _close_overlay() -> void:
+	if _overlay:
+		_overlay.queue_free()
+		_overlay = null
+
+
 func _show_toast(text: String) -> void:
 	if _toast == null:
 		_toast = UiTheme.title("", 24, UiTheme.GOLD)
@@ -597,9 +603,8 @@ func _show_leaderboard() -> void:
 	var note := UiTheme.label(tr("Every zombie you kill online earns TON points. The week's top hunter gets the prize, paid by the game owner."), 15, UiTheme.MUTED)
 	note.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	v.add_child(note)
-	v.add_child(UiTheme.gold_button(tr("CLOSE"), func():
-		_overlay.queue_free()
-		_overlay = null))
+	v.add_child(UiTheme.gold_button(tr("CLOSE"), _close_overlay))
+	Platform.on_back(_overlay, _close_overlay)
 	var fill := func(b: Dictionary) -> void:
 		if not is_instance_valid(grid):
 			return
@@ -664,9 +669,8 @@ func _how_to_play() -> void:
 		var l := UiTheme.label("•  " + line, 18)
 		l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		v.add_child(l)
-	v.add_child(UiTheme.gold_button(tr("CLOSE"), func():
-		_overlay.queue_free()
-		_overlay = null))
+	v.add_child(UiTheme.gold_button(tr("CLOSE"), _close_overlay))
+	Platform.on_back(_overlay, _close_overlay)
 
 
 ## A thin XP bar with its numbers under it.

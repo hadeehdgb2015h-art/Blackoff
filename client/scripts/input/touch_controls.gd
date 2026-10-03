@@ -9,9 +9,9 @@ signal pause_requested
 signal voice_toggled(which: String)   ## "mic" or "speaker" tapped
 signal view_toggled                   ## the TPP/FPP button (or V)
 
-const AIM_DEG_PER_PX := 0.16     ## touch look at sensitivity 1.0 (view is 720 px tall)
-const AIM_PITCH_SCALE := 0.8     ## vertical look is a bit slower than horizontal
-const AIM_SMOOTH_RATE := 40.0    ## 1/s; removes finger jitter (~25 ms of smoothing)
+const AIM_DEG_PER_PX := 0.22     ## touch look at sensitivity 1.0 (view is 720 px tall); 0.16 felt heavy
+const AIM_PITCH_SCALE := 0.9     ## vertical look is a bit slower than horizontal
+const AIM_SMOOTH_RATE := 60.0    ## 1/s; removes finger jitter (~17 ms of smoothing)
 const MOUSE_GUARD_MS := 1500     ## ignore browser mouse events this long after a real touch
 const STICK_RADIUS := 85.0
 const PITCH_LIMIT := 1.35
@@ -36,7 +36,7 @@ var mic_talking: bool = false     ## pulse the mic ring while the player speaks
 var mic_blocked: bool = false     ## permission denied / unsupported: drawn crossed and grey
 var ads_on: bool = false          ## aiming down sights (AIM toggles it on touch; right mouse holds it)
 var ads_allowed: bool = true      ## the game turns aiming off (downed, infected, reloading)
-var ads_sens: float = 1.0         ## look speed multiplier while zoomed (the game sets fov / 75)
+var ads_sens: float = 1.0         ## look speed multiplier while zoomed (the game sets (fov / 75)^0.7)
 var view_label: String = "TPP"    ## what the view button switches to
 var aim_override_on: bool = false ## third person: the sim aims at the crosshair point, not along the camera
 var aim_override := Vector2.ZERO  ## (yaw, pitch) of that aim
@@ -223,8 +223,7 @@ func _on_key(e: InputEventKey) -> void:
 		KEY_V:
 			view_toggled.emit()
 		KEY_ESCAPE:
-			Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
-			pause_requested.emit()
+			Input.mouse_mode = Input.MOUSE_MODE_VISIBLE  # the pause menu: Platform.go_back
 
 
 func _touch_recent() -> bool:
@@ -287,7 +286,7 @@ func _on_drag(e: InputEventScreenDrag) -> void:
 		Role.AIM, Role.FIRE:
 			# Response curve: slow drags are precise, fast swipes turn quickly.
 			var speed := delta.length() / dt
-			_aim_pending += delta * lerpf(0.6, 1.2, smoothstep(120.0, 1400.0, speed))
+			_aim_pending += delta * lerpf(0.85, 1.35, smoothstep(80.0, 1100.0, speed))
 	get_viewport().set_input_as_handled()
 	queue_redraw()
 

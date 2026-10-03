@@ -9,6 +9,14 @@ var is_touch: bool = false
 var telegram_platform: String = ""
 var telegram_version: String = ""
 
+## Back (phase 27): every open panel registers how it closes. Telegram's back
+## button (shown while something is open; the phone's back key presses it, so
+## a player no longer leaves the game by mistake) and Escape close the newest
+## one. In a game the bottom entry opens the pause menu.
+var _backs: Array[Dictionary] = []
+var _back_shown := false
+var _back_poll := 0.0
+
 
 func _ready() -> void:
 	# The engine mirrors every Control in right-to-left locales (an Arabic phone):
@@ -26,6 +34,57 @@ func _ready() -> void:
 		if is_telegram:
 			telegram_platform = str(_js("window.Telegram.WebApp.platform"))
 			telegram_version = str(_js("window.Telegram.WebApp.version"))
+
+
+## Registers how `node` closes; forgotten once the node is freed.
+func on_back(node: Node, close: Callable) -> void:
+	_backs.append({"node": node, "close": close})
+
+
+## Closes the newest open panel; false when nothing is open.
+func go_back() -> bool:
+	var top := _top_back()
+	if top.is_empty():
+		return false
+	print("[back] %s" % top.node.name)
+	top.close.call()
+	return true
+
+
+func _top_back() -> Dictionary:
+	for i in range(_backs.size() - 1, -1, -1):
+		var b: Dictionary = _backs[i]
+		if not is_instance_valid(b.node) or b.node.is_queued_for_deletion():
+			_backs.remove_at(i)
+			continue
+		var n: Node = b.node
+		if not n.is_inside_tree() or (n is CanvasItem and not (n as CanvasItem).is_visible_in_tree()):
+			continue
+		return b
+	return {}
+
+
+func _process(delta: float) -> void:
+	_back_poll += delta
+	if _back_poll < 0.1:
+		return
+	_back_poll = 0.0
+	var show := not _top_back().is_empty()
+	if not is_web:  # browsers too (no button there): tests press it with BlackoffTG._backPresses
+		return
+	if show != _back_shown:
+		_back_shown = show
+		_js("window.BlackoffTG.setBack(%s)" % ("true" if show else "false"))
+	if int(_js("window.BlackoffTG.takeBack()")) > 0:
+		go_back()
+
+
+func _unhandled_key_input(event: InputEvent) -> void:
+	var k := event as InputEventKey
+	if k and k.pressed and not k.echo and k.keycode == KEY_ESCAPE:
+		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+		if go_back():
+			get_viewport().set_input_as_handled()
 
 
 ## Raw Telegram initData string. Sent to the server for HMAC validation;

@@ -166,6 +166,7 @@ func _ready() -> void:
 	v.add_child(spk)
 
 	v.add_child(UiTheme.gold_button(tr("DONE"), _close))
+	Platform.on_back(self, _close)
 	_refresh()
 
 

@@ -79,9 +79,8 @@ func _ready() -> void:
 	v.add_child(_story)
 	_save = UiTheme.button(tr("SAVE IMAGE"), _on_save)
 	v.add_child(_save)
-	v.add_child(UiTheme.button(tr("CLOSE"), func():
-		closed.emit()
-		queue_free()))
+	v.add_child(UiTheme.button(tr("CLOSE"), _close))
+	Platform.on_back(self, _close)
 	for b in [_send, _story, _save]:
 		b.disabled = true
 
@@ -121,6 +120,11 @@ func _on_card(d: Dictionary) -> void:
 		_:
 			_status.text = tr("Could not draw the card. You can still send your invite.")
 			_fallback()
+
+
+func _close() -> void:
+	closed.emit()
+	queue_free()
 
 
 ## No card: the SEND button shares the invite text as before.

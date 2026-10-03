@@ -49,6 +49,7 @@ window.BlackoffTG = (function () {
         if (atLeast('7.7')) w.disableVerticalSwipes();
         if (atLeast('6.1')) { w.setHeaderColor('#08090a'); w.setBackgroundColor('#08090a'); }
         if (atLeast('6.2')) w.enableClosingConfirmation();
+        if (atLeast('6.1') && w.BackButton) w.BackButton.onClick(function () { window.BlackoffTG._backPresses++; });
         if (atLeast('8.0')) { w.requestFullscreen(); }
       } catch (e) { console.warn('Telegram init', e); }
     },
@@ -137,6 +138,17 @@ window.BlackoffTG = (function () {
       } catch (e) {}
       return 'none';
     },
+    // Telegram's back button (phase 27): shown while a panel is open; the
+    // phone's back key presses it instead of closing the game. The game reads
+    // the presses with takeBack().
+    _backPresses: 0,
+    setBack: function (on) {
+      const w = wa();
+      try {
+        if (w && w.initData && atLeast('6.1') && w.BackButton) { if (on) w.BackButton.show(); else w.BackButton.hide(); }
+      } catch (e) {}
+    },
+    takeBack: function () { const n = this._backPresses; this._backPresses = 0; return n; },
     canShareCards: function () {
       const w = wa();
       return !!(w && w.initData && atLeast('7.8'));

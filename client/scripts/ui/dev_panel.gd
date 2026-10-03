@@ -55,9 +55,8 @@ func _ready() -> void:
 	_add(grid, tr("SUMMON THE WARDEN"), func(): _send(Cmd.SPAWN_BOSS))
 	for n in [5, 10, 25]:
 		_add(grid, tr("JUMP TO WAVE %d") % n, func(): _send(Cmd.GOTO_WAVE, n))
-	var close := UiTheme.gold_button(tr("CLOSE"), func():
-		closed.emit()
-		queue_free())
+	var close := UiTheme.gold_button(tr("CLOSE"), _close)
+	Platform.on_back(self, _close)
 	close.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	v.add_child(close)
 	_refresh()
@@ -78,3 +77,8 @@ func _refresh() -> void:
 func _send(cmd: int, arg := 0) -> void:
 	Net.send("dev", {"cmd": cmd, "arg": arg})
 	Platform.haptic("light")
+
+
+func _close() -> void:
+	closed.emit()
+	queue_free()

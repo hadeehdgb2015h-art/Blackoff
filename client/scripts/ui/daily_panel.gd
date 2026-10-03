@@ -74,9 +74,8 @@ func _ready() -> void:
 	v.add_child(_rows)
 	_bonus = UiTheme.label("", 16, UiTheme.MUTED)
 	v.add_child(_bonus)
-	var close := UiTheme.gold_button(tr("CLOSE"), func():
-		closed.emit()
-		queue_free())
+	var close := UiTheme.gold_button(tr("CLOSE"), _close)
+	Platform.on_back(self, _close)
 	close.size_flags_horizontal = Control.SIZE_SHRINK_END
 	v.add_child(close)
 
@@ -299,3 +298,8 @@ class ProgressLine extends Control:
 		draw_rect(Rect2(0, y - 4, w * clampf(float(value) / float(goal), 0.0, 1.0), 8), UiTheme.GREEN if done else UiTheme.ACCENT)
 		draw_rect(Rect2(0, y - 4, w, 8), UiTheme.BRASS_DARK, false, 1.0)
 		draw_string(font, Vector2(size.x - lw, y + 5), label, HORIZONTAL_ALIGNMENT_LEFT, -1, 13, UiTheme.MUTED)
+
+
+func _close() -> void:
+	closed.emit()
+	queue_free()

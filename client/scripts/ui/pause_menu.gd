@@ -26,6 +26,7 @@ func _ready() -> void:
 	I18n.dir(_box)
 	_box.add_theme_constant_override("separation", 14)
 	panel.add_child(_box)
+	Platform.on_back(self, func(): resume.emit())
 	_box.add_child(UiTheme.label(tr("PAUSED"), 36, UiTheme.ACCENT))
 	_box.add_child(UiTheme.button(tr("Resume"), func(): resume.emit()))
 	if Social.can_invite():

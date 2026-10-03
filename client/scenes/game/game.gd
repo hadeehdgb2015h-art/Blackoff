@@ -116,6 +116,10 @@ func _ready() -> void:
 	_controls = TouchControls.new()
 	ui.add_child(_controls)
 	_controls.pause_requested.connect(_toggle_pause)
+	# back button / Escape with nothing open: pause (the pause menu's own entry resumes)
+	Platform.on_back(_controls, func():
+		if not _paused:
+			_toggle_pause())
 	_controls.view_toggled.connect(func():
 		Settings.third_person = not Settings.third_person
 		Settings.save())
@@ -325,9 +329,9 @@ func _aim_friction(eye: Vector3) -> float:
 		var to: Vector2 = z.pos - Vector2(eye.x, eye.z)
 		if to.length_squared() > 900.0:
 			continue
-		var h := HitTest.ray_character(eye, dir, z.pos, z.radius() * 1.8, float(z.def.headCenterHeight), float(z.def.headRadius) * 1.8)
+		var h := HitTest.ray_character(eye, dir, z.pos, z.radius() * 1.3, float(z.def.headCenterHeight), float(z.def.headRadius) * 1.3)
 		if not h.is_empty() and world.map.raycast(eye, dir, h.t) >= h.t:
-			return 0.55
+			return 0.8
 	return 1.0
 
 
@@ -726,7 +730,8 @@ func _update_aim_and_camera(p: SimPlayer, eye: Vector3, delta: float) -> void:
 ## After the camera moved: aim the sim at what the crosshair covers (third
 ## person), zoomed look speed, the crosshair or scope, and the local body.
 func _after_camera(p: SimPlayer, eye: Vector3, alpha: float, delta: float) -> void:
-	_controls.ads_sens = _rig.current_fov() / FpRig.BASE_FOV
+	# zoomed look slows less than the zoom itself: a scope stays usable on a phone
+	_controls.ads_sens = pow(_rig.current_fov() / FpRig.BASE_FOV, 0.7)
 	_hud.set_aim(_rig.ads_amount(), _rig.scoped_in(), delta)
 	var third := _rig.tpp_k > 0.5
 	_controls.aim_override_on = third and not bot

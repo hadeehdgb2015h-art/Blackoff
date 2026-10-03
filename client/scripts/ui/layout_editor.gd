@@ -29,6 +29,7 @@ class Ring extends Control:
 
 func _ready() -> void:
 	theme = UiTheme.get_theme()
+	Platform.on_back(self, _cancel)
 	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	var bg := ColorRect.new()
 	bg.color = Color(0.04, 0.05, 0.06, 0.96)
@@ -100,9 +101,7 @@ func _ready() -> void:
 		_controls.queue_redraw())
 	row.add_child(_fire2)
 	for b in [UiTheme.button(tr("RESET"), _reset), UiTheme.gold_button(tr("SAVE"), func(): _save(op.value)),
-			UiTheme.button(tr("CANCEL"), func():
-				closed.emit()
-				queue_free())]:
+			UiTheme.button(tr("CANCEL"), _cancel)]:
 		b.add_theme_font_size_override("font_size", 16)
 		for st in ["normal", "hover", "pressed"]:
 			var sb: StyleBoxTexture = b.get_theme_stylebox(st).duplicate()
@@ -221,3 +220,8 @@ func _handle(event: InputEvent) -> void:
 			TouchLayout.place(_layout, _selected, event.position + _drag_offset, size_v)
 			_controls.queue_redraw()
 			_update_ring()
+
+
+func _cancel() -> void:
+	closed.emit()
+	queue_free()
