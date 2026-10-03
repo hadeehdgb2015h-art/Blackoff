@@ -80,10 +80,10 @@ describe.skipIf(!dbUrl)("postgres store", () => {
     expect(await migrate(pool)).toEqual([]);
     const store = new PgProfileStore(pool);
     const extra = { shots: 0, hits: 0, tonMicro: 0, flags: [] as string[] };
-    expect(await store.load("tg:1", "Ali")).toEqual({ games: 0, kills: 0, headshots: 0, bestWave: 0, playSeconds: 0, tonMicro: 0, suspicion: 0 });
+    expect(await store.load("tg:1", "Ali")).toEqual({ games: 0, kills: 0, headshots: 0, bestWave: 0, playSeconds: 0, tonMicro: 0, suspicion: 0, xp: 0 });
     await store.record({ accountId: "tg:1", name: "Ali", kills: 10, headshots: 3, wave: 4, seconds: 100.4, ...extra });
     const p = await store.record({ accountId: "tg:1", name: "Ali K", kills: 2, headshots: 0, wave: 2, seconds: 50, ...extra });
-    expect(p).toEqual({ games: 2, kills: 12, headshots: 3, bestWave: 4, playSeconds: 150, tonMicro: 0, suspicion: 0 });
+    expect(p).toEqual({ games: 2, kills: 12, headshots: 3, bestWave: 4, playSeconds: 150, tonMicro: 0, suspicion: 0, xp: 0 });
     expect((await store.load("tg:1", "Ali K")).games).toBe(2);
     const name = await pool.query("SELECT name FROM players WHERE account_id = 'tg:1'");
     expect(name.rows[0].name).toBe("Ali K");
