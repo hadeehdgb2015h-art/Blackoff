@@ -100,7 +100,7 @@ describe.skipIf(!dbUrl)("weekly hunt (postgres)", () => {
   let pool: pg.Pool;
   beforeAll(async () => {
     pool = new pg.Pool({ connectionString: dbUrl });
-    await pool.query("DROP TABLE IF EXISTS players, matches, weekly_scores, schema_migrations");
+    await pool.query("DROP TABLE IF EXISTS players, matches, weekly_scores, settings, schema_migrations");
     await migrate(pool);
   });
   afterAll(() => pool.end());

@@ -71,7 +71,7 @@ describe.skipIf(!dbUrl)("postgres store", () => {
   let pool: pg.Pool;
   beforeAll(async () => {
     pool = new pg.Pool({ connectionString: dbUrl });
-    await pool.query("DROP TABLE IF EXISTS players, matches, weekly_scores, schema_migrations");
+    await pool.query("DROP TABLE IF EXISTS players, matches, weekly_scores, settings, schema_migrations");
   });
   afterAll(() => pool.end());
 
