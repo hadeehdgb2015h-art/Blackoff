@@ -160,5 +160,10 @@
 - [x] Aiming in third person closes the camera in over the shoulder and zooms (only the sniper scope goes first person)
 - [ ] Owner: say if the zoom or the camera distance should change (SHOULDER_AIM in game.gd, adsFov in client/data/visuals.json)
 
+## Phase 29: statistics and problem reports
+- [x] Daily activity per account (opens, games, minutes, device, language, FPS); bot 📈 page: active and new players, next-day and weekly return, where new players stop, devices and FPS, languages
+- [x] REPORT A PROBLEM in settings and the pause menu: category, screenshot, device and settings; to the owners in the bot with reply / solved / close; the player adds details by writing to the bot
+- [ ] Owner: after a few days, read 📈 and decide the next phase (bots in empty squads or rewards for levels)
+
 ## Open questions for the owner
 - Own subdomain or the free sslip.io address (installer default)

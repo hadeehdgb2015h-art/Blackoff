@@ -10,6 +10,10 @@
  * prize text, maintenance mode, recent warnings, restart. Switches persist
  * (RuntimeSettings). Actions that need a value ask for it, and the owner's
  * next message answers.
+ * Phase 29: statistics (active and new players, retention, where new players
+ * stop, devices and FPS, languages) and problem reports from the game: each
+ * arrives with its screenshot; the player can add details by writing here for
+ * a while, the owner can answer them, resolve or close the report.
  */
 import crypto from "node:crypto";
 import type { Env } from "../config/env.js";
@@ -19,6 +23,9 @@ import { GameMode } from "../sim/simWorld.js";
 import { weekLabel, weekStart } from "../db/profileStore.js";
 import { levelFor, rankFor } from "../progression.js";
 import { RANK_NAMES } from "../card/cardRender.js";
+import type { ReportRow } from "../db/profileStore.js";
+import { REPORT_CATEGORIES } from "../report/report.js";
+import type { Analytics, Ratio } from "../stats/analytics.js";
 
 type Json = Record<string, unknown>;
 interface TgUser { id: number; first_name?: string; last_name?: string; username?: string }
@@ -32,6 +39,37 @@ export interface LiveInfo { connections: number; uptimeSec: number; version: str
 
 const esc = (s: string) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 const ton = (micro: number) => (micro / 1_000_000).toFixed(6).replace(/0+$/, "").replace(/\.$/, "");
+const pct = (r: Ratio) => (r.of ? `${Math.round((100 * r.n) / r.of)}%` : "—");
+const mins = (sec: number) => `${Math.round(sec / 60)} د`;
+const WEEKDAYS_AR = ["الأحد", "الإثنين", "الثلاثاء", "الأربعاء", "الخميس", "الجمعة", "السبت"];
+const PLATFORMS_AR: Record<string, string> = { android: "أندرويد", ios: "آيفون", desktop: "كمبيوتر", web: "متصفح", other: "أخرى", unknown: "غير معروف" };
+const LANGS_AR: Record<string, string> = { ar: "العربية", en: "English", ru: "Русский" };
+const CATEGORY_AR: Record<(typeof REPORT_CATEGORIES)[number], string> = {
+  lag: "⚡ بطء أو تقطيع", controls: "🎯 التحكم أو التصويب", connection: "📶 الاتصال", sound: "🔊 الصوت", visual: "👁 خلل في الصورة", other: "❓ شيء آخر",
+};
+/** What the player reads after a report and around it, in their language. */
+const REPORT_TEXT = {
+  ar: {
+    got: (id: number) => `✅ وصل بلاغك رقم <b>#${id}</b>، شكراً لك!\n\nإذا تريد تضيف تفاصيل (ماذا حدث بالضبط؟ متى؟) اكتبها هنا خلال 30 دقيقة وستصل للمطور مباشرة.`,
+    added: (id: number) => `📝 أضيفت إلى بلاغك #${id}.`,
+    reply: (id: number, t: string) => `📩 <b>رد المطور على بلاغك #${id}:</b>\n\n${t}\n\n<i>يمكنك الرد هنا.</i>`,
+    fixed: (id: number) => `✅ تم إصلاح المشكلة التي أبلغت عنها (#${id}). شكراً لمساعدتك!`,
+  },
+  en: {
+    got: (id: number) => `✅ Your report <b>#${id}</b> arrived, thank you!\n\nTo add details (what happened exactly? when?), write them here within 30 minutes and they go straight to the developer.`,
+    added: (id: number) => `📝 Added to your report #${id}.`,
+    reply: (id: number, t: string) => `📩 <b>The developer answered your report #${id}:</b>\n\n${t}\n\n<i>You can reply here.</i>`,
+    fixed: (id: number) => `✅ The problem you reported (#${id}) is fixed. Thank you for your help!`,
+  },
+  ru: {
+    got: (id: number) => `✅ Ваш отчёт <b>#${id}</b> получен, спасибо!\n\nЧтобы добавить подробности (что именно случилось? когда?), напишите их здесь в течение 30 минут — они сразу попадут к разработчику.`,
+    added: (id: number) => `📝 Добавлено к отчёту #${id}.`,
+    reply: (id: number, t: string) => `📩 <b>Разработчик ответил на ваш отчёт #${id}:</b>\n\n${t}\n\n<i>Можно ответить здесь.</i>`,
+    fixed: (id: number) => `✅ Проблема из вашего отчёта (#${id}) исправлена. Спасибо за помощь!`,
+  },
+};
+type ReportLang = keyof typeof REPORT_TEXT;
+const FOLLOWUP_MS = 30 * 60_000;
 const nameOf = (u: TgUser) => [u.first_name, u.last_name].filter(Boolean).join(" ") || u.username || "لاعب";
 
 export class TelegramBot {
@@ -40,6 +78,8 @@ export class TelegramBot {
   private stopped = false;
   /** owner chat -> the value the panel asked for, and until when */
   private pending = new Map<number, { action: string; until: number }>();
+  /** player chat -> the report their next messages add to, and until when (phase 29) */
+  private followups = new Map<number, { id: number; until: number; left: number }>();
 
   constructor(private readonly env: Env, private readonly hub: SessionHub, private readonly live: () => LiveInfo,
     private readonly apiBase = "https://api.telegram.org") {}
@@ -157,6 +197,11 @@ export class TelegramBot {
       this.pending.delete(chat);
       if (Date.now() <= wait.until) return this.onAdminInput(chat, wait.action, text);
     }
+    const follow = this.followups.get(chat);
+    if (follow && !text.startsWith("/")) {
+      if (Date.now() <= follow.until && follow.left > 0) return this.onFollowup(chat, m.from, follow, text);
+      this.followups.delete(chat);
+    }
     const [cmd = "", ...rest] = text.split(/\s+/);
     const arg = rest.join(" ");
     switch (cmd.split("@")[0]) {
@@ -262,6 +307,7 @@ export class TelegramBot {
   private panelButtons(): Button[][] {
     const s = this.hub.settings;
     return [
+      [{ text: "📈 الإحصائيات", callback_data: "a:stats" }, { text: "🐞 البلاغات", callback_data: "a:reports" }],
       [{ text: "📊 الحالة الآن", callback_data: "a:live" }, { text: "👥 اللاعبون", callback_data: "a:users" }],
       [{ text: "🏆 المتصدرون", callback_data: "a:top" }, { text: "🕵️ المشتبه بهم", callback_data: "a:sus" }],
       [{ text: "📢 رسالة للجميع", callback_data: "a:bc" }, { text: "🔎 بحث عن لاعب", callback_data: "a:find" }],
@@ -280,7 +326,8 @@ export class TelegramBot {
       "🛠 <b>لوحة المطور</b>\n\n" +
       `🟢 متصلون الآن: <b>${z.players}</b> لاعب في ${z.zones} مباراة · ${z.zombies} زومبي\n` +
       `💰 TON لكل قتلة: ${ton(s.tonPerKill())}${s.tonMultiplier > 1 ? ` (مضاعفة ×${s.tonMultiplier})` : ""}\n` +
-      `🛠 الصيانة: ${s.maintenance ? "<b>تعمل</b>" : "متوقفة"} · 🚫 محظورون: ${s.banned.size}`,
+      `🛠 الصيانة: ${s.maintenance ? "<b>تعمل</b>" : "متوقفة"} · 🚫 محظورون: ${s.banned.size}\n` +
+      `🐞 بلاغات مفتوحة: ${await this.hub.store.countOpenReports().catch(() => 0)}`,
       this.panelButtons());
   }
 
@@ -291,7 +338,11 @@ export class TelegramBot {
 
   private async onAdmin(chat: number, cmd: string): Promise<void> {
     const s = this.hub.settings;
+    const rep = /^r([rsxv]):(\d+)$/.exec(cmd);
+    if (rep) return this.onReportAction(chat, rep[1]!, Number(rep[2]));
     switch (cmd) {
+      case "stats": return this.statsPanel(chat);
+      case "reports": return this.reportList(chat);
       case "panel": return this.panel(chat);
       case "live": return this.live_(chat);
       case "users": {
@@ -365,8 +416,121 @@ export class TelegramBot {
       [[{ text: "♻️ تحديث", callback_data: "a:live" }, { text: "⬅️ اللوحة", callback_data: "a:panel" }]]);
   }
 
+  // ------------------------------------------------------------------ statistics (phase 29)
+
+  private async statsPanel(chat: number): Promise<void> {
+    const a = await this.hub.analytics();
+    await this.send(chat, statsText(a), [[{ text: "♻️ تحديث", callback_data: "a:stats" }, { text: "⬅️ اللوحة", callback_data: "a:panel" }]]);
+  }
+
+  // ------------------------------------------------------------------ problem reports (phase 29)
+
+  private ownerChats(): number[] {
+    return [...this.hub.owners].map((o) => Number(o.slice(3))).filter((n) => Number.isFinite(n) && n > 0);
+  }
+
+  private reportButtons(id: number): Button[][] {
+    return [[{ text: "↩️ رد على اللاعب", callback_data: `a:rr:${id}` }],
+      [{ text: "✅ تم الحل (أبلغه)", callback_data: `a:rs:${id}` }, { text: "🗑 إغلاق", callback_data: `a:rx:${id}` }]];
+  }
+
+  /** A new report from the game: to every owner (with the screenshot), and a
+   *  receipt to the player, whose next messages here add details. */
+  async onReport(r: ReportRow, shot: Buffer | null): Promise<void> {
+    if (!this.env.TELEGRAM_BOT_TOKEN) return;
+    const text = reportText(r);
+    for (const chat of this.ownerChats()) {
+      if (shot) {
+        const short = text.length <= 1000;
+        if (await this.sendPhoto(chat, shot, short ? text : `🐞 بلاغ #${r.id}`, short ? this.reportButtons(r.id) : undefined)) {
+          if (!short) await this.send(chat, text, this.reportButtons(r.id));
+          continue;
+        }
+      }
+      await this.send(chat, text, this.reportButtons(r.id));
+    }
+    const tg = /^tg:(\d+)$/.exec(r.accountId);
+    if (!tg) return;
+    const chat = Number(tg[1]);
+    this.followups.set(chat, { id: r.id, until: Date.now() + FOLLOWUP_MS, left: 10 });
+    await this.send(chat, REPORT_TEXT[reportLang(r)].got(r.id));
+  }
+
+  private async onFollowup(chat: number, u: TgUser, f: { id: number; until: number; left: number }, text: string): Promise<void> {
+    f.left -= 1;
+    const r = await this.hub.store.report(f.id);
+    if (!r) return;
+    const line = text.slice(0, 1000);
+    await this.hub.store.noteReport(r.id, "👤 " + line);
+    for (const owner of this.ownerChats()) {
+      if (owner === chat) continue;
+      await this.send(owner, `📝 <b>تفاصيل البلاغ #${r.id}</b> من ${esc(nameOf(u))}:\n\n${esc(line)}`, this.reportButtons(r.id));
+    }
+    await this.send(chat, REPORT_TEXT[reportLang(r)].added(r.id));
+  }
+
+  private async reportList(chat: number): Promise<void> {
+    const rows = await this.hub.store.reports(8, true);
+    const lines = rows.map((r) => `• <b>#${r.id}</b> ${CATEGORY_AR[REPORT_CATEGORIES[r.category] ?? "other"]} · ${esc(r.name)} · ${ago(r.createdAt)}` +
+      (r.notes ? `\n  ${esc(r.notes.split("\n").pop()!.slice(0, 80))}` : ""));
+    const buttons: Button[][] = rows.map((r) => [
+      { text: `#${r.id} 👁`, callback_data: `a:rv:${r.id}` },
+      { text: `#${r.id} ↩️`, callback_data: `a:rr:${r.id}` },
+      { text: `#${r.id} ✅`, callback_data: `a:rs:${r.id}` },
+      { text: `#${r.id} 🗑`, callback_data: `a:rx:${r.id}` },
+    ]);
+    buttons.push([{ text: "⬅️ اللوحة", callback_data: "a:panel" }]);
+    await this.send(chat, "🐞 <b>البلاغات المفتوحة</b>\n\n" + (lines.join("\n") || "لا بلاغات مفتوحة 🎉"), buttons);
+  }
+
+  private async onReportAction(chat: number, what: string, id: number): Promise<void> {
+    const r = await this.hub.store.report(id);
+    if (!r) return void this.send(chat, "لا يوجد بلاغ بهذا الرقم.");
+    if (what === "v") return void this.send(chat, reportText(r), this.reportButtons(id));
+    if (what === "r") {
+      if (!/^tg:\d+$/.test(r.accountId)) return void this.send(chat, "هذا اللاعب ليس من تيليجرام: لا يمكن الرد عليه.");
+      return void this.ask(chat, "rr:" + id, `↩️ اكتب ردك على ${esc(r.name)} (بلاغ #${id}):`);
+    }
+    const had = await this.hub.store.resolveReport(id);
+    if (!had) return void this.send(chat, `البلاغ #${id} مغلق من قبل.`, [[{ text: "🐞 البلاغات", callback_data: "a:reports" }]]);
+    const tg = /^tg:(\d+)$/.exec(r.accountId);
+    if (what === "s" && tg) await this.send(Number(tg[1]), REPORT_TEXT[reportLang(r)].fixed(id));
+    await this.send(chat, what === "s" ? `✅ البلاغ #${id} حُل وأُبلغ اللاعب.` : `🗑 أُغلق البلاغ #${id}.`, [[{ text: "🐞 البلاغات", callback_data: "a:reports" }]]);
+  }
+
+  private async sendPhoto(chatId: number, photo: Buffer, caption: string, buttons?: Button[][]): Promise<boolean> {
+    for (const method of ["sendPhoto", "sendDocument"]) {
+      try {
+        const form = new FormData();
+        form.set("chat_id", String(chatId));
+        form.set("caption", caption);
+        form.set("parse_mode", "HTML");
+        if (buttons) form.set("reply_markup", JSON.stringify({ inline_keyboard: buttons }));
+        form.set(method === "sendPhoto" ? "photo" : "document", new Blob([new Uint8Array(photo)], { type: "image/webp" }), "screen.webp");
+        const res = await fetch(`${this.apiBase}/bot${this.env.TELEGRAM_BOT_TOKEN}/${method}`, { method: "POST", body: form, signal: AbortSignal.timeout(20_000) });
+        const j = (await res.json()) as { ok: boolean; description?: string };
+        if (j.ok) return true;
+        log.warn("report screenshot refused", { method, error: j.description });
+      } catch (err) {
+        log.warn("report screenshot failed", { method, error: (err as Error).message });
+      }
+    }
+    return false;
+  }
+
   private async onAdminInput(chat: number, action: string, text: string): Promise<void> {
     const s = this.hub.settings;
+    if (action.startsWith("rr:")) {
+      const r = await this.hub.store.report(Number(action.slice(3)));
+      const tg = r ? /^tg:(\d+)$/.exec(r.accountId) : null;
+      if (!r || !tg) return void this.send(chat, "لا يوجد بلاغ بهذا الرقم.");
+      const reply = text.slice(0, 2000);
+      await this.hub.store.noteReport(r.id, "🛠 " + reply);
+      const ok = await this.api("sendMessage", { chat_id: Number(tg[1]), text: REPORT_TEXT[reportLang(r)].reply(r.id, esc(reply)), parse_mode: "HTML" })
+        .then((x) => x.ok).catch(() => false);
+      if (ok) this.followups.set(Number(tg[1]), { id: r.id, until: Date.now() + FOLLOWUP_MS, left: 10 });
+      return void this.send(chat, ok ? `📩 وصل ردك إلى ${esc(r.name)}.` : "لم يصل الرد: اللاعب لم يبدأ محادثة مع البوت أو حظره.", this.reportButtons(r.id));
+    }
     const accountOf = (v: string) => (/^\d+$/.test(v) ? "tg:" + v : v);
     switch (action) {
       case "bc": {
@@ -435,4 +599,83 @@ export class TelegramBot {
         return void this.send(chat, "🛠 الصيانة تعمل: لا مباريات جديدة (عدا لك). المباريات الجارية تكمل.", this.panelButtons());
     }
   }
+}
+
+// ------------------------------------------------------------------ texts (phase 29)
+
+function reportLang(r: ReportRow): ReportLang {
+  const l = String((r.info.client as { lang?: string } | undefined)?.lang ?? "");
+  return l === "en" || l === "ru" ? l : "ar";
+}
+
+function ago(at: Date): string {
+  const m = Math.max(0, Math.round((Date.now() - at.getTime()) / 60_000));
+  if (m < 60) return `قبل ${m} د`;
+  if (m < 48 * 60) return `قبل ${Math.round(m / 60)} س`;
+  return `قبل ${Math.round(m / 1440)} يوم`;
+}
+
+/** One report as the owner reads it. */
+export function reportText(r: ReportRow): string {
+  const i = r.info as {
+    where?: string; fps?: number; shot?: boolean; level?: number; games?: number;
+    client?: { platform?: string; tgVersion?: string; lang?: string; build?: string; screen?: string };
+    details?: Record<string, string | number | boolean>;
+    zone?: { id: number; mode: string; wave: number; players: number; state: string } | null;
+  };
+  const c = i.client ?? {};
+  const tg = /^tg:(\d+)$/.exec(r.accountId);
+  const lines = [
+    `🐞 <b>بلاغ #${r.id}</b> · ${CATEGORY_AR[REPORT_CATEGORIES[r.category] ?? "other"]}${r.resolved ? " · ✅ مغلق" : ""}`,
+    `👤 ${esc(r.name)} (<code>${esc(tg ? tg[1]! : r.accountId)}</code>) · المستوى ${i.level ?? 1} · ${i.games ?? 0} مباراة`,
+    `📍 ${esc(i.where || "؟")}` + (i.zone ? ` · مباراة #${i.zone.id} ${i.zone.mode === "INFECTION" ? "عدوى" : "زومبي"} · الموجة ${i.zone.wave} · ${i.zone.players} لاعب` : " · خارج المباريات"),
+    `📱 ${esc(PLATFORMS_AR[c.platform ?? ""] ?? c.platform ?? "؟")} (${esc(c.platform || "؟")}) · تيليجرام ${esc(c.tgVersion || "؟")} · ${esc(c.screen || "؟")} · ${esc(LANGS_AR[c.lang ?? ""] ?? "؟")}`,
+    `🎮 FPS ${i.fps ?? 0}` + Object.entries(i.details ?? {}).map(([k, v]) => ` · ${esc(k)} ${esc(String(v))}`).join(""),
+    `🏷 ${esc(c.build || "?")} · ${r.createdAt.toISOString().slice(0, 16).replace("T", " ")} UTC`,
+  ];
+  if (r.notes) lines.push("", "💬 " + esc(r.notes).slice(0, 1500));
+  return lines.join("\n");
+}
+
+const bar = (n: number, max: number) => "▇".repeat(max ? Math.round((8 * n) / max) : 0) || "▏";
+
+/** The statistics page of the owner's panel. */
+export function statsText(a: Analytics): string {
+  const t = a.days[a.days.length - 1]!;
+  const y = a.days[a.days.length - 2]!;
+  const per = (sec: number, n: number) => (n ? mins(sec / n) : "—");
+  const maxActive = Math.max(...a.days.map((d) => d.active));
+  const dayName = (day: string) => WEEKDAYS_AR[new Date(day + "T00:00:00Z").getUTCDay()]!;
+  const f = a.funnel;
+  const share = (n: number) => (f.fresh ? ` (${Math.round((100 * n) / f.fresh)}%)` : "");
+  const players = a.devices.reduce((s, d) => s + d.players, 0);
+  const langTotal = a.langs.reduce((s, l) => s + l.players, 0);
+  return [
+    "📈 <b>إحصائيات اللعبة</b> <i>(بتوقيت UTC)</i>",
+    "",
+    `<b>اليوم:</b> 👥 ${t.active} نشط · 🆕 ${t.fresh} جديد · 🕹 ${t.games} مباراة · ⏱ ${per(t.seconds, t.active)} للاعب`,
+    `<b>أمس:</b> 👥 ${y.active} نشط · 🆕 ${y.fresh} جديد · 🕹 ${y.games} مباراة · ⏱ ${per(y.seconds, y.active)} للاعب`,
+    `<b>آخر 7 أيام:</b> 👥 ${a.week.active} لاعب مختلف · 🆕 ${a.week.fresh} جديد · 🕹 ${a.week.games} مباراة`,
+    "",
+    "📅 <b>النشطون كل يوم</b>",
+    ...a.days.map((d) => `<code>${d.day.slice(5)}</code> ${dayName(d.day)}: ${bar(d.active, maxActive)} ${d.active}`),
+    "",
+    "🔁 <b>هل يعودون؟</b>",
+    `• رجعوا في اليوم التالي: <b>${pct(a.nextDay)}</b> (${a.nextDay.n} من ${a.nextDay.of} جديد)`,
+    `• رجعوا خلال أسبوع: <b>${pct(a.withinWeek)}</b> (${a.withinWeek.n} من ${a.withinWeek.of} جديد)`,
+    "",
+    `🪜 <b>أين يتوقف الجدد</b> (آخر 7 أيام)`,
+    `• فتحوا اللعبة: ${f.fresh}`,
+    `• لعبوا مباراة واحدة على الأقل: ${f.played}${share(f.played)}`,
+    `• وصلوا الموجة 3: ${f.wave3}${share(f.wave3)}`,
+    `• لعبوا 3 مباريات: ${f.games3}${share(f.games3)}`,
+    `• رجعوا في يوم آخر: ${f.returned}${share(f.returned)}`,
+    "",
+    "📱 <b>الأجهزة</b> (آخر 7 أيام)",
+    ...(a.devices.length
+      ? a.devices.map((d) => `• ${PLATFORMS_AR[d.platform] ?? d.platform}: ${Math.round((100 * d.players) / Math.max(1, players))}% (${d.players})` + (d.fps ? ` · متوسط ${d.fps} FPS` : ""))
+      : ["• لا بيانات بعد"]),
+    `🐢 أجهزة تحت 25 FPS: ${a.slow.n} من ${a.slow.of} (${pct(a.slow)})`,
+    "🌐 اللغات: " + (a.langs.map((l) => `${LANGS_AR[l.lang] ?? l.lang} ${Math.round((100 * l.players) / Math.max(1, langTotal))}%`).join(" · ") || "—"),
+  ].join("\n");
 }

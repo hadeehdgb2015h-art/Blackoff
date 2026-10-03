@@ -56,7 +56,7 @@
     ]
   },
   "net": {
-    "protocolVersion": 13,
+    "protocolVersion": 14,
     "maxMessageBytes": 4096,
     "interestRadius": 45,
     "reconnectGraceSec": 30,

@@ -8,6 +8,7 @@ signal quit
 signal invite  ## online: share the squad invite link
 
 var _box: VBoxContainer
+var where := "game"  ## for problem reports: the game sets the wave
 
 
 func _ready() -> void:
@@ -32,6 +33,7 @@ func _ready() -> void:
 	if Social.can_invite():
 		_box.add_child(UiTheme.gold_button(tr("Invite friends"), func(): invite.emit()))
 	_box.add_child(UiTheme.button(tr("Settings"), _open_settings))
+	_box.add_child(UiTheme.button(tr("Report a problem"), _report))
 	_box.add_child(UiTheme.button(tr("Quit to menu"), func(): quit.emit()))
 
 
@@ -42,6 +44,12 @@ func _open_settings() -> void:
 	add_child(center)
 	center.add_child(s)
 	s.closed.connect(center.queue_free)
+	s.report.connect(_report)
 	s.open_layout.connect(func():
 		var ed := LayoutEditor.new()
 		add_child(ed))
+
+
+## The screenshot is of the game: this menu is hidden while it is taken.
+func _report() -> void:
+	ReportPanel.open(get_parent(), [self], where)

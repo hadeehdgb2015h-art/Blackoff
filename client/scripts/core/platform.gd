@@ -246,6 +246,23 @@ func stored_value(key: String) -> String:
 	return str(v) if v != null else ""
 
 
+## The screen in device pixels, e.g. 1080x2400 (problem reports).
+func screen_desc() -> String:
+	if is_web:
+		var v: Variant = _js("Math.round(screen.width * (window.devicePixelRatio || 1)) + 'x' + Math.round(screen.height * (window.devicePixelRatio || 1))")
+		return str(v) if v != null else ""
+	var s := DisplayServer.screen_get_size()
+	return "%dx%d" % [s.x, s.y]
+
+
+## Opens a t.me link (inside Telegram: without leaving it; elsewhere a new tab).
+func open_telegram_link(url: String) -> void:
+	if not is_web:
+		OS.shell_open(url)
+		return
+	_js("(function (u) { var w = window.Telegram && window.Telegram.WebApp; if (w && w.initData && w.openTelegramLink) w.openTelegramLink(u); else window.open(u, '_blank'); })(%s)" % JSON.stringify(url))
+
+
 ## Reloads the page (the language changed: every text is built again).
 func reload_page() -> void:
 	if is_web:

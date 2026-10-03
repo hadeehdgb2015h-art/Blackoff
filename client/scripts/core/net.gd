@@ -13,6 +13,7 @@ signal voice_changed   ## mic or speaker state changed (buttons redraw)
 signal daily_received(daily: Dictionary)  ## daily reward and missions state (phase 23)
 signal card_received(card: Dictionary)    ## result card: status, url, preview, prepared (phase 25)
 signal level_up(from_level: int, to_level: int)  ## the server counted a game that raised the level (phase 26)
+signal reported(status: int, id: int)     ## a problem report arrived (0) or was refused (1 too soon, 2 error) (phase 29)
 
 const RETRY_SEC := 2.0
 
@@ -202,6 +203,8 @@ func _on_packet(data: PackedByteArray) -> void:
 			_resume_token = str(msg.resumeToken)
 			_retry_until = 0.0
 			_set_status("ready")
+			if not resumed:
+				_send_client_info()
 			if _want_zone and not resumed:
 				send("quickPlay", {"mode": mode, "friend": friend_code})
 		"zoneJoined":
@@ -224,6 +227,8 @@ func _on_packet(data: PackedByteArray) -> void:
 			daily_received.emit(msg)
 		"card":
 			card_received.emit(msg)
+		"reported":
+			reported.emit(int(msg.status), int(msg.id))
 		"voice":
 			if voice_speaker and voice_available:
 				Platform.voice_play(int(msg.entityId), int(msg.seq), msg.data)
@@ -325,6 +330,38 @@ func request_daily() -> void:
 func request_card() -> void:
 	if status in ["ready", "in_zone"]:
 		send("card", {"lang": I18n.lang})
+
+
+## The device, once per connection: the owner's statistics and reports (phase 29).
+func _send_client_info() -> void:
+	send("clientInfo", {"platform": Platform.telegram_platform if Platform.is_telegram else ("web" if Platform.is_web else OS.get_name().to_lower()),
+		"tgVersion": Platform.telegram_version, "lang": I18n.lang, "build": Platform.build_id().left(40), "screen": Platform.screen_desc()})
+
+
+## The average frame rate of a game that just ended (statistics only).
+func send_perf(fps: float, seconds: float) -> void:
+	if status in ["ready", "in_zone"] and seconds >= 20.0:
+		send("perf", {"fps": clampi(roundi(fps), 1, 240), "seconds": clampi(roundi(seconds), 0, 65535)})
+
+
+## Whether a problem report can be sent now.
+func can_report() -> bool:
+	return status in ["ready", "in_zone"]
+
+
+const SHOT_PART := 3800
+
+## A problem report: the screenshot (WebP bytes, may be empty) in parts, then
+## the report itself. Answered with `reported`.
+func send_report(category: int, where: String, fps: float, details: Dictionary, shot: PackedByteArray) -> void:
+	if not can_report():
+		reported.emit(2, 0)
+		return
+	var total := ceili(shot.size() / float(SHOT_PART))
+	if total > 0 and total <= 12:
+		for i in total:
+			send("reportShot", {"part": i, "total": total, "data": shot.slice(i * SHOT_PART, mini(shot.size(), (i + 1) * SHOT_PART))})
+	send("report", {"category": category, "where": where.left(24), "fps": clampi(roundi(fps), 0, 255), "details": JSON.stringify(details).left(1500)})
 
 
 ## Takes today's streak reward; the server answers with `daily` (and `profile`).

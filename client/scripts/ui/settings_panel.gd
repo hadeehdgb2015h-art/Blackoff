@@ -5,6 +5,7 @@ extends PanelContainer
 signal closed
 
 signal open_layout
+signal report  ## REPORT A PROBLEM (phase 29): the menu that opened these settings takes the screenshot
 
 var _sens_label: Label
 var _vol_label: Label
@@ -165,6 +166,8 @@ func _ready() -> void:
 	spk.toggled.connect(func(on): Settings.voice_speaker = on)
 	v.add_child(spk)
 
+	var rep := UiTheme.button(tr("REPORT A PROBLEM"), func(): report.emit())
+	v.add_child(rep)
 	v.add_child(UiTheme.gold_button(tr("DONE"), _close))
 	Platform.on_back(self, _close)
 	_refresh()

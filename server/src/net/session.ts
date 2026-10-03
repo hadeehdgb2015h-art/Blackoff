@@ -26,6 +26,8 @@ import { DailyService, type DailyUpdate } from "../daily/dailyService.js";
 import { CardService, cardsBaseUrl, cardsDir } from "../card/cardService.js";
 import type { CardLang } from "../card/cardRender.js";
 import type { TelegramBot } from "../bot/telegramBot.js";
+import { addDays, computeAnalytics, utcDay, type ActivityPatch, type Analytics } from "../stats/analytics.js";
+import { REPORT_CATEGORIES, ReportLimiter, ShotBuffer, cleanClientInfo, cleanDetails, type ClientInfo } from "../report/report.js";
 
 export interface Account { id: string; name: string; playerId: number; profile: Profile; weekly: WeeklyStanding }
 
@@ -56,6 +58,8 @@ export class SessionHub implements ZoneSink {
   readonly lastResult = new Map<string, ZoneResult>();
   private readonly inviteKey: Buffer;
   botUsername: string;
+  /** problem reports: one a minute, ten a day per account (phase 29) */
+  readonly reportLimit = new ReportLimiter();
 
   constructor(readonly env: Env, readonly shared: SharedData, readonly codec: Codec, readonly zones: ZoneManager, readonly store: ProfileStore) {
     zones.sink = this;
@@ -110,6 +114,7 @@ export class SessionHub implements ZoneSink {
       ...z, tonMicro: z.mode === GameMode.INFECTION ? 0 : z.kills * this.settings.tonPerKill(), flags,
       xp: xpFor(z, this.shared.constants.progression),
     };
+    this.activity(z.accountId, { games: 1, seconds: z.seconds, wave: z.wave });
     this.track(this.store.record(r).then(
       async (profile) => {
         let daily: DailyUpdate | null = null;
@@ -127,6 +132,18 @@ export class SessionHub implements ZoneSink {
       },
       (err: Error) => log.warn("profile write failed", { account: r.accountId, error: err.message }),
     ));
+  }
+
+  /** Adds to today's activity of an account (the owner's statistics, phase 29). */
+  activity(accountId: string, patch: ActivityPatch): void {
+    this.track(this.store.touchActivity(accountId, patch).catch((err: Error) => log.warn("activity write failed", { error: err.message })));
+  }
+
+  /** The owner's statistics over the last two weeks of activity. */
+  async analytics(today = utcDay()): Promise<Analytics> {
+    const from = addDays(today, -15);
+    const [rows, first] = await Promise.all([this.store.activitySince(from), this.store.firstSeenSince(from)]);
+    return computeAnalytics(rows, first, today);
   }
 
   onMatch(m: MatchSummary): void {
@@ -158,6 +175,8 @@ export class SessionHub implements ZoneSink {
 }
 
 const HELLO_TIMEOUT_MS = 10_000;
+/** S2C reported status (protocol enum reportStatus). */
+const ReportStatus = { OK: 0, TOO_SOON: 1, ERROR: 2 } as const;
 /** S2C card status (protocol enum cardStatus). */
 const CardStatus = { OK: 0, NOTHING: 1, UNAVAILABLE: 2, BUSY: 3, ERROR: 4 } as const;
 const CARD_COOLDOWN_MS = 8_000;
@@ -213,6 +232,9 @@ export class Session implements ZoneClient {
   private helloPending = false;
   private dropped = 0;
   private lastCardAt = 0;
+  /** the device the game runs on (clientInfo, phase 29): shown to the owner, never trusted */
+  client: ClientInfo | null = null;
+  private readonly shot = new ShotBuffer();
   private readonly inputs: Bucket;
   private readonly other = new Bucket(10, 20);
   private readonly voice: Bucket;
@@ -281,6 +303,10 @@ export class Session implements ZoneClient {
       case "daily": return void this.onDaily(false);
       case "claimDaily": return void this.onDaily(true);
       case "card": return void this.onCard(msg);
+      case "clientInfo": return this.onClientInfo(msg);
+      case "perf": return this.onPerf(msg);
+      case "reportShot": this.shot.add(msg.part as number, msg.total as number, msg.data as Uint8Array); return;
+      case "report": return void this.onReport(msg);
       default: return this.strike("unexpected message " + name);
     }
   }
@@ -329,6 +355,54 @@ export class Session implements ZoneClient {
     this.helloPending = false;
     if (this.ws.readyState !== this.ws.OPEN) return; // left while we waited
     this.adopt({ id, name, playerId: this.hub.playerIdFor(id), profile, weekly }, crypto.randomBytes(18).toString("base64url"));
+    this.hub.activity(id, { opens: 1 });
+  }
+
+  /** Once per connection: the device, for the owner's statistics and reports. */
+  private onClientInfo(msg: Msg): void {
+    if (this.client) return;
+    this.client = cleanClientInfo(msg);
+    this.hub.activity(this.account!.id, { platform: this.client.platform, lang: this.client.lang });
+  }
+
+  /** The average FPS of a game that just ended (statistics only). */
+  private onPerf(msg: Msg): void {
+    const fps = msg.fps as number;
+    if (fps < 1 || fps > 240 || (msg.seconds as number) < 20) return;
+    this.hub.activity(this.account!.id, { fps });
+  }
+
+  /** A problem report: stored with what the server knows, then sent to the owners by the bot. */
+  private async onReport(msg: Msg): Promise<void> {
+    const account = this.account!;
+    const reply = (status: number, id = 0) => {
+      if (this.ws.readyState === this.ws.OPEN) this.send("reported", { status, id });
+    };
+    const category = msg.category as number;
+    if (category >= REPORT_CATEGORIES.length) return this.strike("bad report category");
+    const shot = this.shot.take();
+    if (!this.hub.reportLimit.take(account.id)) return reply(ReportStatus.TOO_SOON);
+    const z = this.zone;
+    const info = {
+      where: String(msg.where ?? "").replace(/[^\w .:-]/g, "").slice(0, 24),
+      fps: msg.fps as number,
+      shot: !!shot,
+      level: levelFor(account.profile.xp, this.hub.shared.constants.progression),
+      games: account.profile.games,
+      client: this.client ?? {},
+      details: cleanDetails(String(msg.details ?? "")),
+      zone: z ? { id: z.id, mode: GameMode[z.mode], wave: z.world.director.wave, players: z.size, state: ZoneState[z.state] } : null,
+    };
+    try {
+      const id = await this.hub.store.addReport({ accountId: account.id, name: account.name, category, info });
+      log.info("problem report", { id, account: account.id, category: REPORT_CATEGORIES[category], shot: !!shot });
+      reply(ReportStatus.OK, id);
+      const row = await this.hub.store.report(id);
+      if (row && this.hub.bot) await this.hub.bot.onReport(row, shot);
+    } catch (err) {
+      log.warn("problem report failed", { account: account.id, error: (err as Error).message });
+      reply(ReportStatus.ERROR);
+    }
   }
 
   onProfile(profile: Profile, weekly: WeeklyStanding): void {

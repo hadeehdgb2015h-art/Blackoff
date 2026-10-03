@@ -71,7 +71,7 @@ describe.skipIf(!dbUrl)("postgres store", () => {
   let pool: pg.Pool;
   beforeAll(async () => {
     pool = new pg.Pool({ connectionString: dbUrl });
-    await pool.query("DROP TABLE IF EXISTS players, matches, weekly_scores, settings, daily_state, schema_migrations");
+    await pool.query("DROP TABLE IF EXISTS players, matches, weekly_scores, settings, daily_state, activity, reports, schema_migrations");
   });
   afterAll(() => pool.end());
 
@@ -92,5 +92,28 @@ describe.skipIf(!dbUrl)("postgres store", () => {
     const t = new Date();
     await store.recordMatch({ mapId: "facility_01", startedAt: t, endedAt: t, wave: 4, players: 2, reason: "game over" });
     expect((await pool.query("SELECT count(*)::int AS n FROM matches")).rows[0].n).toBe(1);
+  });
+
+  it("keeps daily activity and problem reports (phase 29)", async () => {
+    const store = new PgProfileStore(pool);
+    await store.touchActivity("tg:1", { opens: 1, platform: "ios", lang: "ar" }, "2026-10-01");
+    await store.touchActivity("tg:1", { games: 1, seconds: 60.4, wave: 4, fps: 41.6 }, "2026-10-01");
+    await store.touchActivity("tg:1", { games: 1, seconds: 30, wave: 2, fps: 30, platform: "" }, "2026-10-01");
+    await store.touchActivity("tg:1", { opens: 1 }, "2026-10-02");
+    const rows = await store.activitySince("2026-10-01");
+    expect(rows.find((r) => r.day === "2026-10-01")).toEqual({
+      day: "2026-10-01", accountId: "tg:1", opens: 1, games: 2, seconds: 90, bestWave: 4, platform: "ios", lang: "ar", fpsSum: 72, fpsN: 2,
+    });
+    expect(rows).toHaveLength(2);
+    expect((await store.firstSeenSince("2000-01-01")).get("tg:1")).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+    const id = await store.addReport({ accountId: "tg:1", name: "Ali", category: 2, info: { where: "menu", client: { lang: "ar" } } });
+    await store.noteReport(id, "first");
+    await store.noteReport(id, "second");
+    expect(await store.report(id)).toMatchObject({ id, category: 2, notes: "first\nsecond", resolved: false, info: { where: "menu" } });
+    expect(await store.countOpenReports()).toBe(1);
+    expect(await store.resolveReport(id)).toBe(true);
+    expect(await store.resolveReport(id)).toBe(false);
+    expect(await store.reports(10, true)).toEqual([]);
+    expect((await store.reports(10, false))[0]!.id).toBe(id);
   });
 });

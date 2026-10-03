@@ -52,6 +52,9 @@ var _room_t: float = 0.0
 var _machines := {} ## perk id -> PerkMachineView
 var _acc: float = 0.0
 var _paused: bool = false
+var _stat_time := 0.0       ## seconds of play measured for the owner's statistics (phase 29)
+var _stat_frames := 0
+var _stat_sent := false
 var _last_wave: int = 0  ## the wave the game ended on (the challenge message)
 var _pause_menu: Control
 var _groan_t: float = 2.0
@@ -237,6 +240,9 @@ func _process(delta: float) -> void:
 			world.step()
 			_sync_views()
 			_acc -= world.dt
+	if not _paused and not _stat_sent:
+		_stat_time += delta
+		_stat_frames += 1
 	_prof_t0 = Time.get_ticks_usec()
 	if not _paused:
 		_acc += delta
@@ -652,6 +658,7 @@ func _on_event(e: Dictionary) -> void:
 			Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 			_last_wave = int(e.wave)
 			_hud.show_game_over(int(e.wave), world.players[pid], world.scores())
+			_send_perf()
 	_hud.on_event(e, pid)
 
 
@@ -897,6 +904,7 @@ func _toggle_pause() -> void:
 	if _paused:
 		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 		_pause_menu = PauseMenu.new()
+		_pause_menu.where = ("game w%d" % world.director.wave) if world else "game"
 		_hud.add_child(_pause_menu)
 		_pause_menu.resume.connect(_toggle_pause)
 		_pause_menu.quit.connect(_to_menu)
@@ -1157,7 +1165,16 @@ func _sync_voice_buttons() -> void:
 	_controls.queue_redraw()
 
 
+## The average frame rate of this game, once (the owner's device statistics).
+func _send_perf() -> void:
+	if _stat_sent or _stat_time <= 0.0:
+		return
+	_stat_sent = true
+	Net.send_perf(_stat_frames / _stat_time, _stat_time)
+
+
 func _exit_tree() -> void:
+	_send_perf()
 	if world is NetWorld:
 		(world as NetWorld).close()
 	if Net.failed.is_connected(_on_net_failed):

@@ -74,6 +74,15 @@ func _ready() -> void:
 		# screenshot tests: log in (needs ?server= and ?name=) and show the profile card
 		if Net.status in ["offline", "failed"] and Net.is_online_available():
 			Net.connect_to_server(false)
+	elif Platform.query_param("screen") == "report":
+		# screenshot tests: the report panel once logged in (needs ?server= and ?name=)
+		if Net.status in ["offline", "failed"] and Net.is_online_available():
+			Net.connect_to_server(false)
+		var opened := [false]
+		Net.status_changed.connect(func(st: String):
+			if st == "ready" and not opened[0] and is_inside_tree():
+				opened[0] = true
+				get_tree().create_timer(3.0).timeout.connect(func(): ReportPanel.open(_content, [], "menu")))
 	elif Platform.query_param("screen") == "daily":
 		# screenshot tests: open the daily panel once logged in (needs ?server= and ?name=)
 		_daily_opened = true
@@ -560,6 +569,7 @@ func _settings() -> void:
 	center.add_child(s)
 	s.closed.connect(center.queue_free)
 	s.open_layout.connect(_open_layout)
+	s.report.connect(func(): ReportPanel.open(_content, [center], "menu"))
 
 
 func _open_layout() -> void:

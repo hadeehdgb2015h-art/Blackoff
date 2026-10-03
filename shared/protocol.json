@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "protocolVersion": 13,
+  "protocolVersion": 14,
   "endianness": "little",
   "frame": "u8 messageId followed by fields in declared order; one message per WebSocket binary frame. Decoders reject unknown ids, short frames and trailing bytes.",
   "primitives": {
@@ -81,7 +81,9 @@
     "gameMode": {"classic": 0, "infection": 1},
     "missionKind": {"kills": 0, "headshots": 1, "wave": 2, "boss": 3, "games": 4},
     "dailyPaid": {"none": 0, "streak": 1, "missions": 2},
-    "cardStatus": {"ok": 0, "nothing": 1, "unavailable": 2, "busy": 3, "error": 4}
+    "cardStatus": {"ok": 0, "nothing": 1, "unavailable": 2, "busy": 3, "error": 4},
+    "reportCategory": {"lag": 0, "controls": 1, "connection": 2, "sound": 3, "visual": 4, "other": 5},
+    "reportStatus": {"ok": 0, "tooSoon": 1, "error": 2}
   },
   "types": {
     "inputButtons": "u8 bitmask: 1=fireHeld 2=reload 4=interact 8=revive 16=switchWeapon 32=firePressed (latched edge since last input) 64=aimDownSights (held)",
@@ -138,7 +140,11 @@
       "dev": {"id": 10, "fields": [["cmd", "u8"], ["arg", "u16"]]},
       "daily": {"id": 11, "fields": []},
       "claimDaily": {"id": 12, "fields": []},
-      "card": {"id": 13, "fields": [["lang", "str8"]]}
+      "card": {"id": 13, "fields": [["lang", "str8"]]},
+      "clientInfo": {"id": 14, "fields": [["platform", "str8"], ["tgVersion", "str8"], ["lang", "str8"], ["build", "str8"], ["screen", "str8"]]},
+      "perf": {"id": 15, "fields": [["fps", "u8"], ["seconds", "u16"]]},
+      "reportShot": {"id": 16, "fields": [["part", "u8"], ["total", "u8"], ["data", "bytes16"]]},
+      "report": {"id": 17, "fields": [["category", "u8"], ["where", "str8"], ["fps", "u8"], ["details", "str16"]]}
     },
     "S2C": {
       "welcome": {
@@ -258,7 +264,8 @@
           ["paidKind", "u8"]
         ]
       },
-      "card": {"id": 78, "fields": [["status", "u8"], ["url", "str16"], ["prepared", "str8"], ["preview", "str16"]]}
+      "card": {"id": 78, "fields": [["status", "u8"], ["url", "str16"], ["prepared", "str8"], ["preview", "str16"]]},
+      "reported": {"id": 79, "fields": [["status", "u8"], ["id", "u32"]]}
     }
   },
   "coordinates": "Sim plane is Godot (x, z); y is up. yaw=0 faces -Z, positive yaw turns left (Godot rotation.y). pitch>0 looks up.",
@@ -309,6 +316,7 @@
   },
   "_dailyNote": "Phase 23. C2S daily asks for the state, claimDaily takes today's streak reward. S2C daily is sent after welcome, on request, after a claim and after each recorded game; paidMicro/paidKind tell what that message just paid (missions are paid automatically when done, the all-missions bonus with them). nextDay = the streak day (1-7) today's claim pays, or paid if already claimed; resetSec = seconds to the next day (00:00 UTC).",
   "_cardNote": "Phase 25. C2S card {lang} asks for the result card of the game being played (or the last one recorded); S2C card answers with the status (cardStatus), the public URL of the JPEG the server drew from its own numbers, a small PNG preview (the web engine has no JPEG decoder), and the id of a prepared Telegram message (savePreparedInlineMessage) for WebApp.shareMessage, \"\" when there is none.",
+  "_reportNote": "Phase 29. clientInfo (once after welcome) and perf (average FPS over a game, sent when it ends) describe the device for the owner's statistics only; nothing in them is trusted for play. A problem report is reportShot parts (an optional WebP screenshot, at most 12 parts) followed by report {category (reportCategory), where (menu / game / wave), fps, details: short JSON of the client's settings}; the server adds what it knows itself, sends it to the owners through the bot and answers reported {status (reportStatus), id}.",
   "_levelNote": "Phase 26. welcome and profile carry the account's xp and level (computed by the server from shared constants.progression); roster entries carry each player's level so teammates see ranks.",
   "_tonNote": "tonMicro = TON points in millionths (1000 = 0.001 TON). Earned per kill in online zones only; the server owns every number. Prizes are paid by the owner by hand from the weekly leaderboard.",
   "_voiceNote": "Voice frames are opaque to the server: it relays each C2S voice frame to the other connected members of the zone that listen (voiceListen), stamped with the speaker's entityId. Format (client/web/voice.js): 40 ms of 16 kHz mono IMA ADPCM, 4-byte header + 320 bytes.",

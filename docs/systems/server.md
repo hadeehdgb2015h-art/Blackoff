@@ -106,3 +106,21 @@ At game over CHALLENGE FRIENDS asks for `card {lang}`. The server takes the play
 
 ## Levels and ranks (phase 26)
 `src/progression.ts`, numbers in `shared/constants.json` → `progression`. Each recorded online game gives XP from the server's own record: kills × 10, headshot kills × 5 and wave reached × 50 (zombies) or 20 per minute played (infection). Level n → n+1 costs 500 + 150 × (n − 1) XP (level 10 ≈ 9.9k, 50 ≈ 201k, 100 ≈ 777k). Thirteen ranks from Recruit (level 1) to Legend (100), each with its insignia (chevrons, chevrons with rockers, bars, diamonds, a crown) and metal (iron, bronze, silver, gold, crimson). `players.xp` (migration 5) accumulates with the profile; `welcome` and `profile` carry `xp` and `level`, the zone `roster` each player's level (teammates see ranks). The level is a pure function of XP, mirrored by `client/scripts/core/progression.gd` and checked by both sides through `shared/tests/golden.json` (`levels`, `xpGames`). The result card shows "LEVEL n · RANK", the bot's stats the rank, level and XP. Protocol v13. Tests: `test/progression.test.ts`.
+
+## Statistics and problem reports (phase 29)
+
+**Statistics.** Postgres table `activity` (migration 6) holds one row per account per UTC day: times the game was opened (each fresh `hello`), games and seconds (from every recorded result), the best wave, and descriptive device fields: Telegram platform and interface language (C2S `clientInfo`, once per connection) and the average FPS of each game (C2S `perf`, sent by the client when a game ends, ignored under 20 s). `src/stats/analytics.ts` computes the owner's page from the last 15 days. It shows:
+- active, new, games and minutes per player for today, yesterday and 7 days, with a bar per day;
+- retention: next-day return over the last 7 complete cohorts, and return within a week;
+- where new players stop: opened → played a game → wave 3 → 3 games → came back another day;
+- platforms with their average FPS, devices under 25 FPS, and languages.
+
+"New" is `players.created_at`. Days are UTC, like the daily reward. The bot panel's 📈 button shows it.
+
+**Reports.** REPORT A PROBLEM (settings, pause menu) sends:
+- `reportShot` parts: an optional WebP screenshot, at most 12 × 3.9 KB, 46 KB in all, checked for the RIFF/WEBP header;
+- then `report` {category, where, fps, details: a small JSON of the client's settings, cleaned on the server}.
+
+The server adds the account's level and games and the zone (id, mode, wave, players, state). It stores the report in `reports` and answers `reported` {status, id}. The limit is one report a minute and ten a day per account. The bot then sends the report to every owner, as a photo with the text as caption (`sendPhoto` multipart, falling back to `sendDocument`, then to text). Each report carries the buttons ↩️ reply, ✅ solved (tells the player) and 🗑 close.
+
+The player gets a receipt in their language. Their next messages to the bot within 30 minutes are added to the report and forwarded to the owners. An owner's reply reaches the player and opens a new 30-minute window. The panel's 🐞 button lists open reports.

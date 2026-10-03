@@ -1,3 +1,5 @@
+import { applyPatch, utcDay, type ActivityPatch, type ActivityRow } from "../stats/analytics.js";
+
 /**
  * Player profiles: lifetime stats keyed by account id ("tg:<id>" or "dev:<name>").
  * The server works without a database (MemoryProfileStore, lost on restart);
@@ -73,8 +75,27 @@ export interface StoreOverview { users: number; newToday: number; activeToday: n
 /** One account found by id or name (owner's panel). */
 export interface FoundPlayer { accountId: string; name: string; profile: Profile }
 
+/** A problem report sent from the game (phase 29). */
+export interface NewReport { accountId: string; name: string; category: number; info: Record<string, unknown> }
+export interface ReportRow extends NewReport { id: number; createdAt: Date; notes: string; resolved: boolean }
+
 export interface ProfileStore {
   readonly kind: string;
+  /** Adds to one account's activity on a UTC day (statistics, phase 29). */
+  touchActivity(accountId: string, patch: ActivityPatch, day?: string): Promise<void>;
+  /** Activity rows from `day` (inclusive) to now. */
+  activitySince(day: string): Promise<ActivityRow[]>;
+  /** The UTC day each account created since `day` first appeared. */
+  firstSeenSince(day: string): Promise<Map<string, string>>;
+  addReport(r: NewReport): Promise<number>;
+  report(id: number): Promise<ReportRow | null>;
+  /** Newest first; only unresolved ones with `open`. */
+  reports(limit: number, open: boolean): Promise<ReportRow[]>;
+  countOpenReports(): Promise<number>;
+  /** Appends the player's follow-up text (or the owner's reply) to a report. */
+  noteReport(id: number, text: string): Promise<void>;
+  /** Marks a report resolved; false when it was unknown or already resolved. */
+  resolveReport(id: number): Promise<boolean>;
   overview(): Promise<StoreOverview>;
   /** Telegram accounts ("tg:<id>"), most recently seen first (broadcasts). */
   telegramIds(limit: number): Promise<string[]>;
@@ -127,10 +148,14 @@ export class MemoryProfileStore implements ProfileStore {
   readonly seen = new Map<string, number>();
   readonly settings = new Map<string, unknown>();
   readonly daily = new Map<string, string>();
+  readonly activity = new Map<string, ActivityRow>();
+  readonly created = new Map<string, string>();
+  readonly reportRows: ReportRow[] = [];
 
   async load(accountId: string, name = ""): Promise<Profile> {
     let p = this.profiles.get(accountId);
     if (!p) this.profiles.set(accountId, (p = emptyProfile()));
+    if (!this.created.has(accountId)) this.created.set(accountId, utcDay());
     if (name) this.names.set(accountId, name);
     this.seen.set(accountId, Date.now());
     return { ...p };
@@ -214,6 +239,51 @@ export class MemoryProfileStore implements ProfileStore {
       .sort((a, b) => b[1].suspicion - a[1].suspicion)
       .slice(0, limit)
       .map(([id, p]) => ({ accountId: id, name: "", suspicion: p.suspicion, kills: p.kills, ...(this.stats.get(id) ?? { shots: 0, hits: 0 }) }));
+  }
+
+  async touchActivity(accountId: string, patch: ActivityPatch, day = utcDay()): Promise<void> {
+    const key = day + "|" + accountId;
+    const row = this.activity.get(key) ?? { day, accountId, opens: 0, games: 0, seconds: 0, bestWave: 0, platform: "", lang: "", fpsSum: 0, fpsN: 0 };
+    this.activity.set(key, applyPatch(row, patch));
+  }
+
+  async activitySince(day: string): Promise<ActivityRow[]> {
+    return [...this.activity.values()].filter((r) => r.day >= day).map((r) => ({ ...r }));
+  }
+
+  async firstSeenSince(day: string): Promise<Map<string, string>> {
+    return new Map([...this.created.entries()].filter(([, d]) => d >= day));
+  }
+
+  async addReport(r: NewReport): Promise<number> {
+    const id = this.reportRows.length + 1;
+    this.reportRows.push({ ...r, id, createdAt: new Date(), notes: "", resolved: false });
+    return id;
+  }
+
+  async report(id: number): Promise<ReportRow | null> {
+    const r = this.reportRows[id - 1];
+    return r ? { ...r } : null;
+  }
+
+  async reports(limit: number, open: boolean): Promise<ReportRow[]> {
+    return [...this.reportRows].reverse().filter((r) => !open || !r.resolved).slice(0, limit).map((r) => ({ ...r }));
+  }
+
+  async countOpenReports(): Promise<number> {
+    return this.reportRows.filter((r) => !r.resolved).length;
+  }
+
+  async noteReport(id: number, text: string): Promise<void> {
+    const r = this.reportRows[id - 1];
+    if (r) r.notes = (r.notes ? r.notes + "\n" : "") + text;
+  }
+
+  async resolveReport(id: number): Promise<boolean> {
+    const r = this.reportRows[id - 1];
+    if (!r || r.resolved) return false;
+    r.resolved = true;
+    return true;
   }
 
   async recordMatch(s: MatchSummary): Promise<void> {
