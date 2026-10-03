@@ -129,7 +129,8 @@
       "leave": {"id": 6, "fields": []},
       "leaderboard": {"id": 7, "fields": []},
       "voice": {"id": 8, "fields": [["seq", "u16"], ["data", "bytes16"]]},
-      "voiceListen": {"id": 9, "fields": [["on", "bool"]]}
+      "voiceListen": {"id": 9, "fields": [["on", "bool"]]},
+      "dev": {"id": 10, "fields": [["cmd", "u8"], ["arg", "u16"]]}
     },
     "S2C": {
       "welcome": {
@@ -148,7 +149,8 @@
           ["tonPerKill", "u32"],
           ["voice", "bool"],
           ["inviteCode", "str8"],
-          ["botUsername", "str8"]
+          ["botUsername", "str8"],
+          ["dev", "bool"]
         ]
       },
       "zoneJoined": {

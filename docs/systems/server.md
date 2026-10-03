@@ -80,3 +80,12 @@ npm test                                          # sim, codec, golden contract,
 TEST_DATABASE_URL=postgres://u:p@127.0.0.1/db npm test   # also the Postgres store (CI does this)
 npm run gen:golden                                # after an intended rule change, then fix the client
 ```
+
+## Telegram bot and owner panel (phase 20)
+`src/bot/telegramBot.ts` long-polls Telegram (`getUpdates`; it deletes any webhook at start, so nginx is untouched) when `TELEGRAM_BOT_TOKEN` is set and `BOT_POLLING` is not 0 (never under tests). Players get Arabic replies: /start (welcome, a Play button opening `https://BLACKOFF_DOMAIN/` as a Web App, invite, stats, weekly top, how to play), /stats, /top, /invite, /help; the command menu is set with `setMyCommands`. A rejected token (401/404) makes it stop quietly.
+
+Owners are the Telegram ids in `ADMIN_TELEGRAM_IDS` (the release's `deploy/owner.env` supplies it when `.env` does not: `applyDefaultsFile`). /admin opens a panel of buttons: live zones (mode, wave, players), memory and tick time; player counts; weekly top; anti-cheat suspects; a message to every player (`telegramIds`, 40 ms apart); find, ban (kicks and refuses login) and unban; TON per kill and a x2 event; give or take TON; the prize text; maintenance (no new games except for owners, with a message); the last warnings (`recentProblems`); restart (exit, pm2 starts it again). A button that needs a value asks for it and takes the owner's next message (5 minutes). The switches live in `RuntimeSettings`, stored in the `settings` table (migration 3; memory without Postgres).
+
+## Owner dev powers (phase 20)
+`welcome.dev` is true for owners; the game then shows a DEV button in online zombie games (`client/scripts/ui/dev_panel.gd`). It sends `dev {cmd, arg}` (protocol v9); `Session.onDev` strikes anyone else and applies `src/admin/devPowers.ts` to the live zone: god mode (no damage), infinite ammo, +10,000 credits, full heal, skip the wave, kill every zombie, summon the Warden, jump to wave 5, 10 or 25. Tests: `test/dev.test.ts`, `test/bot.test.ts` (a fake Telegram API).
+

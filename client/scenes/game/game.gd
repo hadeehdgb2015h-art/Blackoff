@@ -193,6 +193,8 @@ func _process(delta: float) -> void:
 			elif Net.joined_friend == 2:
 				_hud.show_toast("Your friend's game was full or over: here is a new one", 4.0)
 			Net.joined_friend = 0
+			if Net.dev and nw.mode == 0:
+				_add_dev_button()
 			if Platform.query_param("voice") == "1":  # browser tests: talk right away
 				Net.set_voice_mic(true)
 		return
@@ -687,6 +689,25 @@ func _ambient_groans(delta: float) -> void:
 	var views := _zviews.values()
 	var v: ZombieView = views[randi() % views.size()]
 	_sfx.play_at("zombie_groan%d" % (1 + randi() % 4), v.global_position + Vector3(0, 1.5, 0), -6.0, 0.1)
+
+
+## The owner's DEV button (online zombie games, welcome.dev): opens DevPanel.
+func _add_dev_button() -> void:
+	DevPanel.god = false  # a new game: the server starts every player without powers
+	DevPanel.ammo = false
+	var b := UiTheme.gold_button("DEV", func():
+		_controls.enabled = false
+		_controls.release_all()
+		var panel := DevPanel.new()
+		_hud.add_child(panel)
+		panel.closed.connect(func(): _controls.enabled = true))
+	b.custom_minimum_size = Vector2(92, 46)
+	var ins := Platform.safe_insets(get_viewport().get_visible_rect().size)
+	b.position = Vector2(24 + float(ins.left), 84 + float(ins.top))
+	_hud.add_child(b)
+	print("[game] dev powers available")
+	if Platform.query_param("devpanel") == "1":  # screenshot tests
+		b.pressed.emit()
 
 
 ## ?showcase=1: art review mode. Waves off, player invulnerable, one of each

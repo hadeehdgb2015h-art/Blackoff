@@ -20,6 +20,7 @@ import type { ZoneManager, ZoneSink } from "../zone/zoneManager.js";
 import type { ZoneResult } from "../zone/zone.js";
 import { flagsFor } from "../anticheat.js";
 import { RuntimeSettings } from "../admin/runtime.js";
+import { applyDev } from "../admin/devPowers.js";
 
 export interface Account { id: string; name: string; playerId: number; profile: Profile; weekly: WeeklyStanding }
 
@@ -218,6 +219,7 @@ export class Session implements ZoneClient {
       case "leave": return this.leaveZone();
       case "leaderboard": return void this.onLeaderboard();
       case "voiceListen": this.voiceListen = !!msg.on; return;
+      case "dev": return this.onDev(msg);
       default: return this.strike("unexpected message " + name);
     }
   }
@@ -308,6 +310,7 @@ export class Session implements ZoneClient {
       tickRate: this.hub.shared.constants.sim.tickRate, ...profileMsg(account.profile, account.weekly, this.hub.settings.tonPerKill()),
       voice: this.hub.env.VOICE_CHAT,
       inviteCode: this.hub.inviteCodeFor(account.id), botUsername: this.hub.botUsername,
+      dev: this.hub.isOwner(account.id),
     });
     const zone = slot ? this.hub.zones.zones.get(slot.zoneId) : undefined;
     if (zone && slot && zone.attach(slot.entityId, this)) {
@@ -348,6 +351,15 @@ export class Session implements ZoneClient {
     const friend = this.hub.byAccount.get(friendId);
     if (!friend?.zone || !friend.account) return null;
     return this.hub.zones.joinFriend(this, this.account!.id, friend.zone, friend.account.name);
+  }
+
+  /** The owner's in-game powers; anyone else sending one is struck. */
+  private onDev(msg: Msg): void {
+    if (!this.hub.isOwner(this.account!.id)) return this.strike("not allowed");
+    const p = this.zone?.world.players.get(this.entityId);
+    if (!this.zone || !p || this.zone.mode !== GameMode.CLASSIC) return;
+    const what = applyDev(this.zone.world, p, msg.cmd as number, msg.arg as number);
+    log.info("dev power", { account: this.account!.id, zone: this.zone.id, what });
   }
 
   /** A voice frame: relayed as-is to the other members of the zone. The

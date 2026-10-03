@@ -109,5 +109,12 @@
 - [ ] Owner: enable the bot's Mini App in @BotFather (needed for invite links)
 - [ ] Next: boss wave every 5 waves, daily reward and missions, a result card image for sharing
 
+## Phase 20: boss, bot, owner powers
+- [x] Boss wave every 5 waves: THE WARDEN (both sims, health bar, roar, tests)
+- [x] The bot answers players (Arabic): Play button, stats, weekly top, invite, how to play
+- [x] Owner panel in the bot (/admin): live zones, players, top, suspects, broadcast, find/ban/unban, TON per kill and x2, give TON, prize, maintenance, warnings, restart
+- [x] Owner DEV powers in game: god mode, infinite ammo, money, heal, skip wave, kill all, summon the Warden, jump to wave
+- [ ] Next: daily reward and missions, a result card image for sharing
+
 ## Open questions for the owner
 - Own subdomain or the free sslip.io address (installer default)

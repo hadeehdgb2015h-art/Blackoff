@@ -98,7 +98,10 @@ export class SimWorld {
     this.tick += 1;
     this.time += this.dt;
     if (this.zoneState === ZoneState.GAME_OVER) return;
-    for (const p of this.players.values()) this.playerSys.update(p);
+    for (const p of this.players.values()) {
+      this.playerSys.update(p);
+      if (p.infiniteAmmo) for (const wp of p.weapons) { wp.mag = wp.def.magSize; wp.reserve = Math.max(wp.reserve, wp.def.reserveStart); }
+    }
     if (this.infection) {
       // no AI zombies, boxes, power-ups or waves: the round rules decide everything
       this.infection.update();
@@ -129,7 +132,7 @@ export class SimWorld {
   }
 
   damagePlayer(p: SimPlayer, amount: number, sourceId: number): void {
-    if (!p.isAlive()) return;
+    if (!p.isAlive() || p.god) return;
     p.hp -= amount;
     p.lastDamageTime = this.time;
     this.emit({ type: "player_damaged", pid: p.id, amount, source: sourceId });

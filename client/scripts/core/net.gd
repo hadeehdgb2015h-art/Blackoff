@@ -25,6 +25,7 @@ var leaderboard: Dictionary = {}  ## last weekly leaderboard received
 var tick_rate: int = 20
 var invite_code: String = ""      ## this player's invite code (from welcome)
 var bot_username: String = ""     ## the bot's @username, for t.me links ("" = invites off)
+var dev: bool = false             ## this account has the owner's dev powers (welcome.dev)
 var friend_code: String = ""      ## a friend's invite code to join on the next quick play (from the launch link)
 var joined_friend: int = 0        ## last zoneJoined: 0 alone, 1 in a friend's game, 2 the invite could not be honoured
 var joined_friend_name: String = ""
@@ -190,6 +191,7 @@ func _on_packet(data: PackedByteArray) -> void:
 			ton_per_kill = int(msg.get("tonPerKill", 0))
 			invite_code = str(msg.get("inviteCode", ""))
 			bot_username = str(msg.get("botUsername", ""))
+			dev = bool(msg.get("dev", false))
 			_setup_voice(bool(msg.get("voice", false)))
 			print("[net] logged in as %s (games %d, best wave %d, TON %.3f)" % [display_name, profile.games, profile.bestWave, profile.tonMicro / 1000000.0])
 			var resumed := _resume_token != "" and _resume_token == str(msg.resumeToken)

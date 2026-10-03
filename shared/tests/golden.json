@@ -206,59 +206,66 @@
    "hex": "0901"
   },
   {
+   "dir": "C2S",
+   "name": "dev",
+   "msg": {
+    "cmd": 20,
+    "arg": 41171
+   },
+   "hex": "0a14d3a0"
+  },
+  {
+   "dir": "C2S",
+   "name": "dev",
+   "msg": {
+    "cmd": 98,
+    "arg": 65113
+   },
+   "hex": "0a6259fe"
+  },
+  {
    "dir": "S2C",
    "name": "welcome",
    "msg": {
-    "playerId": 297551380,
-    "displayName": "علي",
-    "resumeToken": "Ali_99",
-    "tickRate": 89,
-    "games": 1702601223,
-    "kills": 3013969310,
-    "bestWave": 49065,
-    "tonMicro": 3361724775,
-    "weekKills": 525522594,
-    "weekRank": 4216,
-    "tonPerKill": 283405714,
+    "playerId": 1702601223,
+    "displayName": "",
+    "resumeToken": "hello world",
+    "tickRate": 103,
+    "games": 525522594,
+    "kills": 2150961272,
+    "bestWave": 28050,
+    "tonMicro": 1050489194,
+    "weekKills": 4176513413,
+    "weekRank": 43268,
+    "tonPerKill": 2229272142,
     "voice": false,
     "inviteCode": "علي",
-    "botUsername": "zombie"
+    "botUsername": "zombie",
+    "dev": false
    },
-   "hex": "401446bc1106d8b9d984d98a06416c695f39395907a27b659e85a5b3a9bf67d95fc8a2d6521f7810926de4100006d8b9d984d98a067a6f6d626965"
+   "hex": "4007a27b65000b68656c6c6f20776f726c6467a2d6521f78103580926d6a319d3e8589f0f804a94efedf840006d8b9d984d98a067a6f6d62696500"
   },
   {
    "dir": "S2C",
    "name": "welcome",
    "msg": {
-    "playerId": 2229272142,
-    "displayName": "zombie",
-    "resumeToken": "علي",
-    "tickRate": 216,
-    "games": 1974703074,
-    "kills": 517158524,
-    "bestWave": 39003,
-    "tonMicro": 2945836654,
-    "weekKills": 821541266,
-    "weekRank": 20938,
-    "tonPerKill": 1083380614,
-    "voice": true,
+    "playerId": 517158524,
+    "displayName": "Ali_99",
+    "resumeToken": "hello world",
+    "tickRate": 146,
+    "games": 4054602186,
+    "kills": 1083380614,
+    "bestWave": 42405,
+    "tonMicro": 1869597629,
+    "weekKills": 2603994802,
+    "weekRank": 16065,
+    "tonPerKill": 878724400,
+    "voice": false,
     "inviteCode": "hello world",
-    "botUsername": "Ali_99"
+    "botUsername": "hello world",
+    "dev": false
    },
-   "hex": "404efedf84067a6f6d62696506d8b9d984d98ad8e293b3757c36d31e5b986ee695af92b9f730ca5186139340010b68656c6c6f20776f726c6406416c695f3939"
-  },
-  {
-   "dir": "S2C",
-   "name": "zoneJoined",
-   "msg": {
-    "zoneId": 1497513665,
-    "mapId": "",
-    "entityId": 48018,
-    "mode": 232,
-    "friend": 231,
-    "friendName": "علي"
-   },
-   "hex": "41c13e42590092bbe8e706d8b9d984d98a"
+   "hex": "407c36d31e06416c695f39390b68656c6c6f20776f726c6492ca51acf186139340a5a5bdcb6f6fb2ce359bc13e30456034000b68656c6c6f20776f726c640b68656c6c6f20776f726c6400"
   },
   {
    "dir": "S2C",
@@ -275,234 +282,238 @@
   },
   {
    "dir": "S2C",
+   "name": "zoneJoined",
+   "msg": {
+    "zoneId": 947446919,
+    "mapId": "علي",
+    "entityId": 60530,
+    "mode": 208,
+    "friend": 127,
+    "friendName": ""
+   },
+   "hex": "4187e4783806d8b9d984d98a72ecd07f00"
+  },
+  {
+   "dir": "S2C",
    "name": "snapshot",
    "msg": {
-    "tick": 947446919,
-    "ackSeq": 9215,
-    "zoneState": 114,
-    "wave": 4816,
-    "remaining": 55935,
-    "timer": 41552,
+    "tick": 1837131881,
+    "ackSeq": 54127,
+    "zoneState": 24,
+    "wave": 23659,
+    "remaining": 15437,
+    "timer": 51708,
     "entities": [
      {
-      "id": 54127,
-      "kind": 24,
-      "sub": 107,
-      "x": -270.796875,
-      "y": 295.9375,
-      "floor": 7,
-      "yaw": 1.575110647760825,
+      "id": 16429,
+      "kind": 3,
+      "sub": 179,
+      "x": -300.890625,
+      "y": -5.765625,
+      "floor": 238,
+      "yaw": 5.307190030887347,
+      "hp": 228,
+      "flags": 29
+     },
+     {
+      "id": 40920,
+      "kind": 131,
+      "sub": 121,
+      "x": 53.421875,
+      "y": 156.9375,
+      "floor": 105,
+      "yaw": 3.21004654624919,
+      "hp": 119,
+      "flags": 246
+     }
+    ],
+    "removed": [
+     8867,
+     10159
+    ],
+    "instaKill": 192,
+    "doublePoints": 20,
+    "fireSale": 45
+   },
+   "hex": "426968806d6fd3186b5c4d3cfcc9022d4003b3c7b48ffeee3cd8e41dd89f83795b0d3c2769ca8277f602a322af27c0142d"
+  },
+  {
+   "dir": "S2C",
+   "name": "snapshot",
+   "msg": {
+    "tick": 1095636192,
+    "ackSeq": 4809,
+    "zoneState": 125,
+    "wave": 28121,
+    "remaining": 2057,
+    "timer": 51745,
+    "entities": [
+     {
+      "id": 47441,
+      "kind": 14,
+      "sub": 123,
+      "x": -440.6875,
+      "y": -100.625,
+      "floor": 166,
+      "yaw": 2.9331630140358316,
       "hp": 3,
-      "flags": 179
-     },
-     {
-      "id": 13511,
-      "kind": 143,
-      "sub": 238,
-      "x": 352.9375,
-      "y": -132.4375,
-      "floor": 29,
-      "yaw": 3.9231558650175273,
-      "hp": 131,
-      "flags": 121
-     },
-     {
-      "id": 36187,
-      "kind": 60,
-      "sub": 105,
-      "x": 11.15625,
-      "y": -414.140625,
-      "floor": 246,
-      "yaw": 3.730928897535608,
-      "hp": 163,
-      "flags": 175
+      "flags": 66
      }
     ],
     "removed": [
-     36628
+     46427,
+     13784
     ],
-    "instaKill": 45,
-    "doublePoints": 224,
-    "fireSale": 201
+    "instaKill": 36,
+    "doublePoints": 228,
+    "fireSale": 66
    },
-   "hex": "4287e47838ff2372d0127fda50a2036fd3186b4dbcfc49072d4003b3c7348fee3c58e4de1dd89f83795b8d3c69ca027798f60398a3af01148f2de0c9"
-  },
-  {
-   "dir": "S2C",
-   "name": "snapshot",
-   "msg": {
-    "tick": 906341501,
-    "ackSeq": 28121,
-    "zoneState": 9,
-    "wave": 51745,
-    "remaining": 64281,
-    "timer": 47441,
-    "entities": [
-     {
-      "id": 49019,
-      "kind": 212,
-      "sub": 216,
-      "x": 214.59375,
-      "y": -33.96875,
-      "floor": 3,
-      "yaw": 5.89681389623089,
-      "hp": 152,
-      "flags": 91
-     }
-    ],
-    "removed": [
-     25124
-    ],
-    "instaKill": 228,
-    "doublePoints": 66,
-    "fireSale": 250
-   },
-   "hex": "427dac0536d96d0921ca19fb51b9017bbfd4d8a63582f70342f0985b012462e442fa"
+   "hex": "42e0144e41c9127dd96d090821ca0151b90e7bd491d8e6a682770342025bb5d83524e442"
   },
   {
    "dir": "S2C",
    "name": "selfState",
    "msg": {
-    "hp": 124,
-    "state": 198,
-    "currency": 3121377621,
-    "slot": 230,
+    "hp": 250,
+    "state": 124,
+    "currency": 169120454,
+    "slot": 85,
     "weapons": [
      {
-      "weapon": 41,
-      "mag": 123,
-      "reserve": 48641
+      "weapon": 237,
+      "mag": 41,
+      "reserve": 13691
      },
      {
-      "weapon": 172,
-      "mag": 3,
-      "reserve": 29724
-     },
-     {
-      "weapon": 100,
-      "mag": 236,
-      "reserve": 8275
+      "weapon": 1,
+      "mag": 172,
+      "reserve": 8707
      }
     ],
-    "flags": 81,
-    "revive": 157,
-    "bleedout": 239,
-    "perks": 197
+    "flags": 28,
+    "revive": 100,
+    "bleedout": 236,
+    "perks": 83
    },
-   "hex": "437cc655710cbae603297b01beac031c7464ec5320519defc5"
+   "hex": "43fa7cc692140a5502ed297b3501ac03221c64ec53"
   },
   {
    "dir": "S2C",
    "name": "selfState",
    "msg": {
-    "hp": 32,
-    "state": 212,
-    "currency": 1188368971,
-    "slot": 179,
+    "hp": 81,
+    "state": 157,
+    "currency": 2306417135,
+    "slot": 197,
     "weapons": [
      {
-      "weapon": 24,
-      "mag": 79,
-      "reserve": 2943
+      "weapon": 212,
+      "mag": 75,
+      "reserve": 34483
      },
      {
-      "weapon": 16,
-      "mag": 199,
-      "reserve": 60447
+      "weapon": 221,
+      "mag": 24,
+      "reserve": 27983
+     },
+     {
+      "weapon": 127,
+      "mag": 16,
+      "reserve": 60615
      }
     ],
-    "flags": 79,
-    "revive": 37,
-    "bleedout": 219,
-    "perks": 179
+    "flags": 31,
+    "revive": 79,
+    "bleedout": 37,
+    "perks": 219
    },
-   "hex": "4320d44b12d546b302184f7f0b10c71fec4f25dbb3"
+   "hex": "43519def217989c503d44bb386dd184f6d7f10c7ec1f4f25db"
   },
   {
    "dir": "S2C",
    "name": "event",
    "msg": {
-    "kind": 224,
-    "a": 64052,
-    "b": 53824,
-    "value": -9947,
-    "flags": 173
+    "kind": 179,
+    "a": 55520,
+    "b": 64052,
+    "value": 21056,
+    "flags": 37
    },
-   "hex": "44e034fa40d225d9ad"
+   "hex": "44b3e0d834fa405225"
   },
   {
    "dir": "S2C",
    "name": "event",
    "msg": {
-    "kind": 215,
-    "a": 54336,
-    "b": 42145,
-    "value": 22086,
-    "flags": 5
+    "kind": 173,
+    "a": 43735,
+    "b": 54336,
+    "value": 9377,
+    "flags": 70
    },
-   "hex": "44d740d4a1a4465605"
+   "hex": "44add7aa40d4a12446"
   },
   {
    "dir": "S2C",
    "name": "pong",
    "msg": {
-    "clientTime": 2638520392,
-    "serverTick": 3845373285
+    "clientTime": 2289843973,
+    "serverTick": 2638520392
    },
-   "hex": "4548a0449d65bd33e5"
+   "hex": "45053f7c8848a0449d"
   },
   {
    "dir": "S2C",
    "name": "pong",
    "msg": {
-    "clientTime": 3582445888,
-    "serverTick": 268093157
+    "clientTime": 3845373285,
+    "serverTick": 3582445888
    },
-   "hex": "4540c987d5e5c6fa0f"
+   "hex": "4565bd33e540c987d5"
   },
   {
    "dir": "S2C",
    "name": "error",
    "msg": {
-    "code": 237,
+    "code": 229,
     "message": ""
    },
-   "hex": "46ed00"
+   "hex": "46e500"
   },
   {
    "dir": "S2C",
    "name": "error",
    "msg": {
-    "code": 235,
-    "message": "hello world"
+    "code": 188,
+    "message": "Ali_99"
    },
-   "hex": "46eb0b68656c6c6f20776f726c64"
+   "hex": "46bc06416c695f3939"
   },
   {
    "dir": "S2C",
    "name": "shot",
    "msg": {
-    "playerId": 12615,
-    "weapon": 253,
-    "toX": -145.21875,
-    "toY": -355.40625,
-    "toZ": 387.390625,
-    "hit": 193
+    "playerId": 50899,
+    "weapon": 71,
+    "toX": -288.046875,
+    "toY": -145.21875,
+    "toZ": -355.40625,
+    "hit": 217
    },
-   "hex": "474731fdb2db26a7d960c1"
+   "hex": "47d3c647fdb7b2db26a7d9"
   },
   {
    "dir": "S2C",
    "name": "shot",
    "msg": {
-    "playerId": 31419,
-    "weapon": 8,
-    "toX": -96.953125,
-    "toY": 57.28125,
-    "toZ": 324.046875,
-    "hit": 253
+    "playerId": 8641,
+    "weapon": 187,
+    "toX": 72.125,
+    "toY": -96.953125,
+    "toZ": 57.28125,
+    "hit": 3
    },
-   "hex": "47bb7a08c3e7520e0351fd"
+   "hex": "47c121bb0812c3e7520e03"
   },
   {
    "dir": "S2C",
@@ -510,37 +521,39 @@
    "msg": {
     "players": [
      {
-      "id": 42362,
-      "name": "Ali_99"
-     },
+      "id": 41205,
+      "name": "zombie"
+     }
+    ]
+   },
+   "hex": "4801f5a0067a6f6d626965"
+  },
+  {
+   "dir": "S2C",
+   "name": "roster",
+   "msg": {
+    "players": [
      {
       "id": 48329,
       "name": "hello world"
      }
     ]
    },
-   "hex": "48027aa506416c695f3939c9bc0b68656c6c6f20776f726c64"
+   "hex": "4801c9bc0b68656c6c6f20776f726c64"
   },
   {
    "dir": "S2C",
-   "name": "roster",
+   "name": "profile",
    "msg": {
-    "players": [
-     {
-      "id": 54844,
-      "name": ""
-     },
-     {
-      "id": 51857,
-      "name": "hello world"
-     },
-     {
-      "id": 3402,
-      "name": "hello world"
-     }
-    ]
+    "games": 2296275365,
+    "kills": 525456956,
+    "bestWave": 59892,
+    "tonMicro": 2142685841,
+    "weekKills": 1109156374,
+    "weekRank": 3402,
+    "tonPerKill": 2045919584
    },
-   "hex": "48033cd60091ca0b68656c6c6f20776f726c644a0d0b68656c6c6f20776f726c64"
+   "hex": "49a561de883cd6511ff4e991cab67f16621c424a0d6041f279"
   },
   {
    "dir": "S2C",
@@ -558,143 +571,136 @@
   },
   {
    "dir": "S2C",
-   "name": "profile",
-   "msg": {
-    "games": 9123260,
-    "kills": 1319786736,
-    "bestWave": 7866,
-    "tonMicro": 419767858,
-    "weekKills": 3719238976,
-    "weekRank": 10284,
-    "tonPerKill": 259499611
-   },
-   "hex": "49bc358b00f058aa4eba1e322605194015afdd2c285ba6770f"
-  },
-  {
-   "dir": "S2C",
    "name": "scoreboard",
    "msg": {
-    "wave": 19944,
+    "wave": 13756,
     "players": [
      {
-      "id": 29161,
-      "name": "hello world",
-      "kills": 65096,
-      "headshots": 57360,
-      "downs": 200,
-      "revives": 182
-     },
-     {
-      "id": 21272,
-      "name": "hello world",
-      "kills": 62472,
-      "headshots": 50455,
-      "downs": 108,
-      "revives": 187
-     }
-    ]
-   },
-   "hex": "4ae84d02e9710b68656c6c6f20776f726c6448fe10e0c8b618530b68656c6c6f20776f726c6408f417c56cbb"
-  },
-  {
-   "dir": "S2C",
-   "name": "scoreboard",
-   "msg": {
-    "wave": 16660,
-    "players": [
-     {
-      "id": 50918,
+      "id": 7866,
       "name": "علي",
-      "kills": 59900,
-      "headshots": 14529,
-      "downs": 255,
-      "revives": 16
-     },
-     {
-      "id": 36788,
-      "name": "",
-      "kills": 62338,
-      "headshots": 35981,
-      "downs": 253,
-      "revives": 240
-     },
-     {
-      "id": 40194,
-      "name": "Ali_99",
-      "kills": 39649,
-      "headshots": 60481,
-      "downs": 139,
-      "revives": 55
+      "kills": 5440,
+      "headshots": 10284,
+      "downs": 91,
+      "revives": 232
      }
     ]
    },
-   "hex": "4a144103e6c606d8b9d984d98afce9c138ff10b48f0082f38d8cfdf0029d06416c695f3939e19a41ec8b37"
+   "hex": "4abc3501ba1e06d8b9d984d98a40152c285be8"
   },
   {
    "dir": "S2C",
-   "name": "leaderboard",
+   "name": "scoreboard",
    "msg": {
-    "week": "hello world",
-    "prize": "hello world",
-    "entries": [
+    "wave": 2439,
+    "players": [
      {
-      "rank": 108,
+      "id": 33325,
       "name": "hello world",
-      "kills": 555516933,
-      "tonMicro": 4184542098
+      "kills": 57360,
+      "headshots": 43464,
+      "downs": 182,
+      "revives": 24
      },
      {
-      "rank": 10,
-      "name": "Ali_99",
-      "kills": 2461109609,
-      "tonMicro": 4015651910
+      "id": 23071,
+      "name": "علي",
+      "kills": 50455,
+      "headshots": 8300,
+      "downs": 187,
+      "revives": 20
+     },
+     {
+      "id": 13080,
+      "name": "hello world",
+      "kills": 13324,
+      "headshots": 59900,
+      "downs": 193,
+      "revives": 255
      }
-    ],
-    "myRank": 4747,
-    "myKills": 1527175027,
-    "myTonMicro": 2563148377
+    ]
    },
-   "hex": "4b0b68656c6c6f20776f726c640b68656c6c6f20776f726c64026c0b68656c6c6f20776f726c6405841c21920b6bf90a06416c695f3939698db19246fc59ef8b1273d7065b598ac698"
+   "hex": "4a8709032d820b68656c6c6f20776f726c6410e0c8a9b6181f5a06d8b9d984d98a17c56c20bb1418330b68656c6c6f20776f726c640c34fce9c1ff"
   },
   {
    "dir": "S2C",
    "name": "leaderboard",
    "msg": {
     "week": "zombie",
-    "prize": "zombie",
+    "prize": "",
     "entries": [
      {
-      "rank": 92,
-      "name": "zombie",
-      "kills": 73151479,
-      "tonMicro": 3658073765
-     },
-     {
-      "rank": 179,
-      "name": "hello world",
-      "kills": 1560489660,
-      "tonMicro": 518563502
-     },
-     {
-      "rank": 68,
+      "rank": 130,
       "name": "Ali_99",
-      "kills": 1215938237,
-      "tonMicro": 3759122182
+      "kills": 116275453,
+      "tonMicro": 631251184
+     },
+     {
+      "rank": 2,
+      "name": "Ali_99",
+      "kills": 3275791073,
+      "tonMicro": 3003706433
+     },
+     {
+      "rank": 139,
+      "name": "علي",
+      "kills": 3216488129,
+      "tonMicro": 1378403209
      }
     ],
-    "myRank": 3009,
-    "myKills": 1654681174,
-    "myTonMicro": 635464759
+    "myRank": 19955,
+    "myKills": 3164024940,
+    "myTonMicro": 3743355189
    },
-   "hex": "4b067a6f6d626965067a6f6d626965035c067a6f6d626965f7335c04a5c609dab30b68656c6c6f20776f726c64bc2e035daea6e81e4406416c695f3939bdbe794806a70fe0c10b566ea062376ce025"
+   "hex": "4b067a6f6d62696500038206416c695f3939fd38ee06f020a0250206416c695f3939e19a40c341ec08b38b06d8b9d984d98ac1b6b7bf89c32852f34d6c3097bc35111fdf"
+  },
+  {
+   "dir": "S2C",
+   "name": "leaderboard",
+   "msg": {
+    "week": "علي",
+    "prize": "علي",
+    "entries": [
+     {
+      "rank": 57,
+      "name": "hello world",
+      "kills": 4015651910,
+      "tonMicro": 4114879115
+     },
+     {
+      "rank": 115,
+      "name": "Ali_99",
+      "kills": 396732461,
+      "tonMicro": 3084142281
+     },
+     {
+      "rank": 191,
+      "name": "Ali_99",
+      "kills": 1788492361,
+      "tonMicro": 73151479
+     }
+    ],
+    "myRank": 50853,
+    "myKills": 86937523,
+    "myTonMicro": 3555163644
+   },
+   "hex": "4b06d8b9d984d98a06d8b9d984d98a03390b68656c6c6f20776f726c6446fc59ef8b1244f57306416c695f39392da8a517c946d4b7bf06416c695f3939493a9a6af7335c04a5c6b38f2e05fc7de7d3"
   },
   {
    "dir": "S2C",
    "name": "voice",
    "msg": {
-    "entityId": 63460,
-    "seq": 8615,
+    "entityId": 11964,
+    "seq": 42670,
     "data": [
+     163,
+     189,
+     6,
+     193,
+     86,
+     55,
+     228,
+     167,
+     52,
      232,
      6,
      176,
@@ -713,10 +719,18 @@
      161,
      158,
      18,
-     90,
-     102,
-     176,
-     241,
+     90
+    ]
+   },
+   "hex": "4cbc2eaea61c00a3bd06c15637e4a734e806b049df4ab220f69a2eef6b9a09a19e125a"
+  },
+  {
+   "dir": "S2C",
+   "name": "voice",
+   "msg": {
+    "entityId": 62566,
+    "seq": 17328,
+    "data": [
      160,
      128,
      225,
@@ -730,46 +744,13 @@
      87,
      7,
      86,
-     43
+     43,
+     29,
+     11,
+     17
     ]
    },
-   "hex": "4ce4f7a7212400e806b049df4ab220f69a2eef6b9a09a19e125a66b0f1a080e134dea09c3441d95707562b"
-  },
-  {
-   "dir": "S2C",
-   "name": "voice",
-   "msg": {
-    "entityId": 55069,
-    "seq": 19979,
-    "data": [
-     228,
-     73,
-     84,
-     77,
-     184,
-     180,
-     76,
-     37,
-     17,
-     227,
-     169,
-     216,
-     137,
-     3,
-     15,
-     94,
-     92,
-     186,
-     5,
-     18,
-     223,
-     0,
-     134,
-     31,
-     158
-    ]
-   },
-   "hex": "4c1dd70b4e1900e449544db8b44c2511e3a9d889030f5e5cba0512df00861f9e"
+   "hex": "4c66f4b0431100a080e134dea09c3441d95707562b1d0b11"
   }
  ],
  "waves": [
@@ -1194,6 +1175,111 @@
   }
  ],
  "hits": [
+  {
+   "o": {
+    "x": 0,
+    "y": 1.6,
+    "z": 0
+   },
+   "d": {
+    "x": 0.232722,
+    "y": -0.062483,
+    "z": -0.970534
+   },
+   "pos": {
+    "x": 2.352002,
+    "y": -9.817135
+   },
+   "radius": 0.35,
+   "headY": 1.62,
+   "headR": 0.16,
+   "t": 9.764036,
+   "head": false
+  },
+  {
+   "o": {
+    "x": 0,
+    "y": 1.6,
+    "z": 0
+   },
+   "d": {
+    "x": -0.41153,
+    "y": -0.403576,
+    "z": -0.817171
+   },
+   "pos": {
+    "x": -1.090395,
+    "y": -2.366576
+   },
+   "radius": 0.35,
+   "headY": 1.62,
+   "headR": 0.16,
+   "t": 2.476698,
+   "head": false
+  },
+  {
+   "o": {
+    "x": 0,
+    "y": 1.6,
+    "z": 0
+   },
+   "d": {
+    "x": -0.707449,
+    "y": -0.19026,
+    "z": -0.680674
+   },
+   "pos": {
+    "x": -2.160681,
+    "y": -2.108979
+   },
+   "radius": 0.35,
+   "headY": 1.62,
+   "headR": 0.16,
+   "t": 2.719597,
+   "head": false
+  },
+  {
+   "o": {
+    "x": 0,
+    "y": 1.6,
+    "z": 0
+   },
+   "d": {
+    "x": 0.219164,
+    "y": -0.164258,
+    "z": -0.961762
+   },
+   "pos": {
+    "x": 1.364562,
+    "y": -5.516105
+   },
+   "radius": 0.35,
+   "headY": 1.62,
+   "headR": 0.16,
+   "t": 5.421129,
+   "head": false
+  },
+  {
+   "o": {
+    "x": 0,
+    "y": 1.6,
+    "z": 0
+   },
+   "d": {
+    "x": 0.249045,
+    "y": 0.02678,
+    "z": -0.968122
+   },
+   "pos": {
+    "x": 1.138598,
+    "y": -4.201089
+   },
+   "radius": 0.35,
+   "headY": 1.62,
+   "headR": 0.16,
+   "t": 4.2366,
+   "head": true
+  },
   {
    "o": {
     "x": 0,
@@ -1928,114 +2014,84 @@
    "headR": 0.16,
    "t": 3.057893,
    "head": false
-  },
-  {
-   "o": {
-    "x": 0,
-    "y": 1.6,
-    "z": 0
-   },
-   "d": {
-    "x": 0.433332,
-    "y": -0.090967,
-    "z": -0.896632
-   },
-   "pos": {
-    "x": 2.920702,
-    "y": -7.234603
-   },
-   "radius": 0.35,
-   "headY": 1.62,
-   "headR": 0.16,
-   "t": -1,
-   "head": false
-  },
-  {
-   "o": {
-    "x": 0,
-    "y": 1.6,
-    "z": 0
-   },
-   "d": {
-    "x": -0.253046,
-    "y": -0.036869,
-    "z": -0.966752
-   },
-   "pos": {
-    "x": -2.666722,
-    "y": -11.441686
-   },
-   "radius": 0.35,
-   "headY": 1.62,
-   "headR": 0.16,
-   "t": 11.604499,
-   "head": false
-  },
-  {
-   "o": {
-    "x": 0,
-    "y": 1.6,
-    "z": 0
-   },
-   "d": {
-    "x": -0.171538,
-    "y": 0.039837,
-    "z": -0.984372
-   },
-   "pos": {
-    "x": -0.230654,
-    "y": -4.084868
-   },
-   "radius": 0.35,
-   "headY": 1.62,
-   "headR": 0.16,
-   "t": -1,
-   "head": false
-  },
-  {
-   "o": {
-    "x": 0,
-    "y": 1.6,
-    "z": 0
-   },
-   "d": {
-    "x": 0.029937,
-    "y": -0.194833,
-    "z": -0.980379
-   },
-   "pos": {
-    "x": -0.118311,
-    "y": -7.876586
-   },
-   "radius": 0.35,
-   "headY": 1.62,
-   "headR": 0.16,
-   "t": -1,
-   "head": false
-  },
-  {
-   "o": {
-    "x": 0,
-    "y": 1.6,
-    "z": 0
-   },
-   "d": {
-    "x": 0.331728,
-    "y": -0.190623,
-    "z": -0.923915
-   },
-   "pos": {
-    "x": 1.422367,
-    "y": -4.499123
-   },
-   "radius": 0.35,
-   "headY": 1.62,
-   "headR": 0.16,
-   "t": 4.498435,
-   "head": false
   }
  ],
  "moves": [
+  {
+   "pos": {
+    "x": -13.215834,
+    "y": 1.127418
+   },
+   "delta": {
+    "x": -2.291798,
+    "y": 1.300865
+   },
+   "radius": 0.35,
+   "result": {
+    "x": -15.525593,
+    "y": 1.5
+   }
+  },
+  {
+   "pos": {
+    "x": -19.188082,
+    "y": -20.378099
+   },
+   "delta": {
+    "x": -1.182365,
+    "y": -0.391162
+   },
+   "radius": 0.35,
+   "result": {
+    "x": -20.370447,
+    "y": -20.769261
+   }
+  },
+  {
+   "pos": {
+    "x": 1.515869,
+    "y": 33.597277
+   },
+   "delta": {
+    "x": 0.950797,
+    "y": -1.455573
+   },
+   "radius": 0.35,
+   "result": {
+    "x": 2.466666,
+    "y": 32.8
+   }
+  },
+  {
+   "pos": {
+    "x": -13.10519,
+    "y": 10.592956
+   },
+   "delta": {
+    "x": 1.314545,
+    "y": 0.007102
+   },
+   "radius": 0.35,
+   "result": {
+    "x": -12.5,
+    "y": 10.600058
+   }
+  },
+  {
+   "pos": {
+    "x": -9.449807,
+    "y": -24.887876
+   },
+   "delta": {
+    "x": -0.046249,
+    "y": 0.231903
+   },
+   "radius": 0.35,
+   "result": {
+    "x": -9.496056,
+    "y": -24.655973
+   }
+  },
   {
    "pos": {
     "x": 3.446688,
@@ -2560,84 +2616,79 @@
     "x": 13.635039,
     "y": 0.002185
    }
-  },
-  {
-   "pos": {
-    "x": 0.897819,
-    "y": 14.698374
-   },
-   "delta": {
-    "x": 1.868145,
-    "y": -1.780876
-   },
-   "radius": 0.35,
-   "result": {
-    "x": 2.765964,
-    "y": 12.917498
-   }
-  },
-  {
-   "pos": {
-    "x": 9.175203,
-    "y": -24.449488
-   },
-   "delta": {
-    "x": 3.177886,
-    "y": -1.04957
-   },
-   "radius": 0.35,
-   "result": {
-    "x": 11,
-    "y": -25.499058
-   }
-  },
-  {
-   "pos": {
-    "x": -28.702081,
-    "y": 21.653788
-   },
-   "delta": {
-    "x": -2.520503,
-    "y": 0.602818
-   },
-   "radius": 0.35,
-   "result": {
-    "x": -29.5,
-    "y": 22.256606
-   }
-  },
-  {
-   "pos": {
-    "x": -8.415842,
-    "y": 1.354735
-   },
-   "delta": {
-    "x": -0.028682,
-    "y": -0.199693
-   },
-   "radius": 0.35,
-   "result": {
-    "x": -8.514341,
-    "y": 1.155042
-   }
-  },
-  {
-   "pos": {
-    "x": 9.079082,
-    "y": -26.199629
-   },
-   "delta": {
-    "x": -2.993804,
-    "y": 0.923589
-   },
-   "radius": 0.35,
-   "result": {
-    "x": 9,
-    "y": -25.27604
-   }
   }
  ],
  "rays": [
+  {
+   "o": {
+    "x": -13.215834,
+    "y": 1.6,
+    "z": 1.127418
+   },
+   "d": {
+    "x": -0.869667,
+    "y": 0,
+    "z": 0.493638
+   },
+   "max": 60,
+   "t": 1.463789
+  },
+  {
+   "o": {
+    "x": -19.188082,
+    "y": 1.6,
+    "z": -20.378099
+   },
+   "d": {
+    "x": -0.949394,
+    "y": 0,
+    "z": -0.314088
+   },
+   "max": 60,
+   "t": 2.803807
+  },
+  {
+   "o": {
+    "x": 1.515869,
+    "y": 1.6,
+    "z": 33.597277
+   },
+   "d": {
+    "x": 0.546877,
+    "y": 0,
+    "z": -0.837213
+   },
+   "max": 60,
+   "t": 1.370353
+  },
+  {
+   "o": {
+    "x": -13.10519,
+    "y": 1.6,
+    "z": 10.592956
+   },
+   "d": {
+    "x": 0.999985,
+    "y": 0,
+    "z": 0.005403
+   },
+   "max": 60,
+   "t": 0.955204
+  },
+  {
+   "o": {
+    "x": -9.449807,
+    "y": 1.6,
+    "z": -24.887876
+   },
+   "d": {
+    "x": -0.195581,
+    "y": 0,
+    "z": 0.980687
+   },
+   "max": 60,
+   "t": 27.264434
+  },
   {
    "o": {
     "x": 3.446688,
@@ -3127,76 +3178,6 @@
    },
    "max": 60,
    "t": 4.094386
-  },
-  {
-   "o": {
-    "x": 0.897819,
-    "y": 1.6,
-    "z": 14.698374
-   },
-   "d": {
-    "x": 0.723811,
-    "y": 0,
-    "z": -0.689999
-   },
-   "max": 60,
-   "t": 5.460239
-  },
-  {
-   "o": {
-    "x": 9.175203,
-    "y": 1.6,
-    "z": -24.449488
-   },
-   "d": {
-    "x": 0.949552,
-    "y": 0,
-    "z": -0.313611
-   },
-   "max": 60,
-   "t": 2.29034
-  },
-  {
-   "o": {
-    "x": -28.702081,
-    "y": 1.6,
-    "z": 21.653788
-   },
-   "d": {
-    "x": -0.972571,
-    "y": 0,
-    "z": 0.232606
-   },
-   "max": 60,
-   "t": 1.180293
-  },
-  {
-   "o": {
-    "x": -8.415842,
-    "y": 1.6,
-    "z": 1.354735
-   },
-   "d": {
-    "x": -0.142174,
-    "y": 0,
-    "z": -0.989842
-   },
-   "max": 60,
-   "t": 6.217896
-  },
-  {
-   "o": {
-    "x": 9.079082,
-    "y": 1.6,
-    "z": -26.199629
-   },
-   "d": {
-    "x": -0.955562,
-    "y": 0,
-    "z": 0.294791
-   },
-   "max": 60,
-   "t": 0.449036
   }
  ]
 }
