@@ -1,5 +1,0 @@
-Source: https://opengameart.org/content/enchanted-tiki-86
-Author: cynicmusic
-Licence field: CC0
-Query: dark ambient
-Files: enchanted_tiki_86_0.mp3

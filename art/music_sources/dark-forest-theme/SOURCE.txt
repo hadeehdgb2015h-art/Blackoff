@@ -1,5 +1,0 @@
-Source: https://opengameart.org/content/dark-forest-theme
-Author: cynicmusic
-Licence field: CC0
-Query: dungeon ambient
-Files: GameMusic_ForestTheme_24_0.mp3

@@ -1,16 +1,16 @@
 extends Node
 ## Autoload: audio buses (Music, SFX, UI under Master), room reverb on the
 ## SFX bus, looping music with crossfades, and UI clicks. Volumes come from
-## Settings. Streams are real recordings cut by tools/sfx/build_sfx.py: the
-## "music" is a rain bed (seamless 28 s loop), with a low drone under it during
-## waves; the menu uses the same bed.
+## Settings. Streams are real CC0 recordings cut by tools/sfx/build_sfx.py;
+## the music is three real dark tracks looped where their end matches their
+## start (menu, between waves, during a wave).
 ##
 ## Web (phase 14): the engine plays sounds as browser samples there, and buses
 ## added at runtime end up wired in a loop in its audio graph, which Web Audio
 ## answers with total silence. So on the web everything stays on Master and the
 ## music / effects volumes are applied per player instead (`flat` mode).
 
-const MUSIC := {"menu": "res://assets/sfx/music_ambient.wav", "ambient": "res://assets/sfx/music_ambient.wav",
+const MUSIC := {"menu": "res://assets/sfx/music_menu.wav", "ambient": "res://assets/sfx/music_ambient.wav",
 	"tension": "res://assets/sfx/music_tension.wav"}
 const FADE_SEC := 1.6
 

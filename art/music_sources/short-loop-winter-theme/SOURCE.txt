@@ -1,5 +1,0 @@
-Source: https://opengameart.org/content/short-loop-winter-theme
-Author: yd
-Licence field: CC0
-Query: creepy loop
-Files: rememberWinter.ogg

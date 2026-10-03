@@ -1,5 +1,0 @@
-Source: https://opengameart.org/content/dungeon-ambience
-Author: yd
-Licence field: CC0
-Query: dark ambient
-Files: dungeon002_0.ogg

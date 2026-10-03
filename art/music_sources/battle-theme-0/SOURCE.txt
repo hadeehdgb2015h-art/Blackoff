@@ -1,5 +1,0 @@
-Source: https://opengameart.org/content/battle-theme-0
-Author: Wolfgang_
-Licence field: CC0
-Query: tension music
-Files: Battle.mp3

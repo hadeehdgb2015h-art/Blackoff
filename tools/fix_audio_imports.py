@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Sets the import options of the sounds under client/assets/sfx (built by
 tools/sfx/build_sfx.py from real recordings):
-  - music_* loop forward and are QOA-compressed at 32 kHz (rain beds, low-passed);
+  - music_* loop forward and are QOA-compressed at 22 kHz (real music, dark and low);
   - short effects (under 0.8 s: shots, hits, steps, clicks) stay 16-bit PCM,
     whose sharp attacks QOA smears;
   - longer effects are QOA-compressed (a fifth of the size).
@@ -27,7 +27,7 @@ for imp in glob.glob(os.path.join(ROOT, "assets", "sfx", "*.import")):
     new = re.sub(r"^edit/loop_mode=.*$", "edit/loop_mode=" + ("1" if music else "0"), text, flags=re.M)
     new = re.sub(r"^compress/mode=.*$", "compress/mode=" + mode, new, flags=re.M)
     new = re.sub(r"^force/max_rate=.*$", "force/max_rate=" + ("true" if music else "false"), new, flags=re.M)
-    new = re.sub(r"^force/max_rate_hz=.*$", "force/max_rate_hz=" + ("32000" if music else "44100"), new, flags=re.M)
+    new = re.sub(r"^force/max_rate_hz=.*$", "force/max_rate_hz=" + ("22050" if music else "44100"), new, flags=re.M)
     if new != text:
         with open(imp, "w", encoding="utf-8") as f:
             f.write(new)

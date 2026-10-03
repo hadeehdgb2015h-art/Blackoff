@@ -6,7 +6,8 @@ Every sound is a recipe: one or more layers (source file, start, length, pitch,
 ffmpeg filters, gain), then a trim, a fade-out that reaches silence before the
 sound's end (web playback stops a voice abruptly when it is reused, so a tail
 that is still loud clicks), a peak normalisation and 16-bit output with dither.
-Music beds are cut into seamless crossfaded loops.
+Music (real CC0 tracks in art/music_sources/) is cut into loops whose end
+matches their start.
 
 Phase 17 replaced the synthesized placeholders of tools/gen_sfx.py, which the
 owner heard as crackly, cheap and repetitive (a 15.75 s music loop plus a
@@ -33,7 +34,6 @@ SKS = OGA + "gunshot-sounds/sounds/sks.wav"
 MOSIN = OGA + "gunshot-sounds/sounds/mosin.wav"
 SHOTTY = OGA + "gunshot-sounds/sounds/shotty.wav"
 ZOMBIE = OGA + "zombies-sound-pack/zombies/zombie-%d.wav"
-RAIN = OGA + "rain-ambient-not-loopable-2-versions-available/Ove_Melaa_-_Rainy__28NOT_loopable_29_Long_Version.ogg"
 RELOAD = OGA + "gun-reload-sounds/assaultriflereload1_0.wav"
 K_IMPACT = "kenney_impact-sounds/"
 K_UI = "kenney_interface-sounds/"
@@ -113,15 +113,16 @@ SOUNDS = {
                     length=4.2, fade=2.4, peak=-2.0, fade_in=0.25),
 }
 
-# looping beds: (source, start, length, crossfade, filters, extra layers)
-LOOPS = {
-    # rain on stone, levelled (the recording swells every 40 s) and darkened
-    "music_ambient": dict(src=RAIN, start=46.0, length=28.0, xfade=3.0,
-                          af="dynaudnorm=f=500:g=31:p=0.5,highpass=f=60,lowpass=f=7000", peak=-6.0),
-    # the same rain with a low engine-like drone under it while a wave is on
-    "music_tension": dict(src=RAIN, start=126.0, length=24.0, xfade=3.0,
-                          af="dynaudnorm=f=500:g=31:p=0.5,highpass=f=60,lowpass=f=6000", peak=-5.0,
-                          drone=(K_SCI + "spaceEngineLow_000.ogg", 0.5, "lowpass=f=180,lowpass=f=180", -9.0)),
+# music loops: (source, where to start looking, loop length range, crossfade, peak).
+# Phase 18: the rain bed of phase 17 sounded like an old TV's static on phone
+# speakers (rain is broadband noise), so the beds are real CC0 music now.
+MUSIC = {
+    # menu: a slow dark theme (SterlingRay, "Into the Ruined Temple"), its main section
+    "music_menu": dict(src="../music_sources/into-the-ruined-temple/into_the_ruined_temple.mp3", start=60.0, min_len=40.0, max_len=52.0, xfade=1.5, peak=-5.0),
+    # between waves: a steady creeping loop (TokyoGeisha, "Creepy")
+    "music_ambient": dict(src="../music_sources/creepy/CrEEP_0.mp3", start=4.0, min_len=40.0, max_len=56.0, xfade=1.5, peak=-6.0),
+    # during a wave: a pulsing, insistent loop (yd, "Insistent")
+    "music_tension": dict(src="../music_sources/insistent-background-loop/Insistent.ogg", start=8.0, min_len=36.0, max_len=56.0, xfade=0.6, peak=-5.0),
 }
 
 
@@ -187,55 +188,40 @@ def build(name, r):
     return normalize(y, r["peak"])
 
 
-def build_loop(name, r):
-    x = load(r["src"], 1.0, r["af"])
-    x = level(x, 2.0)  # the recording swells and fades every 40 s; a loop must not
+def build_music(name, r):
+    """Cuts a loop whose end matches its start: among the lengths allowed,
+    the one where the music 3 s after the cut looks most like its first 3 s
+    (loudness envelope, then waveform for the exact sample), so beats and
+    phrases carry on through the seam; then an equal-power crossfade."""
+    x = load(r["src"])
     s = int(r["start"] * SR)
-    n = int(r["length"] * SR)
+    hop = int(0.02 * SR)
+    env = np.sqrt(np.convolve(x * x, np.ones(hop) / hop, "same"))[::hop]
+    w = int(3.0 / 0.02)
+    a = env[s // hop: s // hop + w]
+    a = (a - a.mean()) / (a.std() + 1e-9)
+    best, best_l = -9.0, 0
+    for l in range(int(r["min_len"] / 0.02), int(r["max_len"] / 0.02)):
+        b = env[s // hop + l: s // hop + l + w]
+        if len(b) < w:
+            break
+        c = float(np.dot(a, (b - b.mean()) / (b.std() + 1e-9))) / w
+        if c > best:
+            best, best_l = c, l
+    n = best_l * hop
+    # refine to the sample: best waveform match within +-15 ms
+    k = int(0.015 * SR)
+    ref = x[s: s + int(0.05 * SR)]
+    scores = [float(np.dot(ref, x[s + n + d: s + n + d + len(ref)])) for d in range(-k, k)]
+    n += int(np.argmax(scores)) - k
     xf = int(r["xfade"] * SR)
-    seg = x[s:s + n + xf]
-    if len(seg) < n + xf:
-        raise SystemExit("%s: source too short" % name)
-    # equal-power crossfade of the extra tail into the head: sample n wraps to 0
+    seg = x[s: s + n + xf]
     t = np.linspace(0.0, 1.0, xf)
     head = seg[:xf] * np.sin(t * np.pi / 2) + seg[n:n + xf] * np.cos(t * np.pi / 2)
     y = np.concatenate([head, seg[xf:n]])
-    if r.get("drone"):
-        src, pitch, af, gain = r["drone"]
-        d = load(src, pitch, af)
-        # tile the drone with short crossfades to the loop's length, wrap included
-        dx = int(0.4 * SR)
-        tiled = np.zeros(n + dx)
-        pos = 0
-        w = np.linspace(0.0, 1.0, dx)
-        while pos < n + dx:
-            piece = d[: min(len(d), n + dx - pos)].copy()
-            if pos > 0:
-                piece[:dx] *= np.sin(w[: len(piece[:dx])] * np.pi / 2)
-            m = len(piece)
-            if pos + m < n + dx and m > dx:
-                piece[-dx:] *= np.cos(w * np.pi / 2)
-            tiled[pos:pos + m] += piece
-            pos += max(m - dx, 1)
-        wrap = tiled[:dx] * np.sin(w * np.pi / 2) + tiled[n:n + dx] * np.cos(w * np.pi / 2)
-        drone = np.concatenate([wrap, tiled[dx:n]])
-        drone *= (np.abs(y).max() / max(np.abs(drone).max(), 1e-9)) * 10 ** (gain / 20.0)
-        y = y + drone
     y -= np.mean(y)
+    print("[sfx] %-15s loop %.2f s, seam match %.2f" % (name, n / SR, best))
     return normalize(y, r["peak"])
-
-
-def level(x, window):
-    """Slow gain riding: divides out the loudness measured over `window`
-    seconds, so the bed stays at one level all through the loop."""
-    w = int(window * SR)
-    c = np.concatenate([[0.0], np.cumsum(x * x)])
-    i = np.arange(len(x))
-    lo = np.clip(i - w // 2, 0, len(x))
-    hi = np.clip(i + w // 2, 0, len(x))
-    env = np.sqrt((c[hi] - c[lo]) / np.maximum(hi - lo, 1))
-    g = np.median(env) / np.maximum(env, 1e-6)
-    return x * np.clip(g, 0.25, 4.0)
 
 
 def normalize(y, peak_db):
@@ -263,9 +249,9 @@ def main():
     for name, r in SOUNDS.items():
         if not want or name in want:
             write(name, build(name, r))
-    for name, r in LOOPS.items():
+    for name, r in MUSIC.items():
         if not want or name in want:
-            write(name, build_loop(name, r))
+            write(name, build_music(name, r))
 
 
 if __name__ == "__main__":
