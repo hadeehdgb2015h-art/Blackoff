@@ -21,6 +21,8 @@ for imp in glob.glob(os.path.join(ROOT, "assets", "**", "*.import"), recursive=T
     # fx_ sprites are additive: lossy alpha noise would light up the whole quad
     want = {"compress/mode": "0" if os.path.basename(imp).startswith("fx_") else "1", "mipmaps/generate": "true"}
     want["compress/lossy_quality"] = "0.9" if "_normal." in imp else ("0.75" if "_orm." in imp else "0.85")
+    if os.path.basename(imp).startswith("sky_vision_"):
+        want["compress/lossy_quality"] = "0.72"  # soft glowing mirages: small files are enough
     want["compress/normal_map"] = "1" if "_normal." in imp else "0"
     # memory and download budget: roughness/metal maps are low-frequency, so a
     # character's or weapon's map is 256 px (the prop libraries' shared one 512)

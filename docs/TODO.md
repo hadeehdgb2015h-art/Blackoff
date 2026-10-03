@@ -116,5 +116,9 @@
 - [x] Owner DEV powers in game: god mode, infinite ammo, money, heal, skip wave, kill all, summon the Warden, jump to wave
 - [ ] Next: daily reward and missions, a result card image for sharing
 
+## Phase 21: sky visions
+- [x] Six original visions beside the moon (no copied art), one cheap additive quad, ~97 KB
+- [ ] Owner: record a clip of a vision for social media
+
 ## Open questions for the owner
 - Own subdomain or the free sslip.io address (installer default)

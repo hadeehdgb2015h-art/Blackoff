@@ -27,6 +27,7 @@ Read this first in a new session. Then read `docs/TECHNICAL_ARCHITECTURE.md`, `d
 | 18 Real music, phone quality fix, TON display | done (`docs/systems/presentation.md`) |
 | 19 Invite friends, challenge, feel | done (`docs/systems/netcode.md`, `presentation.md`, `deploy.md`) |
 | 20 Boss wave, bot replies and owner panel, dev powers | done (`docs/systems/server.md`, `presentation.md`) |
+| 21 Sky visions beside the moon | done (`docs/systems/presentation.md`) |
 
 ## Live preview
 

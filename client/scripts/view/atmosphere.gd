@@ -363,6 +363,11 @@ func _moon(m: Node3D) -> Node3D:
 	mat.set_shader_parameter("energy", float(m.get_meta("energy", 1.35)))
 	var q := _quad(Vector2.ONE * float(m.get_meta("size", 70.0)), mat)
 	q.extra_cull_margin = 100.0
+	# visions appear beside the moon now and then (phase 21)
+	var v := SkyVisions.new()
+	v.setup(float(m.get_meta("size", 70.0)))
+	q.add_child(v)
+	v.top_level = true
 	return q
 
 
