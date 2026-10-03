@@ -8,6 +8,11 @@ extends Control
 signal retry_pressed
 signal menu_pressed
 signal challenge_pressed  ## game over: share the result with the invite link
+signal streak(kills: int)  ## the local player chained kills (the game plays a sound)
+
+## Kills chained within STREAK_GAP seconds of each other, and what is called out.
+const STREAK_GAP := 2.6
+const STREAK_NAMES := {2: "DOUBLE KILL", 3: "TRIPLE KILL", 4: "QUAD KILL", 5: "RAMPAGE", 7: "MASSACRE", 10: "UNSTOPPABLE", 15: "GODLIKE"}
 
 var _hp_bar: ColorRect
 var _hp_back: ColorRect
@@ -46,6 +51,10 @@ var _dead_at: float = -1.0   ## infection: when the local infected player fell (
 var _fps_t: float = 0.0
 var _world: SimWorld
 var _banner_t: float = 0.0
+var _callout: Label
+var _callout_t: float = 0.0
+var _streak: int = 0
+var _streak_last: float = -100.0
 var _toast_t: float = 0.0
 var _pop_t: float = 0.0
 var _pop_amount: int = 0
@@ -207,6 +216,10 @@ func _ready() -> void:
 	_banner = _centered(56, UiTheme.ACCENT, -120, true)
 	_banner.add_theme_font_override("font", UiTheme.display_font())
 	_toast = _centered(24, Color(1, 0.55, 0.45), 200)
+	_callout = _centered(44, UiTheme.GOLD, -200, true)
+	_callout.add_theme_font_override("font", UiTheme.display_font())
+	_callout.add_theme_constant_override("outline_size", 8)
+	_callout.modulate.a = 0.0
 	_downed = _centered(36, UiTheme.ACCENT, -40, true)
 	_downed.add_theme_font_override("font", UiTheme.display_font())
 
@@ -395,6 +408,7 @@ func on_event(e: Dictionary, local_pid: int) -> void:
 			if e.pid == local_pid:
 				_cross.hit_t = 0.18
 				_cross.hit_kill = true
+				_on_local_kill(bool(e.get("head", false)))
 				# TON is counted quietly and shown once, at game over: a "+0.00001 TON"
 				# flash on every kill looked cheap (owner, phase 18)
 				if Net.ton_per_kill > 0 and Net.online_requested:
@@ -438,6 +452,7 @@ func on_event(e: Dictionary, local_pid: int) -> void:
 			elif e.by == local_pid:
 				_cross.hit_t = 0.18
 				_cross.hit_kill = true
+				_on_local_kill(bool(e.get("head", false)))
 		"infected":
 			if e.pid == local_pid:
 				_show_banner("YOU ARE INFECTED")
@@ -507,6 +522,9 @@ func _tick(delta: float) -> void:
 	if _banner_t > 0.0:
 		_banner_t -= delta
 		_banner.modulate.a = clampf(_banner_t / 0.6, 0.0, 1.0)
+	if _callout_t > 0.0:
+		_callout_t -= delta
+		_callout.modulate.a = clampf(_callout_t / 0.35, 0.0, 1.0)
 	if _toast_t > 0.0:
 		_toast_t -= delta
 		_toast.modulate.a = clampf(_toast_t / 0.4, 0.0, 1.0)
@@ -526,6 +544,35 @@ func _tick(delta: float) -> void:
 func _show_banner(text: String) -> void:
 	_banner.text = text
 	_banner_t = 2.2
+	_pop(_banner, 1.35)
+
+
+## Kill streaks: kills less than STREAK_GAP apart chain up and are called out
+## (DOUBLE KILL ... GODLIKE); a lone head kill gets a short HEADSHOT.
+func _on_local_kill(head: bool) -> void:
+	var now := Time.get_ticks_msec() / 1000.0
+	_streak = _streak + 1 if now - _streak_last <= STREAK_GAP else 1
+	_streak_last = now
+	if STREAK_NAMES.has(_streak):
+		_callout.text = STREAK_NAMES[_streak]
+		_callout.add_theme_color_override("font_color", UiTheme.GOLD if _streak < 5 else UiTheme.ACCENT)
+		_callout_t = 1.6
+		_pop(_callout, 1.8)
+		streak.emit(_streak)
+	elif head and _callout_t <= 0.2:
+		_callout.text = "HEADSHOT"
+		_callout.add_theme_color_override("font_color", UiTheme.TEXT)
+		_callout_t = 0.7
+		_pop(_callout, 1.25)
+
+
+## A label punches in: starts big and settles to its size.
+func _pop(l: Label, from_scale: float) -> void:
+	l.pivot_offset = l.size / 2.0
+	l.scale = Vector2.ONE * from_scale
+	l.modulate.a = 1.0
+	var tw := l.create_tween()
+	tw.tween_property(l, "scale", Vector2.ONE, 0.22).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 
 
 func _show_toast(text: String, sec := 1.6) -> void:

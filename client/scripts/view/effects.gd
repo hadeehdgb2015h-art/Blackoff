@@ -1,9 +1,12 @@
 class_name Effects
 extends Node3D
-## Pooled cheap combat effects: bullet tracers and impact puffs.
+## Pooled cheap combat effects: bullet tracers, impact puffs, and on a kill a
+## burst of blood with a splat left on the floor (phase 19).
 
 const TRACERS := 12
-const IMPACTS := 16
+const IMPACTS := 24
+const SPLATS := 12
+const SPLAT_SEC := 9.0
 
 var _tracers: Array[MeshInstance3D] = []
 var _tracer_t: PackedFloat32Array = []
@@ -17,6 +20,10 @@ var _tracer_mats := {}  ## colour -> material (energy weapons)
 var _blasts: Array[MeshInstance3D] = []
 var _blast_t: PackedFloat32Array = []
 var _blast_next: int = 0
+var _splats: Array[MeshInstance3D] = []
+var _splat_t: PackedFloat32Array = []
+var _splat_next: int = 0
+var _splat_mat: StandardMaterial3D
 
 
 func _ready() -> void:
@@ -58,6 +65,21 @@ func _ready() -> void:
 		_blast_t.append(0.0)
 	_mat_dust = _puff_mat(Color(0.75, 0.72, 0.65, 0.8))
 	_mat_blood = _puff_mat(Color(0.45, 0.04, 0.03, 0.9))
+	_splat_mat = StandardMaterial3D.new()
+	_splat_mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	_splat_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	_splat_mat.albedo_texture = _splat_texture()
+	var plane := PlaneMesh.new()  # flat on the floor
+	plane.size = Vector2(1.4, 1.4)
+	for i in SPLATS:
+		var mi := MeshInstance3D.new()
+		mi.mesh = plane
+		mi.material_override = _splat_mat.duplicate()
+		mi.visible = false
+		mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		add_child(mi)
+		_splats.append(mi)
+		_splat_t.append(0.0)
 	var q := QuadMesh.new()
 	q.size = Vector2(0.25, 0.25)
 	for i in IMPACTS:
@@ -130,7 +152,33 @@ func impact(point: Vector3, blood: bool) -> void:
 	mi.visible = true
 
 
+## A kill: blood bursts around the body and a splat stays on the floor a while.
+func gore(at: Vector3) -> void:
+	for i in 5:
+		impact(at + Vector3(randf_range(-0.35, 0.35), randf_range(-0.5, 0.45), randf_range(-0.35, 0.35)), true)
+	var mi := _splats[_splat_next]
+	_splat_t[_splat_next] = SPLAT_SEC
+	_splat_next = (_splat_next + 1) % SPLATS
+	var s := randf_range(0.8, 1.3)
+	mi.global_transform = Transform3D(Basis(Vector3.UP, randf() * TAU).scaled(Vector3(s, 1.0, s)), Vector3(at.x, 0.03 + _splat_next * 0.002, at.z))
+	(mi.material_override as StandardMaterial3D).albedo_color.a = 1.0
+	mi.visible = true
+
+
+## Removes every floor splat (after the load-time shader warm-up).
+func clear_gore() -> void:
+	for i in SPLATS:
+		_splat_t[i] = 0.0
+		_splats[i].visible = false
+
+
 func _process(delta: float) -> void:
+	for i in SPLATS:
+		if _splat_t[i] > 0.0:
+			_splat_t[i] -= delta
+			(_splats[i].material_override as StandardMaterial3D).albedo_color.a = clampf(_splat_t[i] / 2.0, 0.0, 1.0)  # fades over the last 2 s
+			if _splat_t[i] <= 0.0:
+				_splats[i].visible = false
 	for i in _blasts.size():
 		if _blast_t[i] > 0.0:
 			_blast_t[i] -= delta
@@ -150,6 +198,38 @@ func _process(delta: float) -> void:
 			_impacts[i].scale = Vector3.ONE * lerpf(1.4, 0.4, _impact_t[i] / 0.22)
 			if _impact_t[i] <= 0.0:
 				_impacts[i].visible = false
+
+
+## A dark red blot with ragged edges and a few droplets, drawn once (each
+## blob only touches the pixels of its own box: cheap on a phone).
+static func _splat_texture() -> ImageTexture:
+	var n := 64
+	var cov := PackedFloat32Array()
+	cov.resize(n * n)
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 1919
+	var c := Vector2(n / 2.0, n / 2.0)
+	var blobs: Array = [[c, 14.0]]
+	for i in 9:
+		var a := rng.randf() * TAU
+		blobs.append([c + Vector2(cos(a), sin(a)) * rng.randf_range(7.0, 20.0), rng.randf_range(3.0, 7.5)])
+	for i in 14:
+		var a := rng.randf() * TAU
+		blobs.append([c + Vector2(cos(a), sin(a)) * rng.randf_range(20.0, 29.0), rng.randf_range(0.9, 2.0)])
+	for b in blobs:
+		var o: Vector2 = b[0]
+		var r: float = b[1]
+		for y in range(maxi(0, int(o.y - r - 2)), mini(n, int(o.y + r + 3))):
+			for x in range(maxi(0, int(o.x - r - 2)), mini(n, int(o.x + r + 3))):
+				var k := clampf((r - Vector2(x, y).distance_to(o)) / 1.5, 0.0, 1.0)
+				cov[y * n + x] = maxf(cov[y * n + x], k)
+	var img := Image.create_empty(n, n, false, Image.FORMAT_RGBA8)
+	for y in n:
+		for x in n:
+			var k := cov[y * n + x]
+			var shade := 0.3 + 0.08 * sin(x * 0.6) * cos(y * 0.5)
+			img.set_pixel(x, y, Color(shade, 0.01, 0.01, 0.85 * k))
+	return ImageTexture.create_from_image(img)
 
 
 func _puff_mat(c: Color) -> StandardMaterial3D:

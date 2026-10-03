@@ -97,5 +97,17 @@
 - [ ] Owner listens on the phone and reports which sounds still feel wrong
 - [ ] Next size step if needed: brotli on the server (nginx module), or fewer weapon models shipped at start
 
+## Phase 18: owner's second phone report
+- [x] Static "old TV" hiss: the rain bed is replaced by three real CC0 music loops
+- [x] Black lines and stalls on "high": no MSAA on phones, at most 10 lights
+- [x] No "+0.00001 TON" on every kill: TON shown once, at game over, in readable form
+
+## Phase 19: a game people talk about
+- [x] Invite friends: t.me/<bot>?startapp link straight into the inviter's game (protocol v8)
+- [x] Challenge friends from the game-over screen (result + link)
+- [x] Feel: kill streak call-outs, shot shake, kill punch, blood bursts and floor splats
+- [ ] Owner: enable the bot's Mini App in @BotFather (needed for invite links)
+- [ ] Next: boss wave every 5 waves, daily reward and missions, a result card image for sharing
+
 ## Open questions for the owner
 - Own subdomain or the free sslip.io address (installer default)

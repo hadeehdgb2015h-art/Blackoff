@@ -94,6 +94,9 @@ func _ready() -> void:
 	ui.add_child(_hud)
 	_hud.retry_pressed.connect(_retry)
 	_hud.menu_pressed.connect(_to_menu)
+	_hud.streak.connect(func(n: int):
+		_sfx.play("powerup", -9.0 if n < 5 else -6.0, 0.0)
+		Platform.haptic("medium" if n < 5 else "heavy"))
 	_hud.challenge_pressed.connect(func():
 		var me: SimPlayer = world.players.get(pid) if world else null
 		_hud.show_toast(Social.challenge(_last_wave, me.kills if me else 0)))
@@ -425,7 +428,7 @@ func _on_event(e: Dictionary) -> void:
 				if pv:
 					pv.on_fire()
 			else:
-				_rig.on_fire()
+				_rig.on_fire(clampf(float(wvis.get("recoilKick", 0.04)) * 2.5, 0.05, 0.35))
 				_sfx.play(wvis.get("sound", "pistol_shot"), -4.0)
 				_controls.add_recoil(float(wvis.get("recoilPitch", 0.02)) * randf_range(0.6, 1.0), randf_range(-0.006, 0.006))
 			var fx := str(wvis.get("fx", "tracer"))
@@ -452,6 +455,10 @@ func _on_event(e: Dictionary) -> void:
 				v.on_death(e.pos, e.yaw)
 				_zviews.erase(e.zid)
 			_sfx.play_at("zombie_death", Vector3(e.pos.x, 1.4, e.pos.y), -2.0)
+			_effects.gore(Vector3(e.pos.x, 1.0, e.pos.y))
+			if local:
+				_rig.punch(3.0 if e.head else 1.6)
+				Platform.haptic("light")
 			if local and e.head:
 				_sfx.play("headshot", -8.0, 0.02)
 		"zombie_attack":
@@ -828,8 +835,10 @@ func _prewarm_gpu() -> void:
 	_effects.impact(at + Vector3(0, 0.3, 0), false)
 	_effects.blast(eye, fwd, 4.0)
 	_effects.bolt(eye + fwd * 0.5, at, Color("#88e0ff"))
+	_effects.gore(at)
 	for f in 3:
 		await get_tree().process_frame
+	_effects.clear_gore()
 	for n in temp:
 		n.queue_free()
 	cover.queue_free()

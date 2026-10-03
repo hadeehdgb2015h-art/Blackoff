@@ -56,3 +56,7 @@ Phase 8 adds: `PowerupView` (spinning emissive prism, name, light, blinks before
 | high | 1.0 | 4× | all | on | on | on | 700 m |
 
 Textures ship as lossy WebP (lossless for `fx_*` sprites). ETC2 GPU compression was tried and made the art blocky on phones; the WebP pack is also smaller (≈ 6 MB).
+
+## Feel (phase 19)
+Kills chain into call-outs when they come less than 2.6 s apart (`Hud.STREAK_NAMES`: DOUBLE KILL, TRIPLE KILL, QUAD KILL, RAMPAGE, MASSACRE, UNSTOPPABLE, GODLIKE) with a chime and a haptic tap; a lone head kill says HEADSHOT. Call-outs and banners punch in (scale 1.3-1.8 to 1 with a back ease). Every local shot adds camera shake by weapon weight (`recoilKick` x 2.5, capped), a kill widens the view for a moment (1.6 degrees, 3 for a head kill), and every kill bursts blood around the body and leaves a ragged splat on the floor for 9 s (`Effects.gore`, 12 pooled floor quads with a texture drawn once at load; its shader is warmed with the others).
+

@@ -30,6 +30,7 @@ var _reload_len: float = 1.0
 var _switch_t: float = -1.0
 var _pending_weapon := ""
 var _shake: float = 0.0
+var _fov_punch: float = 0.0  ## degrees added to the field of view, springing back (kills)
 var _down: float = 0.0
 var _anim: AnimationPlayer
 var _claws: Node3D            ## infection: the infected player's hands instead of a weapon
@@ -102,6 +103,8 @@ func set_weapon(id: String) -> void:
 func set_view(pos: Vector3, yaw: float, pitch: float, moving: bool, delta: float) -> void:
 	var shake := Vector3(randf_range(-1, 1), randf_range(-1, 1), 0) * _shake * 0.03
 	_shake = maxf(0.0, _shake - delta * 3.0)
+	camera.fov = 75.0 + _fov_punch
+	_fov_punch = move_toward(_fov_punch, 0.0, delta * 18.0)
 	global_position = pos + Vector3(0, -_down, 0)
 	rotation = Vector3(0, yaw, 0)
 	camera.rotation = Vector3(pitch + shake.y, shake.x, 0)
@@ -129,7 +132,14 @@ func _play_once(anim_name: String, speed := 1.0) -> bool:
 	return true
 
 
-func on_fire() -> void:
+## A kill: the view breathes out for a moment (a few degrees of field of view).
+func punch(degrees: float) -> void:
+	_fov_punch = maxf(_fov_punch, degrees)
+
+
+## `shake`: camera shake added by this shot (heavier guns shake more).
+func on_fire(shake := 0.0) -> void:
+	_shake = minf(_shake + shake, 0.6)
 	_kick = 0.35 if _play_once("fire") else 1.0
 	_flash_t = 0.05
 	_flash.visible = true
