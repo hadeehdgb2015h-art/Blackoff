@@ -1,4 +1,4 @@
-import { loadEnv } from "./config/env.js";
+import { applyDefaultsFile, loadEnv } from "./config/env.js";
 import { loadShared } from "./shared/loadShared.js";
 import { createApp } from "./app.js";
 import { log, setLogLevel } from "./log.js";
@@ -6,8 +6,10 @@ import { MemoryProfileStore, type ProfileStore } from "./db/profileStore.js";
 import { PgProfileStore } from "./db/pgStore.js";
 
 async function main(): Promise<void> {
+  const defaults = applyDefaultsFile();
   const env = loadEnv();
   setLogLevel(env.LOG_LEVEL);
+  if (defaults) log.info("defaults read", { file: defaults });
   const shared = loadShared(env.SHARED_DIR);
   let store: ProfileStore;
   if (env.DATABASE_URL) {

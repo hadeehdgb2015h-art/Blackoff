@@ -6,9 +6,16 @@ export function setLogLevel(level: Level): void {
   threshold = level;
 }
 
+/** The last warnings and errors, for the owner's panel in the bot. */
+export const recentProblems: string[] = [];
+
 function emit(level: Level, msg: string, data?: Record<string, unknown>): void {
   if (order[level] < order[threshold]) return;
   const line = JSON.stringify({ t: new Date().toISOString(), level, msg, ...data });
+  if (order[level] >= order.warn) {
+    recentProblems.push(line);
+    if (recentProblems.length > 30) recentProblems.shift();
+  }
   (level === "error" || level === "warn" ? process.stderr : process.stdout).write(line + "\n");
 }
 

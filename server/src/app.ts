@@ -7,6 +7,10 @@ import { Session, SessionHub } from "./net/session.js";
 import { ZoneManager } from "./zone/zoneManager.js";
 import { log } from "./log.js";
 import crypto from "node:crypto";
+import fs from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+import { TelegramBot } from "./bot/telegramBot.js";
 import { MemoryProfileStore, weekLabel, weekStart, type ProfileStore } from "./db/profileStore.js";
 
 export interface App {
@@ -14,6 +18,7 @@ export interface App {
   wss: WebSocketServer;
   zones: ZoneManager;
   hub: SessionHub;
+  bot: TelegramBot;
   close(): Promise<void>;
 }
 
@@ -26,6 +31,8 @@ export function createApp(env: Env, shared: SharedData, store: ProfileStore = ne
   const codec = new Codec(shared.protocol);
   const zones = new ZoneManager(shared, codec);
   const hub = new SessionHub(env, shared, codec, zones, store);
+  void hub.settings.load(); // the owner's switches (bans, maintenance, TON) from the store
+  const version = releaseVersion();
 
   const server = http.createServer((req, res) => {
     const url = new URL(req.url ?? "/", "http://local");
@@ -62,7 +69,7 @@ export function createApp(env: Env, shared: SharedData, store: ProfileStore = ne
       let body: unknown;
       if (url.pathname === "/admin/leaderboard") {
         const week = url.searchParams.get("week") ?? weekStart();
-        body = { week, label: weekLabel(week), tonMicroPerKill: env.TON_MICRO_PER_KILL, prize: env.TON_PRIZE_TEXT, entries: await store.leaderboard(100, week) };
+        body = { week, label: weekLabel(week), tonMicroPerKill: hub.settings.tonPerKill(), prize: hub.settings.prizeText(), entries: await store.leaderboard(100, week) };
       } else if (url.pathname === "/admin/suspects") {
         body = { suspects: await store.suspects(100) };
       } else {
@@ -95,6 +102,9 @@ export function createApp(env: Env, shared: SharedData, store: ProfileStore = ne
   });
 
   zones.start();
+  const bot = new TelegramBot(env, hub, () => ({ connections: wss.clients.size, uptimeSec: Math.round((Date.now() - startedAt) / 1000), version }));
+  // never in tests; production and dev answer the bot when it has a token
+  if (env.BOT_POLLING && env.NODE_ENV !== "test") bot.start();
   const sweeper = setInterval(() => hub.sweep(Date.now()), 10_000);
   sweeper.unref();
 
@@ -103,12 +113,27 @@ export function createApp(env: Env, shared: SharedData, store: ProfileStore = ne
     wss,
     zones,
     hub,
+    bot,
     close: () =>
       new Promise<void>((resolve) => {
         clearInterval(sweeper);
+        bot.stop();
         zones.stop();
         for (const c of wss.clients) c.terminate();
         wss.close(() => server.close(() => void hub.flush().then(resolve)));
       }),
   };
+}
+
+/** The release's VERSION file (next to server/ in a release), else "dev". */
+function releaseVersion(): string {
+  try {
+    const here = path.dirname(fileURLToPath(import.meta.url));
+    for (const p of [path.join(here, "..", "VERSION"), path.join(here, "..", "..", "VERSION")]) {
+      if (fs.existsSync(p)) return fs.readFileSync(p, "utf8").trim().slice(0, 64);
+    }
+  } catch {
+    // fall through
+  }
+  return "dev";
 }

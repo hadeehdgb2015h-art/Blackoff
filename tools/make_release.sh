@@ -16,7 +16,7 @@ cp "$root"/server/dist-bundle/server.mjs* "$b/server/"
 cp -r "$root"/shared/*.json "$root/shared/maps" "$b/shared/"
 cp -r "$web"/. "$b/web/"
 rm -f "$b"/web/config.js "$b"/web/*.gz
-cp "$root"/deploy/{install.sh,update.sh,uninstall.sh} "$b/deploy/"
+cp "$root"/deploy/{install.sh,update.sh,uninstall.sh,owner.env} "$b/deploy/"
 echo "$ver" > "$b/VERSION"
 tar -C "$stage" -czf "$out/blackoff.tar.gz" blackoff
 (cd "$out" && sha256sum blackoff.tar.gz > blackoff.tar.gz.sha256)

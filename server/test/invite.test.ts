@@ -80,3 +80,25 @@ describe("invites", () => {
     expect((await e.waitFor("zoneJoined")).friend).toBe(2);
   });
 });
+
+describe("owner switches (phase 20)", () => {
+  it("a banned account cannot log in; maintenance stops new games but not the owner", async () => {
+    const ERR = defs().protocol.enums.errorCode!;
+    app.hub.settings.banned.add("dev:Bad");
+    const bad = await connect();
+    bad.hello("dev:Bad");
+    expect((await bad.waitFor("error")).code).toBe(ERR.authFailed);
+    app.hub.settings.banned.clear();
+
+    app.hub.settings.maintenance = true;
+    app.hub.settings.maintenanceText = "soon";
+    const p = await connect();
+    p.hello("dev:Someone");
+    await p.waitFor("welcome");
+    p.send("quickPlay");
+    const e = await p.waitFor("error");
+    expect(e.code).toBe(ERR.serverShutdown);
+    expect(e.message).toBe("soon");
+    app.hub.settings.maintenance = false;
+  });
+});

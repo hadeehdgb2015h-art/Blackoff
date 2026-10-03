@@ -63,8 +63,24 @@ export interface MatchSummary {
   reason: "game over" | "empty" | "shutdown";
 }
 
+/** Counts for the owner's panel. */
+export interface StoreOverview { users: number; newToday: number; activeToday: number; matchesToday: number; totalKills: number }
+
+/** One account found by id or name (owner's panel). */
+export interface FoundPlayer { accountId: string; name: string; profile: Profile }
+
 export interface ProfileStore {
   readonly kind: string;
+  overview(): Promise<StoreOverview>;
+  /** Telegram accounts ("tg:<id>"), most recently seen first (broadcasts). */
+  telegramIds(limit: number): Promise<string[]>;
+  /** Accounts whose id is `query` or whose name contains it. */
+  find(query: string, limit: number): Promise<FoundPlayer[]>;
+  /** Adds (or with a negative amount removes) TON points; null when the account is unknown. */
+  addTon(accountId: string, micro: number): Promise<Profile | null>;
+  /** Small persistent settings (the owner's runtime switches). */
+  getSetting(key: string): Promise<unknown>;
+  setSetting(key: string, value: unknown): Promise<void>;
   /** Creates the profile on first sight; refreshes the display name. */
   load(accountId: string, name: string): Promise<Profile>;
   /** Adds one match to the profile and returns the updated totals. */
@@ -99,11 +115,53 @@ export class MemoryProfileStore implements ProfileStore {
   readonly matches: MatchSummary[] = [];
   readonly weeks = new Map<string, Map<string, WeeklyRow>>();
   readonly stats = new Map<string, { shots: number; hits: number }>();
+  readonly names = new Map<string, string>();
+  readonly seen = new Map<string, number>();
+  readonly settings = new Map<string, unknown>();
 
-  async load(accountId: string): Promise<Profile> {
+  async load(accountId: string, name = ""): Promise<Profile> {
     let p = this.profiles.get(accountId);
     if (!p) this.profiles.set(accountId, (p = emptyProfile()));
+    if (name) this.names.set(accountId, name);
+    this.seen.set(accountId, Date.now());
     return { ...p };
+  }
+
+  async overview(): Promise<StoreOverview> {
+    const day = Date.now() - 86_400_000;
+    let kills = 0;
+    for (const p of this.profiles.values()) kills += p.kills;
+    return {
+      users: this.profiles.size, newToday: 0, activeToday: [...this.seen.values()].filter((t) => t >= day).length,
+      matchesToday: this.matches.filter((m) => m.endedAt.getTime() >= day).length, totalKills: kills,
+    };
+  }
+
+  async telegramIds(limit: number): Promise<string[]> {
+    return [...this.seen.entries()].filter(([id]) => id.startsWith("tg:")).sort((a, b) => b[1] - a[1]).slice(0, limit).map(([id]) => id);
+  }
+
+  async find(query: string, limit: number): Promise<FoundPlayer[]> {
+    const q = query.toLowerCase();
+    return [...this.profiles.entries()]
+      .filter(([id]) => id === query || id === "tg:" + query || (this.names.get(id) ?? "").toLowerCase().includes(q))
+      .slice(0, limit)
+      .map(([id, p]) => ({ accountId: id, name: this.names.get(id) ?? "", profile: { ...p } }));
+  }
+
+  async addTon(accountId: string, micro: number): Promise<Profile | null> {
+    const p = this.profiles.get(accountId);
+    if (!p) return null;
+    p.tonMicro = Math.max(0, p.tonMicro + micro);
+    return { ...p };
+  }
+
+  async getSetting(key: string): Promise<unknown> {
+    return this.settings.get(key) ?? null;
+  }
+
+  async setSetting(key: string, value: unknown): Promise<void> {
+    this.settings.set(key, value);
   }
 
   async record(r: MatchResult): Promise<Profile> {

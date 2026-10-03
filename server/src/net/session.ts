@@ -19,6 +19,7 @@ import { emptyProfile, weekLabel, weekStart, type MatchSummary, type Profile, ty
 import type { ZoneManager, ZoneSink } from "../zone/zoneManager.js";
 import type { ZoneResult } from "../zone/zone.js";
 import { flagsFor } from "../anticheat.js";
+import { RuntimeSettings } from "../admin/runtime.js";
 
 export interface Account { id: string; name: string; playerId: number; profile: Profile; weekly: WeeklyStanding }
 
@@ -36,6 +37,10 @@ export class SessionHub implements ZoneSink {
   /** Invite code -> account, for accounts seen since the server started (a
    *  friend can only join someone who is playing, so memory is enough). */
   readonly invites = new Map<string, string>();
+  /** The owner's live switches (bans, maintenance, TON), from the bot's admin panel. */
+  readonly settings: RuntimeSettings;
+  /** Telegram ids of the owners ("tg:<id>" accounts get dev powers). */
+  readonly owners: Set<string>;
   private readonly inviteKey: Buffer;
   botUsername: string;
 
@@ -44,6 +49,12 @@ export class SessionHub implements ZoneSink {
     // stable across restarts when a bot token exists, so shared links keep working
     this.inviteKey = crypto.createHash("sha256").update("blackoff-invite:" + (env.TELEGRAM_BOT_TOKEN || crypto.randomBytes(16).toString("hex"))).digest();
     this.botUsername = env.TELEGRAM_BOT_USERNAME;
+    this.settings = new RuntimeSettings(env, store);
+    this.owners = new Set(env.ADMIN_TELEGRAM_IDS.split(",").map((s) => s.trim()).filter(Boolean).map((id) => "tg:" + id));
+  }
+
+  isOwner(accountId: string): boolean {
+    return this.owners.has(accountId);
   }
 
   /** The account's invite code: 10 characters, derived (HMAC) from the account id. */
@@ -76,7 +87,7 @@ export class SessionHub implements ZoneSink {
       log.warn("anticheat flags", { account: z.accountId, name: z.name, flags, shots: z.shots, hits: z.hits, headshots: z.headshots, kills: z.kills, seconds: Math.round(z.seconds) });
     }
     // TON points come from AI zombies only: infection kills are players, never farmed for prizes
-    const r = { ...z, tonMicro: z.mode === GameMode.INFECTION ? 0 : z.kills * this.env.TON_MICRO_PER_KILL, flags };
+    const r = { ...z, tonMicro: z.mode === GameMode.INFECTION ? 0 : z.kills * this.settings.tonPerKill(), flags };
     this.track(this.store.record(r).then(
       async (profile) => {
         const session = this.byAccount.get(r.accountId);
@@ -242,6 +253,7 @@ export class Session implements ZoneClient {
     } else {
       return this.fail("authFailed", "telegram identity required");
     }
+    if (this.hub.settings.banned.has(id)) return this.fail("authFailed", "this account is banned");
     this.helloPending = true;
     let profile = emptyProfile();
     let weekly: WeeklyStanding = { rank: 0, kills: 0, tonMicro: 0 };
@@ -260,20 +272,20 @@ export class Session implements ZoneClient {
     if (!this.account) return;
     this.account.profile = profile;
     this.account.weekly = weekly;
-    this.send("profile", profileMsg(profile, weekly, this.hub.env.TON_MICRO_PER_KILL));
+    this.send("profile", profileMsg(profile, weekly, this.hub.settings.tonPerKill()));
   }
 
   /** This week's top hunters plus the player's own standing. */
   private async onLeaderboard(): Promise<void> {
     if (!this.account) return;
-    const { store, env } = this.hub;
+    const { store } = this.hub;
     try {
       const week = weekStart();
       const rows = await store.leaderboard(10, week);
       const me = await store.weekly(this.account.id, week);
       if (this.ws.readyState !== this.ws.OPEN) return;
       this.send("leaderboard", {
-        week: weekLabel(week), prize: env.TON_PRIZE_TEXT.slice(0, 200),
+        week: weekLabel(week), prize: this.hub.settings.prizeText(),
         entries: rows.map((r, i) => ({ rank: i + 1, name: r.name.slice(0, 32), kills: Math.min(r.kills, 0xffffffff), tonMicro: Math.min(r.tonMicro, 0xffffffff) })),
         myRank: Math.min(me.rank, 0xffff), myKills: Math.min(me.kills, 0xffffffff), myTonMicro: Math.min(me.tonMicro, 0xffffffff),
       });
@@ -293,7 +305,7 @@ export class Session implements ZoneClient {
     this.resumeToken = token;
     this.send("welcome", {
       playerId: account.playerId, displayName: account.name, resumeToken: token,
-      tickRate: this.hub.shared.constants.sim.tickRate, ...profileMsg(account.profile, account.weekly, this.hub.env.TON_MICRO_PER_KILL),
+      tickRate: this.hub.shared.constants.sim.tickRate, ...profileMsg(account.profile, account.weekly, this.hub.settings.tonPerKill()),
       voice: this.hub.env.VOICE_CHAT,
       inviteCode: this.hub.inviteCodeFor(account.id), botUsername: this.hub.botUsername,
     });
@@ -317,6 +329,9 @@ export class Session implements ZoneClient {
     const mode = msg.mode === GameMode.INFECTION ? GameMode.INFECTION : GameMode.CLASSIC;
     if (this.zone && (this.zone.state === ZoneState.GAME_OVER || this.zone.mode !== mode)) this.leaveZone(); // play again / other mode
     if (this.zone) return; // already playing; quickPlay is idempotent
+    if (this.hub.settings.maintenance && !this.hub.isOwner(this.account!.id)) {
+      return this.fail("serverShutdown", this.hub.settings.maintenanceText || "Maintenance: the game is back in a few minutes");
+    }
     const placed = this.joinFriend(String(msg.friend ?? "")) ?? this.hub.zones.quickPlay(this, this.account!.id, mode,
       msg.friend ? { status: 2, name: "" } : undefined);
     this.zone = placed.zone;
@@ -394,6 +409,11 @@ export class Session implements ZoneClient {
     log.debug("bad message", { ip: this.ip, reason, strikes: this.strikes });
     if (this.strikes >= MAX_STRIKES) return this.fail("badMessage", "too many bad messages");
     this.send("error", { code: ERR.badMessage!, message: reason.slice(0, 120) });
+  }
+
+  /** Closes this connection with a reason the player sees (a ban from the owner's panel). */
+  kick(reason: string): void {
+    this.fail("authFailed", reason);
   }
 
   private fail(code: string, message: string): void {

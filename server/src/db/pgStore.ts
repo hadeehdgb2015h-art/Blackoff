@@ -5,7 +5,7 @@
  */
 import pg from "pg";
 import { log } from "../log.js";
-import { weekStart, type MatchResult, type MatchSummary, type Profile, type ProfileStore, type WeeklyRow, type WeeklyStanding } from "./profileStore.js";
+import { weekStart, type FoundPlayer, type MatchResult, type MatchSummary, type Profile, type ProfileStore, type StoreOverview, type WeeklyRow, type WeeklyStanding } from "./profileStore.js";
 
 export interface Migration { id: number; name: string; sql: string }
 
@@ -56,6 +56,17 @@ export const MIGRATIONS: Migration[] = [
       );
       CREATE INDEX weekly_scores_rank ON weekly_scores (week, kills DESC, ton_micro DESC);
       CREATE INDEX players_suspicion ON players (suspicion DESC);`,
+  },
+  {
+    id: 3,
+    name: "owner settings",
+    sql: `
+      CREATE TABLE settings (
+        key        text PRIMARY KEY,
+        value      jsonb NOT NULL,
+        updated_at timestamptz NOT NULL DEFAULT now()
+      );
+      CREATE INDEX players_last_seen ON players (last_seen DESC);`,
   },
 ];
 
@@ -184,6 +195,54 @@ export class PgProfileStore implements ProfileStore {
       [limit],
     );
     return r.rows.map((x) => ({ accountId: x.account_id, name: x.name, suspicion: x.suspicion, kills: x.kills, shots: Number(x.shots), hits: Number(x.hits) }));
+  }
+
+  async overview(): Promise<StoreOverview> {
+    const r = await this.pool.query<{ users: string; new_today: string; active_today: string; kills: string | null }>(
+      `SELECT count(*) AS users,
+              count(*) FILTER (WHERE created_at >= now() - interval '1 day') AS new_today,
+              count(*) FILTER (WHERE last_seen >= now() - interval '1 day') AS active_today,
+              sum(kills) AS kills
+       FROM players`,
+    );
+    const m = await this.pool.query<{ n: string }>("SELECT count(*) AS n FROM matches WHERE ended_at >= now() - interval '1 day'");
+    const x = r.rows[0]!;
+    return { users: Number(x.users), newToday: Number(x.new_today), activeToday: Number(x.active_today), matchesToday: Number(m.rows[0]!.n), totalKills: Number(x.kills ?? 0) };
+  }
+
+  async telegramIds(limit: number): Promise<string[]> {
+    const r = await this.pool.query<{ account_id: string }>(
+      "SELECT account_id FROM players WHERE account_id LIKE 'tg:%' ORDER BY last_seen DESC LIMIT $1", [limit]);
+    return r.rows.map((x) => x.account_id);
+  }
+
+  async find(query: string, limit: number): Promise<FoundPlayer[]> {
+    const r = await this.pool.query<Row & { account_id: string; name: string }>(
+      `SELECT account_id, name, ${COLS} FROM players
+       WHERE account_id = $1 OR account_id = 'tg:' || $1 OR name ILIKE '%' || $1 || '%'
+       ORDER BY last_seen DESC LIMIT $2`,
+      [query, limit],
+    );
+    return r.rows.map((x) => ({ accountId: x.account_id, name: x.name, profile: toProfile(x) }));
+  }
+
+  async addTon(accountId: string, micro: number): Promise<Profile | null> {
+    const r = await this.pool.query<Row>(
+      `UPDATE players SET ton_micro = GREATEST(0, ton_micro + $2) WHERE account_id = $1 RETURNING ${COLS}`, [accountId, micro]);
+    return r.rows[0] ? toProfile(r.rows[0]) : null;
+  }
+
+  async getSetting(key: string): Promise<unknown> {
+    const r = await this.pool.query<{ value: unknown }>("SELECT value FROM settings WHERE key = $1", [key]);
+    return r.rows[0]?.value ?? null;
+  }
+
+  async setSetting(key: string, value: unknown): Promise<void> {
+    await this.pool.query(
+      `INSERT INTO settings (key, value) VALUES ($1, $2::jsonb)
+       ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value, updated_at = now()`,
+      [key, JSON.stringify(value)],
+    );
   }
 
   async recordMatch(s: MatchSummary): Promise<void> {
