@@ -5,6 +5,8 @@
 # matches the official templates (Emscripten 4.0.20 for Godot 4.7.2).
 set -euo pipefail
 src="$1"; emsdk="$2"; out="$3"
+mkdir -p "$(dirname "$out")"
+out="$(cd "$(dirname "$out")" && pwd)/$(basename "$out")"  # absolute: the build runs inside $src
 here="$(cd "$(dirname "$0")" && pwd)"
 # shellcheck disable=SC1091
 source "$emsdk/emsdk_env.sh" >/dev/null
