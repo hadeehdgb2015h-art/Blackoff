@@ -156,5 +156,9 @@
 - [x] Back button: Telegram's back / the phone's back key / Escape close the open panel; in a game they pause and resume
 - [ ] Owner: ask the players if the aim feels right now (the setting still scales it)
 
+## Phase 28: GTA-style aim
+- [x] Aiming in third person closes the camera in over the shoulder and zooms (only the sniper scope goes first person)
+- [ ] Owner: say if the zoom or the camera distance should change (SHOULDER_AIM in game.gd, adsFov in client/data/visuals.json)
+
 ## Open questions for the owner
 - Own subdomain or the free sslip.io address (installer default)

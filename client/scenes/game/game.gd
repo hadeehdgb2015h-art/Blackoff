@@ -21,6 +21,8 @@ var _controls: TouchControls
 var _zviews := {}  ## zid -> ZombieView
 var _pviews := {}  ## other players' entity id -> RemotePlayerView
 var _self_view: RemotePlayerView  ## the local player's own body, seen in third person (phase 22)
+const SHOULDER_HIP := Vector3(0.62, 0.3, 2.6)   ## third-person camera offset (right, up, back) from the eye
+const SHOULDER_AIM := Vector3(0.82, 0.12, 1.7)   ## while aiming: close over the shoulder (GTA-like)
 var _tpp_dist: float = 2.5        ## the shoulder camera's distance, eased back out after a wall pushed it in
 var _ads_was: bool = false
 var _indoor_now: bool = false     ## refreshed twice a second (reverb, third-person ceiling)
@@ -704,16 +706,19 @@ func _update_aim_and_camera(p: SimPlayer, eye: Vector3, delta: float) -> void:
 	_controls.ads_allowed = soldier and wp != null and not p.is_reloading() and world.time >= p.switch_end
 	var ads := _controls.ads_on and _controls.ads_allowed
 	var vis := Visuals.weapon(wp.id) if wp else {}
-	_rig.set_ads(ads, float(vis.get("adsFov", 55.0)), bool(vis.get("scope", false)))
+	var scoped := bool(vis.get("scope", false))
+	_rig.set_ads(ads, float(vis.get("adsFov", 55.0)), scoped)
 	if ads != _ads_was:
 		_sfx.play("switch", -16.0, 0.05, 1.35 if ads else 1.15)  # cloth and steel as the sights come up
 		_ads_was = ads
-	# third person unless sighted (like the big shooters, ADS goes to the eye) or infected (claws)
-	var tpp := Settings.third_person and p.team != 1 and not ads
+	# third person unless scoped (the sniper goes to the eye) or infected (claws).
+	# Aiming in third person is GTA-style (phase 28): the camera closes in
+	# over the right shoulder while the field of view narrows.
+	var tpp := Settings.third_person and p.team != 1 and not (ads and scoped)
 	_controls.view_label = "FPP" if Settings.third_person else "TPP"
 	var b := Basis(Vector3.UP, _controls.yaw) * Basis(Vector3.RIGHT, _controls.pitch)
 	var pivot := eye + Vector3(0, 0.08, 0)
-	var want := b * Vector3(0.62, 0.3, 2.6)
+	var want := b * SHOULDER_HIP.lerp(SHOULDER_AIM, _rig.ads_amount())
 	var full := want.length()
 	var dir := want / full
 	var hit := world.map.raycast(pivot, dir, full)

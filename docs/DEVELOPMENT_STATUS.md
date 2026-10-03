@@ -62,6 +62,7 @@ Also added on request: the supply cache (random weapon box) and two box-only wea
 - Third round: the owner measured **60–70 FPS** on their phone, and asked to remove every circle as well. All rune circles and wall glyphs are gone; the rule is no circles, stars, sigils or religious symbols.
 
 - Phase 27, players' report: "the aim is very heavy" and "I can't get out of any menu". Look speed raised (0.16° → 0.22° per px, slow drags 0.6× → 0.85×), aim slowdown softened (0.55× → 0.8×, narrower), the scope slows less. Telegram's back button and the phone's back key now close the open panel (or pause in a game) instead of leaving the Mini App.
+- Phase 28, owner: "aim like GTA, zoom in when aiming". In third person, AIM no longer switches to first person: the camera closes in over the right shoulder and the field of view narrows; the sniper scope stays first person.
 
 ## Known limitations
 
