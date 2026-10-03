@@ -246,6 +246,22 @@ func stored_value(key: String) -> String:
 	return str(v) if v != null else ""
 
 
+## Even frame pacing in the page (phase 30); false when the page cannot (the
+## engine's own cap is used then).
+func set_frame_cap(fps: int) -> bool:
+	if not is_web:
+		return false
+	return bool(_js("window.BlackoffPace ? (window.BlackoffPace.setCap(%d), true) : false" % fps))
+
+
+## The display's refresh rate in Hz (0 when unknown), for problem reports.
+func display_hz() -> int:
+	if not is_web:
+		return 0
+	var v: Variant = _js("window.BlackoffPace ? window.BlackoffPace.info().hz : 0")
+	return int(v) if v != null else 0
+
+
 ## The screen in device pixels, e.g. 1080x2400 (problem reports).
 func screen_desc() -> String:
 	if is_web:

@@ -165,5 +165,15 @@
 - [x] REPORT A PROBLEM in settings and the pause menu: category, screenshot, device and settings; to the owners in the bot with reply / solved / close; the player adds details by writing to the bot
 - [ ] Owner: after a few days, read 📈 and decide the next phase (bots in empty squads or rewards for levels)
 
+## Phase 30: AI soldiers and smoothness
+- [x] AI soldiers fill an online zombies squad up to 3; they follow, shoot, revive, leave when a human joins; never recorded; owner switch in the bot
+- [x] Even frame pacing on the web (the page runs the engine on every Nth display refresh instead of the engine's jittery cap)
+- [x] Third-person camera: three rays against walls, so it no longer flickers at pillar edges
+- [ ] Owner: try a solo online game (two AI soldiers after a few seconds) and say how smooth 30 FPS feels now
+- [ ] Read the FPS per device in 📈 after a few days; slow devices get more cuts if needed
+
+## Ideas from the owner (to discuss before building)
+- Puzzles in the game (owner, phase 30 request: "we will discuss the puzzles later, keep them in mind")
+
 ## Open questions for the owner
 - Own subdomain or the free sslip.io address (installer default)

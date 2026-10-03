@@ -115,6 +115,14 @@ export class SimWorld {
     this.checkGameOver();
   }
 
+  /** Players counted for wave size and boss health: AI soldiers (phase 30)
+   *  count for `zone.squadBots.waveWeight` each. */
+  squadSize(): number {
+    let n = 0;
+    for (const p of this.players.values()) n += p.bot ? this.constants.zone.squadBots.waveWeight : 1;
+    return n;
+  }
+
   alivePlayers(): SimPlayer[] {
     return [...this.players.values()].filter((p) => p.isAlive());
   }
@@ -182,7 +190,7 @@ export class SimWorld {
         d.phase = Phase.WAVE;
         d.bossLeft = WaveDirector.bossesFor(this.defs.waves, d.wave);
         d.bossAt = this.time + this.defs.waves.boss.delaySec;
-        d.toSpawn = WaveDirector.countFor(this.defs.waves, d.wave, this.players.size) + d.bossLeft;
+        d.toSpawn = WaveDirector.countFor(this.defs.waves, d.wave, this.squadSize()) + d.bossLeft;
         d.spawned = 0;
         d.killed = 0;
         d.nextSpawnTime = this.time;
@@ -194,7 +202,7 @@ export class SimWorld {
       this.zoneState = ZoneState.WAVE;
       const cap = this.constants.zone.maxAliveZombies;
       if (d.bossLeft > 0 && this.time >= d.bossAt && this.zombies.size < cap) {
-        const hpMul = WaveDirector.bossHealthMul(this.defs.waves, this.players.size);
+        const hpMul = WaveDirector.bossHealthMul(this.defs.waves, this.squadSize());
         if (this.zombieSys.spawn(this.defs.waves.boss.type, d.wave, hpMul)) {
           d.bossLeft -= 1;
           d.spawned += 1;

@@ -67,6 +67,7 @@ export class SessionHub implements ZoneSink {
     this.inviteKey = crypto.createHash("sha256").update("blackoff-invite:" + (env.TELEGRAM_BOT_TOKEN || crypto.randomBytes(16).toString("hex"))).digest();
     this.botUsername = env.TELEGRAM_BOT_USERNAME;
     this.settings = new RuntimeSettings(env, store);
+    zones.botsAllowed = () => this.settings.squadBots;
     this.daily = new DailyService(store, shared.constants.daily, () => this.settings.tonPerKill());
     this.cards = new CardService(cardsDir(env), cardsBaseUrl(env));
     this.owners = new Set(env.ADMIN_TELEGRAM_IDS.split(",").map((s) => s.trim()).filter(Boolean).map((id) => "tg:" + id));

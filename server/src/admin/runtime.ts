@@ -17,6 +17,7 @@ interface Saved {
   tonPerKill?: number | null;
   tonMultiplier?: number;
   prizeText?: string | null;
+  squadBots?: boolean;
 }
 
 export class RuntimeSettings {
@@ -28,6 +29,8 @@ export class RuntimeSettings {
   tonMultiplier = 1;
   /** null = TON_PRIZE_TEXT from the environment */
   prizeOverride: string | null = null;
+  /** AI soldiers fill online squads (phase 30) */
+  squadBots = true;
 
   constructor(private readonly env: Env, private readonly store: ProfileStore) {}
 
@@ -50,6 +53,7 @@ export class RuntimeSettings {
       this.tonPerKillOverride = typeof s.tonPerKill === "number" ? s.tonPerKill : null;
       this.tonMultiplier = typeof s.tonMultiplier === "number" && s.tonMultiplier > 0 ? s.tonMultiplier : 1;
       this.prizeOverride = typeof s.prizeText === "string" ? s.prizeText : null;
+      this.squadBots = s.squadBots !== false;
     } catch (err) {
       log.warn("runtime settings load failed", { error: (err as Error).message });
     }
@@ -58,7 +62,7 @@ export class RuntimeSettings {
   async save(): Promise<void> {
     const s: Saved = {
       banned: [...this.banned], maintenance: this.maintenance, maintenanceText: this.maintenanceText,
-      tonPerKill: this.tonPerKillOverride, tonMultiplier: this.tonMultiplier, prizeText: this.prizeOverride,
+      tonPerKill: this.tonPerKillOverride, tonMultiplier: this.tonMultiplier, prizeText: this.prizeOverride, squadBots: this.squadBots,
     };
     try {
       await this.store.setSetting(KEY, s);

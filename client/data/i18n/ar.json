@@ -314,5 +314,8 @@
  "Sending…": "يرسل…",
  "Report #%d sent. Thank you!\nTo add details, write to the bot: they go straight to the developer.": "وصل البلاغ رقم %d، شكراً لك!\nلإضافة تفاصيل اكتبها للبوت: تصل للمطور مباشرة.",
  "You just sent a report. Wait a minute before the next one.": "أرسلت بلاغاً قبل قليل. انتظر دقيقة قبل التالي.",
- "Could not send the report. Check the connection and try again.": "تعذر إرسال البلاغ. تحقق من الاتصال وحاول مجدداً."
+ "Could not send the report. Check the connection and try again.": "تعذر إرسال البلاغ. تحقق من الاتصال وحاول مجدداً.",
+ "AI": "آلي",
+ "AI soldier %s joined your squad": "انضم الجندي الآلي %s إلى فرقتك",
+ "%s left to make room for a player": "غادر %s ليفسح المكان للاعب"
 }

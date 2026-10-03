@@ -315,6 +315,7 @@ export class TelegramBot {
       [{ text: `💰 TON لكل قتلة (${ton(s.tonPerKill())})`, callback_data: "a:ton" }, { text: s.tonMultiplier > 1 ? "✖️ إيقاف مضاعفة TON" : "✖️2 مضاعفة TON", callback_data: "a:tonx" }],
       [{ text: "🎁 منح TON للاعب", callback_data: "a:give" }, { text: "🏅 نص الجائزة", callback_data: "a:prize" }],
       [{ text: s.maintenance ? "🛠 إيقاف الصيانة" : "🛠 تشغيل الصيانة", callback_data: "a:maint" }, { text: "📝 آخر الأخطاء", callback_data: "a:logs" }],
+      [{ text: s.squadBots ? "🤖 إيقاف الجنود الآليين" : "🤖 تشغيل الجنود الآليين", callback_data: "a:bots" }],
       [{ text: "🔄 إعادة تشغيل السيرفر", callback_data: "a:restart" }, { text: "♻️ تحديث اللوحة", callback_data: "a:panel" }],
     ];
   }
@@ -324,7 +325,7 @@ export class TelegramBot {
     const s = this.hub.settings;
     await this.send(chat,
       "🛠 <b>لوحة المطور</b>\n\n" +
-      `🟢 متصلون الآن: <b>${z.players}</b> لاعب في ${z.zones} مباراة · ${z.zombies} زومبي\n` +
+      `🟢 متصلون الآن: <b>${z.players}</b> لاعب في ${z.zones} مباراة · ${z.zombies} زومبي · 🤖 ${z.bots} آلي\n` +
       `💰 TON لكل قتلة: ${ton(s.tonPerKill())}${s.tonMultiplier > 1 ? ` (مضاعفة ×${s.tonMultiplier})` : ""}\n` +
       `🛠 الصيانة: ${s.maintenance ? "<b>تعمل</b>" : "متوقفة"} · 🚫 محظورون: ${s.banned.size}\n` +
       `🐞 بلاغات مفتوحة: ${await this.hub.store.countOpenReports().catch(() => 0)}`,
@@ -362,6 +363,12 @@ export class TelegramBot {
       case "ban": return void this.ask(chat, "ban", "🚫 أرسل رقم اللاعب في تيليجرام لحظره:");
       case "unban": return void this.ask(chat, "unban", "✅ أرسل رقم اللاعب لفك حظره:" + (s.banned.size ? "\n\nالمحظورون: " + [...s.banned].map((b) => `<code>${esc(b.replace(/^tg:/, ""))}</code>`).join("، ") : ""));
       case "ton": return void this.ask(chat, "ton", `💰 كم TON لكل قتلة؟ الآن ${ton(s.tonPerKill())}\nمثال: 0.001 (أو «افتراضي» للعودة لإعداد السيرفر)`);
+      case "bots":
+        s.squadBots = !s.squadBots;
+        await s.save();
+        return void this.send(chat, s.squadBots
+          ? "🤖 الجنود الآليون يعملون: من يلعب وحده أونلاين ينضم إليه جنديان آليان حتى يأتي لاعبون حقيقيون."
+          : "🤖 أُوقف الجنود الآليون: يخرجون من المباريات الجارية خلال ثوانٍ.", this.panelButtons());
       case "tonx":
         s.tonMultiplier = s.tonMultiplier > 1 ? 1 : 2;
         await s.save();
@@ -401,7 +408,7 @@ export class TelegramBot {
     const info = this.live();
     const mem = Math.round(process.memoryUsage().rss / 1048576);
     const zones = [...this.hub.zones.zones.values()].map((zone) => {
-      const names = [...zone.members.values()].map((m) => esc(m.name)).join("، ");
+      const names = [...zone.members.values()].map((m) => (m.bot ? "🤖" : "") + esc(m.name)).join("، ");
       const mode = zone.mode === GameMode.INFECTION ? "عدوى" : "زومبي";
       return `• #${zone.id} ${mode} · الموجة ${zone.world.director.wave} · ${zone.size} لاعب: ${names || "—"}`;
     });

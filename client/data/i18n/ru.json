@@ -314,5 +314,8 @@
  "Sending…": "Отправка…",
  "Report #%d sent. Thank you!\nTo add details, write to the bot: they go straight to the developer.": "Отчёт №%d отправлен. Спасибо!\nПодробности напишите боту: они сразу попадут к разработчику.",
  "You just sent a report. Wait a minute before the next one.": "Вы только что отправили отчёт. Подождите минуту.",
- "Could not send the report. Check the connection and try again.": "Не удалось отправить отчёт. Проверьте соединение и попробуйте снова."
+ "Could not send the report. Check the connection and try again.": "Не удалось отправить отчёт. Проверьте соединение и попробуйте снова.",
+ "AI": "ИИ",
+ "AI soldier %s joined your squad": "Боец ИИ %s вступил в ваш отряд",
+ "%s left to make room for a player": "%s уступил место игроку"
 }

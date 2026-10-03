@@ -728,7 +728,12 @@ func _update_aim_and_camera(p: SimPlayer, eye: Vector3, delta: float) -> void:
 	var want := b * SHOULDER_HIP.lerp(SHOULDER_AIM, _rig.ads_amount())
 	var full := want.length()
 	var dir := want / full
-	var hit := world.map.raycast(pivot, dir, full)
+	# three rays a little apart (a thin "sphere"): the camera does not flicker
+	# in and out while passing the edge of a pillar or a door frame (phase 30)
+	var side := (b * Vector3.RIGHT) * 0.18
+	var up := (b * Vector3.UP) * 0.12
+	var hit := minf(world.map.raycast(pivot, dir, full),
+		minf(world.map.raycast(pivot + side + up, dir, full), world.map.raycast(pivot - side + up, dir, full)))
 	var dist := clampf(hit - 0.3, 0.35, full)
 	# a wall snaps the camera in at once; open space lets it ease back out
 	_tpp_dist = dist if dist < _tpp_dist else move_toward(_tpp_dist, dist, delta * 4.0)
@@ -1090,7 +1095,7 @@ func _govern_quality(delta: float) -> void:
 	# for the rest of the session (steady beats stuttering, and it runs cooler).
 	if Settings.fps_cap == 0 and cap == 60 and fps < 50.0:
 		Settings.auto_fps = 30
-		Engine.max_fps = 30
+		Settings.apply_fps_cap()
 		print("[perf] frame cap -> 30 (%.0f fps)" % fps)
 		return
 	var tiers := ["low", "medium", "high"]

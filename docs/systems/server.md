@@ -124,3 +124,21 @@ At game over CHALLENGE FRIENDS asks for `card {lang}`. The server takes the play
 The server adds the account's level and games and the zone (id, mode, wave, players, state). It stores the report in `reports` and answers `reported` {status, id}. The limit is one report a minute and ten a day per account. The bot then sends the report to every owner, as a photo with the text as caption (`sendPhoto` multipart, falling back to `sendDocument`, then to text). Each report carries the buttons ↩️ reply, ✅ solved (tells the player) and 🗑 close.
 
 The player gets a receipt in their language. Their next messages to the bot within 30 minutes are added to the report and forwarded to the owners. An owner's reply reaches the player and opens a new 30-minute window. The panel's 🐞 button lists open reports.
+
+## AI soldiers (phase 30)
+
+An online zombies game with fewer than `zone.squadBots.fillTo` humans (3) gets AI soldiers up to that size.
+- They arrive one at a time after `joinDelaySec` (6 s), so a friend opening an invite gets the place first.
+- A joining human takes a soldier's place at once (a downed or dead soldier leaves first).
+- When the last human leaves, the soldiers go too.
+- They never join infection games, and the owner can switch them off from the bot panel (🤖, saved in the runtime settings).
+
+`src/sim/squadBot.ts` gives each one a brain. Like a human client, it only produces inputs. In order of priority, it:
+1. revives a downed teammate (walking to them; under pressure only when the bleed-out runs short);
+2. backs away from a zombie that is too close;
+3. keeps near the nearest human, walking the nav grid when far;
+4. turns towards the nearest visible zombie at `turnDegPerSec`, waits `reactionSec`, and shoots with `aimErrorDeg` of error.
+
+They cannot buy: from wave 3 they carry the rifle and from wave 8 the LMG, and they never run dry.
+
+They are never recorded: no profile, TON, leaderboard, missions, activity or card. In the roster their level is 0, which the client shows as an AI tag with join and leave toasts. Each one counts as `waveWeight` (0.5) of a player for wave size and boss health (`SimWorld.squadSize()`).

@@ -102,6 +102,16 @@ func effective_fps_cap() -> int:
 	return auto_fps if fps_cap == 0 else fps_cap
 
 
+## The frame cap: on the web the page paces frames evenly (BlackoffPace in
+## shell.html) and the engine's own cap stays off; elsewhere Engine.max_fps.
+func apply_fps_cap() -> void:
+	var cap := effective_fps_cap()
+	if OS.has_feature("web") and Platform.set_frame_cap(cap):
+		Engine.max_fps = 0
+	else:
+		Engine.max_fps = cap
+
+
 func _apply_audio() -> void:
-	Engine.max_fps = effective_fps_cap()
+	apply_fps_cap()
 	AudioServer.set_bus_volume_db(0, linear_to_db(maxf(master_volume, 0.0001)))

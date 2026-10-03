@@ -15,6 +15,10 @@ export const ConstantsSchema = z.object({
     maxAliveZombies: z.number().int().positive(),
     emptyZoneTtlSec: pos,
     quickPlayJoinableUntilWave: z.number().int().nonnegative(),
+    squadBots: z.object({
+      fillTo: z.number().int().nonnegative(), joinDelaySec: num.nonnegative(), aimErrorDeg: num.nonnegative(), reactionSec: num.nonnegative(),
+      turnDegPerSec: pos, followDistance: pos, waveWeight: num.nonnegative(),
+    }),
   }),
   player: z.object({
     maxHealth: pos, radius: pos, height: pos, eyeHeight: pos, headCenterHeight: pos, headRadius: pos,

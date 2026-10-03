@@ -159,7 +159,7 @@ func _ready() -> void:
 func _details() -> Dictionary:
 	return {
 		"quality": Settings.effective_quality(), "fpsCap": Settings.fps_cap, "tpp": Settings.third_person,
-		"sens": snappedf(Settings.sensitivity, 0.01), "ping": roundi(Net.rtt_ms), "net": Net.status,
+		"sens": snappedf(Settings.sensitivity, 0.01), "ping": roundi(Net.rtt_ms), "net": Net.status, "hz": Platform.display_hz(),
 		"voice": Net.voice_mic, "touch": Platform.is_touch,
 	}
 

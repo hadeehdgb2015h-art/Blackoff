@@ -52,6 +52,8 @@ export class SimPlayer {
   /** owner powers (phase 20): takes no damage / never runs out of ammo */
   god = false;
   infiniteAmmo = false;
+  /** an AI soldier filling an online squad (phase 30, server only) */
+  bot = false;
   weapons: WeaponState[] = [];
   slot = 0;
   nextFireTime = 0;

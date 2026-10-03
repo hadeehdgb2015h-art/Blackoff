@@ -16,6 +16,8 @@ export interface ZoneStats {
   zones: number;
   players: number;
   zombies: number;
+  /** AI soldiers playing (phase 30) */
+  bots: number;
   tickMsAvg: number;
   tickMsMax: number;
 }
@@ -28,6 +30,8 @@ export interface ZoneSink {
 
 export class ZoneManager {
   sink: ZoneSink | null = null;
+  /** AI soldiers allowed in new and running zones (the owner's switch, phase 30) */
+  botsAllowed: () => boolean = () => true;
   readonly zones = new Map<number, Zone>();
   private nextZoneId = 1;
   private timer: NodeJS.Timeout | null = null;
@@ -69,6 +73,7 @@ export class ZoneManager {
       this.nextZoneId = (this.nextZoneId % 0xffffffff) + 1;
       best = new Zone(id, this.shared, this.codec, this.shared.constants.maps.default, (Math.random() * 0xffffffff) >>> 0, this.now(), mode);
       best.onResult = (r) => this.sink?.onResult(r);
+      best.botsAllowed = () => this.botsAllowed();
       this.zones.set(id, best);
       log.info("zone created", { zone: id, map: best.mapId, mode: GameMode[mode] });
     }
@@ -126,12 +131,14 @@ export class ZoneManager {
   stats(): ZoneStats {
     let players = 0;
     let zombies = 0;
+    let bots = 0;
     for (const z of this.zones.values()) {
       players += z.size;
+      bots += z.botCount;
       zombies += z.world.zombies.size;
     }
     const s = {
-      zones: this.zones.size, players, zombies,
+      zones: this.zones.size, players, zombies, bots,
       tickMsAvg: this.statWindow ? +(this.tickMsSum / this.statWindow).toFixed(3) : 0, tickMsMax: +this.tickMsMax.toFixed(3),
     };
     return s;

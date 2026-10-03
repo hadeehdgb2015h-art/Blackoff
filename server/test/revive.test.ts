@@ -14,6 +14,8 @@ describe("revive over the wire", () => {
   const EV = defs().protocol.enums.eventKind!;
   beforeAll(async () => {
     app = createApp(loadEnv({ NODE_ENV: "test", ALLOW_DEV_AUTH: "1" }), defs());
+    await app.hub.settings.load();
+    app.hub.settings.squadBots = false; // two humans revive each other: no AI soldier in the way (phase 30)
     await new Promise<void>((r) => app.server.listen(0, "127.0.0.1", r));
     url = `ws://127.0.0.1:${(app.server.address() as AddressInfo).port}/ws`;
   });

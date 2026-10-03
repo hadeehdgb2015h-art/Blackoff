@@ -6,9 +6,10 @@
  */
 import type { Codec, Msg } from "../net/codec.js";
 import type { SharedData } from "../shared/loadShared.js";
-import { BTN_MASK, Btn, PlayerState, Team, ZombieState, emptyIntent, type PlayerIntent, type SimEvent, type SimPlayer } from "../sim/entities.js";
+import { BTN_MASK, Btn, PlayerState, Team, WeaponState, ZombieState, emptyIntent, type PlayerIntent, type SimEvent, type SimPlayer } from "../sim/entities.js";
 import { GameMode, SimWorld, ZoneState } from "../sim/simWorld.js";
 import { Phase } from "../sim/waveDirector.js";
+import { BOT_NAMES, SquadBot } from "../sim/squadBot.js";
 /** What a zone knows about a member's play when they leave (the hub turns it
  *  into a MatchResult with TON points and anti-cheat flags). */
 export interface ZoneResult {
@@ -44,6 +45,8 @@ export interface Member {
   disconnectedAt: number;
   latest: PlayerIntent;
   queue: PlayerIntent[];
+  /** an AI soldier (phase 30): no client, never recorded, level 0 in the roster */
+  bot: SquadBot | null;
   latched: number;
   joinedAt: number;
   shots: number;
@@ -71,8 +74,13 @@ export class Zone {
   readonly startedAtDate = new Date();
   emptySince: number | null;
   gameOverAt: number | null = null;
-  /** Most members held at once (for the match record). */
+  /** Most human members held at once (for the match record). */
   peakPlayers = 0;
+  /** AI soldiers allowed (the owner's switch); set by the ZoneManager */
+  botsAllowed: () => boolean = () => true;
+  private lastHumanJoin = 0;
+  private lastBotChange = 0;
+  private botSeed = 1;
   /** Called once per member when it leaves the zone or the zone closes. */
   onResult: ((r: ZoneResult) => void) | null = null;
   private readonly weaponIdx = new Map<string, number>();
@@ -99,8 +107,15 @@ export class Zone {
 
   get state(): ZoneState { return this.world.zoneState; }
 
-  /** Members holding a slot (connected or within the reconnect grace). */
-  get size(): number { return this.members.size; }
+  /** Human members holding a slot (connected or within the reconnect grace). */
+  get size(): number {
+    let n = 0;
+    for (const m of this.members.values()) if (!m.bot) n += 1;
+    return n;
+  }
+
+  /** AI soldiers in the zone. */
+  get botCount(): number { return this.members.size - this.size; }
 
   /** `friend`: 1 = joined a friend's game through an invite, 2 = the invite could not be honoured. */
   join(client: ZoneClient, accountId: string, now = performance.now(), friend: FriendJoin = NO_FRIEND): Member {
@@ -108,12 +123,83 @@ export class Zone {
     const m: Member = {
       entityId, name: client.displayName, level: Math.max(1, Math.min(255, client.level ?? 1)), accountId, client, disconnectedAt: 0,
       latest: { ...emptyIntent(), yaw: this.world.players.get(entityId)!.yaw }, queue: [], latched: 0, joinedAt: now, shots: 0, hits: 0, lastSeq: 0, appliedSeq: 0, known: new Set(),
+      bot: null,
     };
     this.members.set(entityId, m);
-    this.peakPlayers = Math.max(this.peakPlayers, this.members.size);
+    this.peakPlayers = Math.max(this.peakPlayers, this.size);
     this.emptySince = null;
+    this.lastHumanJoin = now;
+    // a human takes an AI soldier's place
+    const fill = this.shared.constants.zone.squadBots.fillTo;
+    while (this.botCount > 0 && this.members.size > Math.max(fill, this.size)) this.removeBot();
     this.welcomeMember(m, friend);
     return m;
+  }
+
+  // ------------------------------------------------------------------ AI soldiers (phase 30)
+
+  /** Adds or removes AI soldiers: an online zombies game with fewer than
+   *  `fillTo` humans gets soldiers after `joinDelaySec` (a friend opening an
+   *  invite gets there first), one at a time. */
+  manageBots(now: number): void {
+    const c = this.shared.constants.zone.squadBots;
+    const humans = this.size;
+    const want = this.mode === GameMode.CLASSIC && humans > 0 && this.botsAllowed() && this.state !== ZoneState.GAME_OVER
+      ? Math.max(0, c.fillTo - humans) : 0;
+    if (this.botCount > want) {
+      while (this.botCount > want) this.removeBot();
+      return;
+    }
+    if (this.botCount < want && now - this.lastHumanJoin >= c.joinDelaySec * 1000 && now - this.lastBotChange >= 1500) this.addBot(now);
+  }
+
+  private addBot(now: number): void {
+    const used = new Set([...this.members.values()].map((m) => m.name));
+    const name = BOT_NAMES.find((n) => !used.has(n)) ?? "Bot";
+    const entityId = this.world.addPlayer(name);
+    const p = this.world.players.get(entityId)!;
+    p.bot = true;
+    // next to a human rather than on a far spawn point
+    const human = [...this.members.values()].find((m) => !m.bot);
+    const hp = human ? this.world.players.get(human.entityId) : undefined;
+    if (hp && hp.state !== PlayerState.DEAD) {
+      const spot = this.world.map.moveCircle(hp.pos, { x: 0.9, y: 0.6 }, this.shared.constants.player.radius);
+      p.pos = { ...spot };
+      p.prevPos = { ...spot };
+    }
+    const m: Member = {
+      entityId, name, level: 0, accountId: "bot:" + entityId, client: null, disconnectedAt: 0,
+      latest: { ...emptyIntent(), yaw: p.yaw }, queue: [], latched: 0, joinedAt: now, shots: 0, hits: 0, lastSeq: 0, appliedSeq: 0, known: new Set(),
+      bot: new SquadBot(entityId, this.botSeed++, this.shared.constants.zone.squadBots),
+    };
+    this.members.set(entityId, m);
+    this.lastBotChange = now;
+    this.broadcastRoster();
+  }
+
+  /** AI soldiers cannot buy: they get a better gun as the waves grow, like a
+   *  player would, and never run dry. */
+  private equipBot(p: SimPlayer): void {
+    const wave = this.world.director.wave;
+    const want = wave >= 8 && this.shared.weapons.lmg ? "lmg" : wave >= 3 && this.shared.weapons.rifle ? "rifle" : this.shared.constants.player.startWeapon;
+    const wp = p.weapon();
+    if (wp && wp.id !== want && !p.isReloading() && this.shared.weapons[want]) {
+      p.weapons = [new WeaponState(want, this.shared.weapons[want]!)];
+      p.slot = 0;
+    }
+    for (const w of p.weapons) w.reserve = Math.max(w.reserve, w.def.magSize * 2);
+  }
+
+  /** The AI soldier that leaves first: one who is down or dead, else the newest. */
+  private removeBot(): void {
+    const bots = [...this.members.values()].filter((m) => m.bot);
+    if (bots.length === 0) return;
+    const down = bots.find((m) => !this.world.players.get(m.entityId)?.isAlive());
+    const m = down ?? bots[bots.length - 1]!;
+    this.members.delete(m.entityId);
+    this.world.removePlayer(m.entityId);
+    this.lastBotChange = performance.now();
+    this.broadcastRoster();
   }
 
   /** Reattaches a reconnecting client to its slot (resume token). */
@@ -145,7 +231,10 @@ export class Zone {
     this.finish(m, now);
     this.members.delete(entityId);
     this.world.removePlayer(entityId);
-    if (this.members.size === 0) this.emptySince = now;
+    if (this.size === 0) {
+      while (this.botCount > 0) this.removeBot(); // AI soldiers never play on alone
+      this.emptySince = now;
+    }
     this.broadcastRoster();
   }
 
@@ -165,7 +254,14 @@ export class Zone {
 
   tick(now: number): void {
     const w = this.world;
+    this.manageBots(now);
     for (const m of this.members.values()) {
+      if (m.bot) {
+        const p = w.players.get(m.entityId);
+        if (p) this.equipBot(p);
+        w.setInput(m.entityId, m.bot.think(w));
+        continue;
+      }
       const next = m.queue.shift();
       if (next) {
         m.latest = next;
@@ -186,7 +282,7 @@ export class Zone {
   /** Disconnected members past the grace period lose their slot. */
   expireDisconnected(now: number, graceMs: number): void {
     for (const m of [...this.members.values()]) {
-      if (!m.client && now - m.disconnectedAt >= graceMs) this.remove(m.entityId, now);
+      if (!m.bot && !m.client && now - m.disconnectedAt >= graceMs) this.remove(m.entityId, now);
     }
   }
 
@@ -199,6 +295,7 @@ export class Zone {
   }
 
   private finish(m: Member, now: number): void {
+    if (m.bot) return; // AI soldiers are never recorded
     this.onResult?.(this.resultOf(m, now));
   }
 

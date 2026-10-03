@@ -6,7 +6,17 @@
     "maxPlayersHardCap": 8,
     "maxAliveZombies": 24,
     "emptyZoneTtlSec": 60,
-    "quickPlayJoinableUntilWave": 0
+    "quickPlayJoinableUntilWave": 0,
+    "squadBots": {
+      "_comment": "Phase 30: AI soldiers (server only) fill an online zombies game up to fillTo soldiers while there are fewer humans; each leaves when a human takes its place. They earn nothing and are never recorded. waveWeight: how much one counts as a player for wave size and boss health.",
+      "fillTo": 3,
+      "joinDelaySec": 6,
+      "aimErrorDeg": 3.5,
+      "reactionSec": 0.4,
+      "turnDegPerSec": 320,
+      "followDistance": 4.5,
+      "waveWeight": 0.5
+    }
   },
   "player": {
     "maxHealth": 100,

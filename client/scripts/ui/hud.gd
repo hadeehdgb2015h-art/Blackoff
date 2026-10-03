@@ -35,6 +35,7 @@ var _go_stats: Label
 var _go_table: GridContainer
 var _go_challenge: Button
 var _team: TeamPanel
+var _bots_seen := {}  ## AI soldiers in the squad (phase 30): id -> name, for join / leave toasts
 var _markers: Markers
 var _revive_back: ColorRect
 var _revive_bar: ColorRect
@@ -133,7 +134,14 @@ class TeamPanel extends Control:
 			var text := "  ".join(tags)
 			var x := 160.0
 			var level := int(r.get("level", 0))
-			if level > 0:
+			if r.get("bot", false):
+				# an AI soldier filling the squad (phase 30): a plain tag instead of a rank
+				var tag := tr("AI")
+				var tw := font.get_string_size(tag, HORIZONTAL_ALIGNMENT_LEFT, -1, 12).x + 10.0
+				draw_rect(Rect2(x, y + 1, tw, 16), Color(0.35, 0.6, 0.75, 0.85), false, 1.0)
+				draw_string(font, Vector2(x + 5, y + 13), tag, HORIZONTAL_ALIGNMENT_LEFT, -1, 12, Color(0.55, 0.8, 0.95))
+				x += tw + 8.0
+			elif level > 0:
 				# the teammate's rank insignia and level (phase 26)
 				RankBadge.draw_insignia(self, Rect2(x, y - 1, 20, 20), Progression.rank_for(level))
 				draw_string(font, Vector2(x + 22, y + 14), str(level), HORIZONTAL_ALIGNMENT_LEFT, -1, 13, UiTheme.GOLD)
@@ -376,6 +384,7 @@ func update_state(p: SimPlayer, w: SimWorld, interact: Dictionary, delta: float)
 	_perks.text = "  ·  ".join(chips)
 	_cross.spread = 1.6 if p.moving else 1.0
 	_cross.visible = p.is_alive()
+	_announce_bots(w)
 	var mates := 0
 	var rows := []
 	var speaking: Array = Net.voice_speaking() if Net.online_requested else []
@@ -386,7 +395,8 @@ func update_state(p: SimPlayer, w: SimWorld, interact: Dictionary, delta: float)
 			mates += 1
 		rows.append({"name": o.name, "hp_k": clampf(o.hp / maxf(1.0, o.max_hp), 0.0, 1.0), "state": o.state,
 			"bleed": w.bleedout_left(o), "revived": w.is_being_revived(o), "speaking": o.id in speaking, "infected": o.team == 1,
-			"level": int(w.levels.get(o.id, 0)) if "levels" in w else 0})
+			"level": int(w.levels.get(o.id, 0)) if "levels" in w else 0,
+			"bot": "levels" in w and w.levels.has(o.id) and int(w.levels[o.id]) == 0})
 	_team.rows = rows
 	_team.queue_redraw()
 	var prog := w.revive_progress(p)
@@ -811,3 +821,20 @@ static func _vignette_tex() -> GradientTexture2D:
 	t.width = 128
 	t.height = 128
 	return t
+
+
+## Toasts when an AI soldier joins the squad or makes room for a player (phase 30).
+func _announce_bots(w) -> void:
+	if not ("levels" in w):
+		return
+	var now := {}
+	for id in w.levels:
+		if int(w.levels[id]) == 0 and w.players.has(id):
+			now[id] = str(w.roster.get(id, ""))
+	for id in now:
+		if not _bots_seen.has(id):
+			show_toast(tr("AI soldier %s joined your squad") % now[id], 3.0)
+	for id in _bots_seen:
+		if not now.has(id):
+			show_toast(tr("%s left to make room for a player") % _bots_seen[id], 3.0)
+	_bots_seen = now
