@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "protocolVersion": 9,
+  "protocolVersion": 10,
   "endianness": "little",
   "frame": "u8 messageId followed by fields in declared order; one message per WebSocket binary frame. Decoders reject unknown ids, short frames and trailing bytes.",
   "primitives": {
@@ -81,7 +81,7 @@
     "gameMode": {"classic": 0, "infection": 1}
   },
   "types": {
-    "inputButtons": "u8 bitmask: 1=fireHeld 2=reload 4=interact 8=revive 16=switchWeapon 32=firePressed (latched edge since last input)",
+    "inputButtons": "u8 bitmask: 1=fireHeld 2=reload 4=interact 8=revive 16=switchWeapon 32=firePressed (latched edge since last input) 64=aimDownSights (held)",
     "entityState": [
       ["id", "u16"],
       ["kind", "u8"],

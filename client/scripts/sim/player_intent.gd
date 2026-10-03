@@ -8,6 +8,7 @@ const INTERACT := 4
 const REVIVE := 8
 const SWITCH := 16
 const FIRE_PRESSED := 32
+const ADS := 64  ## aim down sights (held)
 
 var seq: int = 0
 var move := Vector2.ZERO  ## x = strafe right, y = forward; length <= 1

@@ -52,6 +52,7 @@ var _fps_t: float = 0.0
 var _world: SimWorld
 var _banner_t: float = 0.0
 var _callout: Label
+var _scope: ScopeOverlay
 var _boss_box: VBoxContainer   ## the boss's name and health bar, top centre, while one is alive
 var _boss_name: Label
 var _boss_fill: ColorRect
@@ -67,6 +68,8 @@ var _damage: float = 0.0
 
 class Crosshair extends Control:
 	var spread: float = 1.0
+	var ads: float = 0.0       ## sighted amount: the hip cross gives way to a red dot
+	var scoped: bool = false   ## the scope overlay draws its own reticle
 	var hit_t: float = 0.0
 	var hit_head: bool = false
 	var hit_kill: bool = false
@@ -77,12 +80,19 @@ class Crosshair extends Control:
 
 	func _draw() -> void:
 		var c := size / 2.0
-		var gap := 8.0 + spread * 6.0
-		var col := Color(1, 1, 1, 0.85)
-		for d in [Vector2(1, 0), Vector2(-1, 0), Vector2(0, 1), Vector2(0, -1)]:
-			draw_line(c + d * gap, c + d * (gap + 10.0), Color(0, 0, 0, 0.6), 4.0)
-			draw_line(c + d * gap, c + d * (gap + 10.0), col, 2.0)
-		draw_circle(c, 1.6, col)
+		if scoped:
+			return
+		if ads > 0.5:
+			# sights up: a small red dot, as through a reflex sight
+			draw_circle(c, 3.4, Color(0, 0, 0, 0.55))
+			draw_circle(c, 2.3, Color(1.0, 0.22, 0.15, 0.95))
+		else:
+			var gap := 8.0 + spread * 6.0
+			var col := Color(1, 1, 1, 0.85 * (1.0 - ads * 2.0))
+			for d in [Vector2(1, 0), Vector2(-1, 0), Vector2(0, 1), Vector2(0, -1)]:
+				draw_line(c + d * gap, c + d * (gap + 10.0), Color(0, 0, 0, 0.6 * (1.0 - ads * 2.0)), 4.0)
+				draw_line(c + d * gap, c + d * (gap + 10.0), col, 2.0)
+			draw_circle(c, 1.6, col)
 		if hit_t > 0.0:
 			var hc := Color(1, 0.25, 0.2) if hit_head or hit_kill else Color(1, 1, 1)
 			hc.a = clampf(hit_t / 0.12, 0, 1)
@@ -660,6 +670,17 @@ func _update_boss_bar(w: SimWorld) -> void:
 	if boss:
 		_boss_name.text = str(Visuals.zombie(boss.type).bossName)
 		_boss_fill.size.x = 540.0 * clampf(boss.hp / maxf(1.0, boss.max_hp), 0.0, 1.0)
+
+
+## Aiming state for the crosshair and the scope overlay (phase 22).
+func set_aim(ads: float, scoped: bool, delta: float) -> void:
+	_cross.ads = ads
+	_cross.scoped = scoped
+	if _scope == null:
+		_scope = ScopeOverlay.new()
+		add_child(_scope)
+		move_child(_scope, 0)  # under the HUD text and buttons
+	_scope.set_scoped(scoped, delta)
 
 
 ## A boss has come: a banner and a call-out.

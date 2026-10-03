@@ -15,7 +15,7 @@ export const ConstantsSchema = z.object({
   }),
   player: z.object({
     maxHealth: pos, radius: pos, height: pos, eyeHeight: pos, headCenterHeight: pos, headRadius: pos,
-    moveSpeed: pos, healthRegenDelaySec: pos, healthRegenPerSec: pos, downedBleedoutSec: pos,
+    moveSpeed: pos, adsMoveMul: pos.default(0.55), healthRegenDelaySec: pos, healthRegenPerSec: pos, downedBleedoutSec: pos,
     reviveTimeSec: pos, reviveRange: pos, interactRange: pos, startCurrency: z.number().int().nonnegative(),
     startWeapon: z.string(), maxWeaponSlots: z.number().int().positive(), weaponSwitchSec: pos, stepHeight: pos,
   }),
@@ -75,6 +75,8 @@ export const WeaponSchema = z.object({
   splashRadius: pos.default(0), splashDamage: pos.default(0),
   /** a cone blast instead of a ray: every zombie within `range` and this angle is hit */
   coneDeg: pos.default(0),
+  /** spread multiplier while aiming down sights (phase 22) */
+  adsSpreadMul: pos.default(0.5),
 });
 export const WeaponsSchema = z.object({ schemaVersion: z.literal(1), weapons: z.record(z.string(), WeaponSchema) });
 

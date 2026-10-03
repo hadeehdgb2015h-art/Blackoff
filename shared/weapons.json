@@ -18,7 +18,8 @@
       "pellets": 1,
       "price": 0,
       "ammoPrice": 100,
-      "boxWeight": 0
+      "boxWeight": 0,
+      "adsSpreadMul": 0.45
     },
     "rifle": {
       "displayName": "AR-7 Carbine",
@@ -37,7 +38,8 @@
       "pellets": 1,
       "price": 1200,
       "ammoPrice": 600,
-      "boxWeight": 3
+      "boxWeight": 3,
+      "adsSpreadMul": 0.3
     },
     "shotgun": {
       "displayName": "KS-12 Breacher",
@@ -56,7 +58,8 @@
       "pellets": 8,
       "price": 1500,
       "ammoPrice": 500,
-      "boxWeight": 3
+      "boxWeight": 3,
+      "adsSpreadMul": 0.7
     },
     "smg": {
       "displayName": "VX-9 Ripper",
@@ -75,7 +78,8 @@
       "pellets": 1,
       "price": 1500,
       "ammoPrice": 450,
-      "boxWeight": 3
+      "boxWeight": 3,
+      "adsSpreadMul": 0.5
     },
     "lmg": {
       "displayName": "BR-80 Mauler",
@@ -94,7 +98,8 @@
       "pellets": 1,
       "price": 0,
       "ammoPrice": 800,
-      "boxWeight": 2
+      "boxWeight": 2,
+      "adsSpreadMul": 0.4
     },
     "sniper": {
       "displayName": "LR-50 Longshot",
@@ -113,7 +118,8 @@
       "pellets": 1,
       "price": 0,
       "ammoPrice": 700,
-      "boxWeight": 2
+      "boxWeight": 2,
+      "adsSpreadMul": 0.02
     },
     "arc": {
       "displayName": "Arc Lance",
@@ -134,7 +140,8 @@
       "ammoPrice": 0,
       "boxWeight": 0.5,
       "splashRadius": 2.5,
-      "splashDamage": 120
+      "splashDamage": 120,
+      "adsSpreadMul": 0.4
     },
     "gale": {
       "displayName": "Gale Cannon",
@@ -154,7 +161,8 @@
       "price": 0,
       "ammoPrice": 0,
       "boxWeight": 0.3,
-      "coneDeg": 50
+      "coneDeg": 50,
+      "adsSpreadMul": 1.0
     }
   }
 }

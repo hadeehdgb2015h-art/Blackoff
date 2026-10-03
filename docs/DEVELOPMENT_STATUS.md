@@ -28,11 +28,12 @@ Read this first in a new session. Then read `docs/TECHNICAL_ARCHITECTURE.md`, `d
 | 19 Invite friends, challenge, feel | done (`docs/systems/netcode.md`, `presentation.md`, `deploy.md`) |
 | 20 Boss wave, bot replies and owner panel, dev powers | done (`docs/systems/server.md`, `presentation.md`) |
 | 21 Sky visions beside the moon | done (`docs/systems/presentation.md`) |
+| 22 Aim down sights, sniper scope, third-person camera (protocol v10) | done (`docs/systems/presentation.md`, `input-and-hud.md`) |
 
 ## Live preview
 
 **https://hadeehdgb2015h-art.github.io/Blackoff/**: GitHub Pages, redeployed by CI on every push. The cloud session proxy blocks github.io, so the CI `pages` job verifies the live URL itself. Total first download is about 13 MB since phase 17 (stripped engine 24 MB wasm served as 6.2 MB gzip + 7.3 MB pck; it was 22 MB: 9.6 MB engine + 12.4 MB pck).
-URL flags: `?autostart=1` (skip menu), `?bot=1` (test bot plays), `?debug=1` (exposes `window.__blackoff`), `?showcase=1|box|soldier`, `?weapon=<id>`, `?at=x,z,yaw[,pitch]` (camera placement), `?online=1` / `?server=` (quick play online), `&r=N` (bypass a stale `index.html` on Pages, max 10 min; the game files themselves are content-hashed since phase 7 and never stale).
+URL flags: `?autostart=1` (skip menu), `?bot=1` (test bot plays), `?debug=1` (exposes `window.__blackoff`), `?showcase=1|box|soldier`, `?weapon=<id>`, `?at=x,z,yaw[,pitch]` (camera placement), `?view=fpp|tpp`, `?ads=1`, `?online=1` / `?server=` (quick play online), `&r=N` (bypass a stale `index.html` on Pages, max 10 min; the game files themselves are content-hashed since phase 7 and never stale).
 
 ## What exists
 

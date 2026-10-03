@@ -132,7 +132,13 @@ export class PlayerSystem {
     if (!p.moving) return;
     const dir = add(scale(right(p.yaw), mv.x), scale(forward(p.yaw), mv.y));
     const teamMul = p.team === Team.ZOMBIE ? this.w.constants.infection.zombieSpeedMul : 1;
-    p.pos = this.w.map.moveCircle(p.pos, scale(dir, this.cp.moveSpeed * this.perkMul(p, "moveSpeedMul") * teamMul * this.w.dt), this.cp.radius);
+    const adsMul = this.aiming(p, inp) ? this.cp.adsMoveMul : 1;
+    p.pos = this.w.map.moveCircle(p.pos, scale(dir, this.cp.moveSpeed * this.perkMul(p, "moveSpeedMul") * teamMul * adsMul * this.w.dt), this.cp.radius);
+  }
+
+  /** Aiming down sights: ADS held, a soldier, not reloading or switching (phase 22). */
+  aiming(p: SimPlayer, inp: PlayerIntent): boolean {
+    return (inp.buttons & Btn.ADS) !== 0 && p.team !== Team.ZOMBIE && !p.isReloading() && this.w.time >= p.switchEnd;
   }
 
   private regen(p: SimPlayer): void {
@@ -188,7 +194,7 @@ export class PlayerSystem {
     p.shotsFired += 1;
     const origin: V3 = { x: p.pos.x, y: this.cp.eyeHeight, z: p.pos.y };
     if (wp.def.coneDeg > 0) return this.shootCone(p, wp, inp, origin);
-    const spread = (p.moving ? wp.def.moveSpreadDeg : wp.def.spreadDeg) * DEG;
+    const spread = (p.moving ? wp.def.moveSpreadDeg : wp.def.spreadDeg) * DEG * (this.aiming(p, inp) ? wp.def.adsSpreadMul : 1);
     const rngMax = wp.def.range;
     const pellets = Math.max(1, wp.def.pellets);
     const ends: V3[] = [];

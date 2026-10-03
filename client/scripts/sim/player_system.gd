@@ -112,13 +112,19 @@ func _revive(p: SimPlayer, inp: PlayerIntent) -> bool:
 	return true
 
 
+## Aiming down sights: ADS held, a soldier, not reloading or switching (phase 22).
+func aiming(p: SimPlayer, inp: PlayerIntent) -> bool:
+	return inp.has(PlayerIntent.ADS) and p.team != 1 and not p.is_reloading() and w.time >= p.switch_end
+
+
 func _move(p: SimPlayer, inp: PlayerIntent) -> void:
 	var mv := inp.move.limit_length(1.0)
 	p.moving = mv.length_squared() > 0.01
 	if not p.moving:
 		return
 	var dir := SimMath.right(p.yaw) * mv.x + SimMath.forward(p.yaw) * mv.y
-	var delta := dir * float(c_player.moveSpeed) * perk_mul(p, "moveSpeedMul") * w.dt
+	var ads_mul := float(c_player.get("adsMoveMul", 0.55)) if aiming(p, inp) else 1.0
+	var delta := dir * float(c_player.moveSpeed) * perk_mul(p, "moveSpeedMul") * ads_mul * w.dt
 	p.pos = w.map.move_circle(p.pos, delta, float(c_player.radius))
 
 
@@ -180,7 +186,7 @@ func _shoot(p: SimPlayer, wp: WeaponState, inp: PlayerIntent) -> void:
 	if float(wp.def.get("coneDeg", 0.0)) > 0.0:
 		_shoot_cone(p, wp, inp, origin)
 		return
-	var spread := deg_to_rad(float(wp.def.moveSpreadDeg if p.moving else wp.def.spreadDeg))
+	var spread := deg_to_rad(float(wp.def.moveSpreadDeg if p.moving else wp.def.spreadDeg)) * (float(wp.def.get("adsSpreadMul", 0.5)) if aiming(p, inp) else 1.0)
 	var rng_max := float(wp.def.range)
 	var pellets := maxi(1, int(wp.def.pellets))
 	var ends: Array[Vector3] = []

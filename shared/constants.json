@@ -16,6 +16,7 @@
     "headCenterHeight": 1.65,
     "headRadius": 0.15,
     "moveSpeed": 4.5,
+    "adsMoveMul": 0.55,
     "healthRegenDelaySec": 4,
     "healthRegenPerSec": 20,
     "downedBleedoutSec": 30,
@@ -38,7 +39,7 @@
     "maxLevel": 100
   },
   "net": {
-    "protocolVersion": 9,
+    "protocolVersion": 10,
     "maxMessageBytes": 4096,
     "interestRadius": 45,
     "reconnectGraceSec": 30,

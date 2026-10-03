@@ -358,3 +358,22 @@ describe("boss waves (phase 20)", () => {
     expect(w.director.bossLeft).toBe(0);
   });
 });
+
+describe("aim down sights (phase 22)", () => {
+  it("moving while aiming covers adsMoveMul of the distance", () => {
+    const run = (buttons: number) => {
+      const w = world(3);
+      const pid = w.addPlayer("t");
+      const p = w.players.get(pid)!;
+      const start = { ...p.pos };
+      for (let i = 0; i < 10; i++) {
+        p.input = intent(buttons, { move: { x: 0, y: 1 }, yaw: p.yaw });
+        w.step();
+      }
+      return Math.hypot(p.pos.x - start.x, p.pos.y - start.y);
+    };
+    const free = run(0);
+    const ads = run(Btn.ADS);
+    expect(ads / free).toBeCloseTo(defs().constants.player.adsMoveMul, 2);
+  });
+});

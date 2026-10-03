@@ -93,6 +93,17 @@ func on_fire() -> void:
 	_kick = 1.0
 
 
+## The local player's own body in third person: no name tag over its head.
+func set_local() -> void:
+	_name.visible = false
+
+
+## Where shots leave the held gun (third-person tracers).
+func muzzle_position() -> Vector3:
+	var m := _gun_holder.find_child("Muzzle", true, false) as Node3D
+	return m.global_position if m else _gun_holder.global_transform * Vector3(0, 0.05, -0.62)
+
+
 func update_view(alpha: float, delta: float) -> void:
 	var before := position
 	_apply(alpha)

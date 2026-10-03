@@ -4,8 +4,8 @@ import type { WeaponDef, ZombieDef } from "../shared/schemas.js";
 import type { V2 } from "./math.js";
 
 /** Input bits, identical to protocol.json `inputButtons`. */
-export const Btn = { FIRE_HELD: 1, RELOAD: 2, INTERACT: 4, REVIVE: 8, SWITCH: 16, FIRE_PRESSED: 32 } as const;
-export const BTN_MASK = 63;
+export const Btn = { FIRE_HELD: 1, RELOAD: 2, INTERACT: 4, REVIVE: 8, SWITCH: 16, FIRE_PRESSED: 32, ADS: 64 } as const;
+export const BTN_MASK = 127;
 
 export interface PlayerIntent {
   seq: number;

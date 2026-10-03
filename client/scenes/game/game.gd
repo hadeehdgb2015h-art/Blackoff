@@ -20,6 +20,10 @@ var _hud: Hud
 var _controls: TouchControls
 var _zviews := {}  ## zid -> ZombieView
 var _pviews := {}  ## other players' entity id -> RemotePlayerView
+var _self_view: RemotePlayerView  ## the local player's own body, seen in third person (phase 22)
+var _tpp_dist: float = 2.5        ## the shoulder camera's distance, eased back out after a wall pushed it in
+var _ads_was: bool = false
+var _indoor_now: bool = false     ## refreshed twice a second (reverb, third-person ceiling)
 var _izviews := {}  ## infection: infected players' entity id -> ZombieView (with a name tag)
 var _perf_t: float = 0.0
 var _perf_frames: int = 0
@@ -103,6 +107,9 @@ func _ready() -> void:
 	_controls = TouchControls.new()
 	ui.add_child(_controls)
 	_controls.pause_requested.connect(_toggle_pause)
+	_controls.view_toggled.connect(func():
+		Settings.third_person = not Settings.third_person
+		Settings.save())
 	_controls.voice_toggled.connect(_on_voice_toggled)
 	Net.voice_changed.connect(_sync_voice_buttons)
 	if Platform.query_param("nohud") == "1":  # clean captures (menu backdrop)
@@ -158,6 +165,10 @@ func _ready() -> void:
 			p.prev_pos = p.pos
 			_controls.set_look(deg_to_rad(float(v[2])), deg_to_rad(float(v[3])) if v.size() > 3 else 0.0)
 			world.director.phase = WaveDirector.Phase.STOPPED
+	if Platform.query_param("ads") == "1":  # screenshot tests: sights up
+		_controls.ads_on = true
+	if Platform.query_param("view") in ["fpp", "tpp"]:
+		Settings.third_person = Platform.query_param("view") == "tpp"
 	var showcase := Platform.query_param("showcase")
 	if showcase == "1" or showcase == "boss":
 		_start_showcase()
@@ -231,7 +242,10 @@ func _process(delta: float) -> void:
 	var eye := p.prev_pos.lerp(p.pos, alpha)
 	_controls.aim_friction = _aim_friction(Vector3(eye.x, float(world.constants.player.eyeHeight), eye.y))
 	_pm("aim_friction")
-	_rig.set_view(Vector3(eye.x, float(world.constants.player.eyeHeight), eye.y), _controls.yaw, _controls.pitch, p.moving, delta)
+	var eye3 := Vector3(eye.x, float(world.constants.player.eyeHeight), eye.y)
+	_update_aim_and_camera(p, eye3, delta)
+	_rig.set_view(eye3, _controls.yaw, _controls.pitch, p.moving, delta)
+	_after_camera(p, eye3, alpha, delta)
 	_pm("rig")
 	var low := Settings.effective_quality() == "low"
 	for v in _zviews.values():
@@ -373,6 +387,13 @@ func _sync_views() -> void:
 			_izviews.erase(id)
 	for p in world.players.values():
 		if p.id == pid:
+			if _self_view == null:
+				_self_view = RemotePlayerView.new()
+				add_child(_self_view)
+				_self_view.setup(p)
+				_self_view.set_local()
+				_self_view.visible = false
+			_self_view.set_state(p)
 			continue
 		if p.team == 1:
 			# an infected player looks like a zombie (walker model) with a name tag
@@ -423,7 +444,7 @@ func _on_event(e: Dictionary) -> void:
 	match e.type:
 		"shot":
 			var wvis := Visuals.weapon(e.weapon)
-			var from: Vector3 = _rig.muzzle_position() if local else e.from + Vector3(0, -0.2, 0)
+			var from: Vector3 = (_self_view.muzzle_position() if _rig.tpp_k > 0.5 and _self_view else _rig.muzzle_position()) if local else e.from + Vector3(0, -0.2, 0)
 			if not local:
 				_sfx.play_at(wvis.get("sound", "pistol_shot"), from, -8.0)
 				var pv: RemotePlayerView = _pviews.get(e.pid)
@@ -557,10 +578,12 @@ func _on_event(e: Dictionary) -> void:
 				print("[game] player %d respawned" % e.pid)
 		"reload_started":
 			if local:
+				_controls.ads_on = false  # reloading drops the sights
 				_rig.on_reload(float(e.duration))
 				_sfx.play("reload", -4.0)
 		"weapon_switched":
 			if local:
+				_controls.ads_on = false
 				_rig.on_switch(e.weapon)
 				_sfx.play("switch", -6.0)
 		"purchase":
@@ -641,10 +664,70 @@ func _body_sounds(p: SimPlayer, delta: float) -> void:
 	_room_t -= delta
 	if _room_t <= 0.0:
 		_room_t = 0.5
-		Audio.set_room(_indoors(p.pos))
+		_indoor_now = _indoors(p.pos)
+		Audio.set_room(_indoor_now)
 
 
 ## Indoors when a ceiling-height wall is close in most directions (the yard is open).
+# ---- aiming down sights and the third-person camera (phase 22)
+
+## Before the camera moves: whether the sights are up and where a third-person
+## camera goes (behind the right shoulder, pulled in by walls, under ceilings).
+func _update_aim_and_camera(p: SimPlayer, eye: Vector3, delta: float) -> void:
+	var soldier := p.team != 1 and p.is_alive()
+	var wp := p.weapon()
+	_controls.ads_allowed = soldier and wp != null and not p.is_reloading() and world.time >= p.switch_end
+	var ads := _controls.ads_on and _controls.ads_allowed
+	var vis := Visuals.weapon(wp.id) if wp else {}
+	_rig.set_ads(ads, float(vis.get("adsFov", 55.0)), bool(vis.get("scope", false)))
+	if ads != _ads_was:
+		_sfx.play("switch", -16.0, 0.05, 1.35 if ads else 1.15)  # cloth and steel as the sights come up
+		_ads_was = ads
+	# third person unless sighted (like the big shooters, ADS goes to the eye) or infected (claws)
+	var tpp := Settings.third_person and p.team != 1 and not ads
+	_controls.view_label = "FPP" if Settings.third_person else "TPP"
+	var b := Basis(Vector3.UP, _controls.yaw) * Basis(Vector3.RIGHT, _controls.pitch)
+	var pivot := eye + Vector3(0, 0.08, 0)
+	var want := b * Vector3(0.62, 0.3, 2.6)
+	var full := want.length()
+	var dir := want / full
+	var hit := world.map.raycast(pivot, dir, full)
+	var dist := clampf(hit - 0.3, 0.35, full)
+	# a wall snaps the camera in at once; open space lets it ease back out
+	_tpp_dist = dist if dist < _tpp_dist else move_toward(_tpp_dist, dist, delta * 4.0)
+	var cam := pivot + dir * _tpp_dist
+	cam.y = maxf(cam.y, 0.4)
+	if _indoor_now:
+		cam.y = minf(cam.y, 2.55)  # under the facility ceilings
+	_rig.set_third_person(tpp, cam)
+
+
+## After the camera moved: aim the sim at what the crosshair covers (third
+## person), zoomed look speed, the crosshair or scope, and the local body.
+func _after_camera(p: SimPlayer, eye: Vector3, alpha: float, delta: float) -> void:
+	_controls.ads_sens = _rig.current_fov() / FpRig.BASE_FOV
+	_hud.set_aim(_rig.ads_amount(), _rig.scoped_in(), delta)
+	var third := _rig.tpp_k > 0.5
+	_controls.aim_override_on = third and not bot
+	if third:
+		var cam := _rig.camera
+		var o := cam.global_position
+		var d := -cam.global_transform.basis.z
+		var best := world.map.raycast(o, d, 140.0)
+		for z in world.zombies.values():
+			var h := HitTest.ray_character(o, d, z.pos, z.radius(), float(z.def.headCenterHeight), float(z.def.headRadius))
+			if not h.is_empty() and h.t < best:
+				best = h.t
+		# never aim at something between the camera and the player (it would turn the body around)
+		best = maxf(best, o.distance_to(eye) + 1.0)
+		var to := (o + d * best - eye).normalized()
+		_controls.aim_override = Vector2(atan2(-to.x, -to.z), asin(clampf(to.y, -1.0, 1.0)))
+	if _self_view:
+		_self_view.visible = _rig.tpp_k > 0.35 and p.state != SimPlayer.State.DEAD
+		if _self_view.visible:
+			_self_view.update_view(alpha, delta)
+
+
 func _indoors(pos: Vector2) -> bool:
 	var eye := Vector3(pos.x, 1.6, pos.y)
 	var hits := 0

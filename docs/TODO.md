@@ -120,5 +120,11 @@
 - [x] Six original visions beside the moon (no copied art), one cheap additive quad, ~97 KB
 - [ ] Owner: record a clip of a vision for social media
 
+## Phase 22: aim and third person
+- [x] Aim down sights: AIM button / right mouse, per-weapon zoom, sights brought to the eye, red dot, tighter spread and slower walk checked by the server (protocol v10)
+- [x] Sniper scope overlay (lens, mil reticle, red dot)
+- [x] Third-person camera over the shoulder (default), VIEW button and setting, camera never through walls, shots go to the crosshair, ADS switches to first person
+- [ ] Owner: try both views on the phone and say which should be the default
+
 ## Open questions for the owner
 - Own subdomain or the free sslip.io address (installer default)

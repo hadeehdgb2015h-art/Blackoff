@@ -107,6 +107,11 @@ func _ready() -> void:
 		fr.add_child(b)
 	v.add_child(fr)
 
+	var tpp := CheckButton.new()
+	tpp.text = "Third-person camera (over the shoulder)"
+	tpp.button_pressed = Settings.third_person
+	tpp.toggled.connect(func(on): Settings.third_person = on)
+	v.add_child(tpp)
 	var inv := CheckButton.new()
 	inv.text = "Invert vertical look"
 	inv.button_pressed = Settings.invert_y

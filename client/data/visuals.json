@@ -20,7 +20,8 @@
    ],
    "recoilKick": 0.05,
    "recoilPitch": 0.035,
-   "sound": "pistol_shot"
+   "sound": "pistol_shot",
+   "adsFov": 60
   },
   "rifle": {
    "model": "res://assets/models/vm_rifle.glb",
@@ -40,7 +41,8 @@
    ],
    "recoilKick": 0.035,
    "recoilPitch": 0.02,
-   "sound": "rifle_shot"
+   "sound": "rifle_shot",
+   "adsFov": 50
   },
   "shotgun": {
    "model": "res://assets/models/vm_shotgun.glb",
@@ -60,7 +62,8 @@
    ],
    "recoilKick": 0.09,
    "recoilPitch": 0.06,
-   "sound": "shotgun_shot"
+   "sound": "shotgun_shot",
+   "adsFov": 62
   },
   "smg": {
    "model": "res://assets/models/vm_smg.glb",
@@ -80,7 +83,8 @@
    ],
    "recoilKick": 0.025,
    "recoilPitch": 0.012,
-   "sound": "smg_shot"
+   "sound": "smg_shot",
+   "adsFov": 55
   },
   "lmg": {
    "model": "res://assets/models/vm_lmg.glb",
@@ -100,7 +104,8 @@
    ],
    "recoilKick": 0.04,
    "recoilPitch": 0.025,
-   "sound": "lmg_shot"
+   "sound": "lmg_shot",
+   "adsFov": 52
   },
   "sniper": {
    "model": "res://assets/models/vm_sniper.glb",
@@ -120,7 +125,9 @@
    ],
    "recoilKick": 0.11,
    "recoilPitch": 0.08,
-   "sound": "sniper_shot"
+   "sound": "sniper_shot",
+   "adsFov": 18,
+   "scope": true
   },
   "arc": {
    "model": "res://assets/models/vm_arc.glb",
@@ -142,7 +149,8 @@
    "recoilPitch": 0.03,
    "sound": "arc_shot",
    "fx": "bolt",
-   "tracer": "#7fe3ff"
+   "tracer": "#7fe3ff",
+   "adsFov": 54
   },
   "gale": {
    "model": "res://assets/models/vm_gale.glb",
@@ -163,7 +171,8 @@
    "recoilKick": 0.14,
    "recoilPitch": 0.1,
    "sound": "gale_shot",
-   "fx": "blast"
+   "fx": "blast",
+   "adsFov": 64
   }
  },
  "zombies": {

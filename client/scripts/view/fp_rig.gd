@@ -10,6 +10,9 @@ extends Node3D
 const BOB_FREQ := 9.0
 const BOB_AMP := 0.012
 const VM_SCALE := 0.5
+const BASE_FOV := 75.0
+const ADS_SEC := 0.16       ## time to raise the sights
+const TPP_SEC := 0.22       ## time to swing between first and third person
 
 var camera := Camera3D.new()
 var muzzle_light_enabled: bool = false
@@ -32,6 +35,22 @@ var _pending_weapon := ""
 var _shake: float = 0.0
 var _fov_punch: float = 0.0  ## degrees added to the field of view, springing back (kills)
 var _down: float = 0.0
+## Aim down sights (phase 22): 0 at the hip .. 1 sighted, eased; the gun slides
+## so its muzzle sits under the screen centre and the view zooms to the
+## weapon's adsFov. A scoped weapon hides the gun and shows the scope overlay.
+var ads_k: float = 0.0
+var _ads_target: float = 0.0
+var _ads_fov: float = BASE_FOV
+var _scoped: bool = false
+var _ads_shift := Vector3.ZERO
+var _ads_turn := Vector2.ZERO   ## (pitch, yaw) that levels the barrel with the view while sighted
+## Third person (phase 22): 0 = the eye, 1 = the over-the-shoulder point the
+## game computed (collision-checked); blended for a smooth swing.
+var tpp_k: float = 0.0
+var _tpp_target: float = 0.0
+var _tpp_pos := Vector3.ZERO
+var _vm_wanted: bool = true
+var _downed: bool = false
 var _anim: AnimationPlayer
 var _claws: Node3D            ## infection: the infected player's hands instead of a weapon
 var _claws_on: bool = false
@@ -99,15 +118,52 @@ func set_weapon(id: String) -> void:
 		_muzzle.position = Visuals.v3(_vis.muzzle)
 
 
+## Aim down sights this frame: `fov` the zoomed field of view, `scoped` for a scope overlay.
+func set_ads(on: bool, fov: float, scoped: bool) -> void:
+	_ads_target = 1.0 if on else 0.0
+	if on:
+		_ads_fov = fov
+		_scoped = scoped
+
+
+## Sighted amount after easing (0..1).
+func ads_amount() -> float:
+	return ads_k * ads_k * (3.0 - 2.0 * ads_k)
+
+
+## True while the scope overlay should cover the screen.
+func scoped_in() -> bool:
+	return _scoped and ads_amount() > 0.85
+
+
+## Third person this frame, with the camera at `cam_pos` (world space).
+func set_third_person(on: bool, cam_pos: Vector3) -> void:
+	_tpp_target = 1.0 if on else 0.0
+	_tpp_pos = cam_pos
+
+
+## The field of view in force (the controls slow the look by fov / 75 when zoomed).
+func current_fov() -> float:
+	return camera.fov
+
+
 ## Places the camera. pos is the eye position in world space.
 func set_view(pos: Vector3, yaw: float, pitch: float, moving: bool, delta: float) -> void:
-	var shake := Vector3(randf_range(-1, 1), randf_range(-1, 1), 0) * _shake * 0.03
+	ads_k = move_toward(ads_k, _ads_target, delta / ADS_SEC)
+	tpp_k = move_toward(tpp_k, _tpp_target, delta / TPP_SEC)
+	var a := ads_amount()
+	var shake := Vector3(randf_range(-1, 1), randf_range(-1, 1), 0) * _shake * 0.03 * (1.0 - 0.6 * a)
 	_shake = maxf(0.0, _shake - delta * 3.0)
-	camera.fov = 75.0 + _fov_punch
+	camera.fov = lerpf(BASE_FOV, _ads_fov, a) + _fov_punch * (1.0 - 0.7 * a)
 	_fov_punch = move_toward(_fov_punch, 0.0, delta * 18.0)
 	global_position = pos + Vector3(0, -_down, 0)
 	rotation = Vector3(0, yaw, 0)
 	camera.rotation = Vector3(pitch + shake.y, shake.x, 0)
+	var t := tpp_k * tpp_k * (3.0 - 2.0 * tpp_k)
+	camera.position = Vector3.ZERO
+	if t > 0.001:
+		camera.global_position = global_position.lerp(_tpp_pos, t)
+	_vm_root.visible = _vm_wanted and not _downed and t < 0.5 and not scoped_in()
 	if moving:
 		_bob_t += delta * BOB_FREQ
 	else:
@@ -170,6 +226,7 @@ func on_damage(amount: float) -> void:
 
 
 func set_viewmodel_visible(on: bool) -> void:
+	_vm_wanted = on
 	_vm_root.visible = on
 
 
@@ -229,14 +286,17 @@ static func _build_claws() -> Node3D:
 
 func set_downed(downed: bool) -> void:
 	_down = 1.0 if downed else 0.0
+	_downed = downed
 	_vm_root.visible = not downed
 
 
 func _animate(delta: float) -> void:
 	_kick = maxf(0.0, _kick - delta * 12.0)
 	var kick_amt: float = _vis.get("recoilKick", 0.04)
-	var pos := Vector3(sin(_bob_t * 0.5) * BOB_AMP, -absf(sin(_bob_t)) * BOB_AMP, _kick * kick_amt)
-	var rot := Vector3(_kick * 0.12, 0, 0)
+	var a := ads_amount()
+	var bob := BOB_AMP * (1.0 - 0.85 * a)
+	var pos := Vector3(sin(_bob_t * 0.5) * bob, -absf(sin(_bob_t)) * bob, _kick * kick_amt * (1.0 - 0.5 * a))
+	var rot := Vector3(_kick * 0.12 * (1.0 - 0.5 * a), 0, 0)
 	if _reload_t >= 0.0:
 		_reload_t += delta
 		var k := clampf(_reload_t / _reload_len, 0.0, 1.0)
@@ -272,7 +332,23 @@ func _animate(delta: float) -> void:
 		else:
 			_claws.position = Vector3(0, 0.01 * sin(_bob_t * 0.5), 0)
 			_claws.rotation = Vector3.ZERO
-	_vm_root.position = pos
+	# sights: turn the gun so its barrel runs along the view, then slide it so
+	# the muzzle sits just under the screen centre (converges over a few frames)
+	if a > 0.001 and _muzzle.is_inside_tree():
+		var inv := camera.global_transform.affine_inverse()
+		var m := inv * _muzzle.global_position
+		var g := inv * _vm_holder.global_position
+		var barrel := (m - g).normalized()
+		var turn := Vector2(-atan2(barrel.y, Vector2(barrel.x, barrel.z).length()), atan2(barrel.x, -barrel.z))
+		_ads_turn = _ads_turn.lerp((_ads_turn + turn) * a, minf(1.0, delta * 25.0))
+		var rest := m - _vm_root.position
+		var want := Vector3(-rest.x, -rest.y - 0.045, -0.015)
+		_ads_shift = _ads_shift.lerp(want * a, minf(1.0, delta * 30.0))
+	else:
+		_ads_turn = _ads_turn.lerp(Vector2.ZERO, minf(1.0, delta * 20.0))
+		_ads_shift = _ads_shift.lerp(Vector3.ZERO, minf(1.0, delta * 20.0))
+	rot += Vector3(_ads_turn.x, _ads_turn.y, 0)
+	_vm_root.position = pos + _ads_shift
 	_vm_root.rotation = rot
 	if _flash_t > 0.0:
 		_flash_t -= delta
