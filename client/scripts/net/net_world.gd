@@ -348,7 +348,7 @@ func scores() -> Array:
 func _new_player(id: int) -> SimPlayer:
 	var p := SimPlayer.new()
 	p.id = id
-	p.name = str(roster.get(id, "Player"))
+	p.name = str(roster.get(id, tr("Player")))
 	p.max_hp = float(constants.player.maxHealth)
 	p.hp = p.max_hp
 	players[id] = p

@@ -13,22 +13,24 @@ static func can_invite() -> bool:
 ## Opens the share sheet with the squad invite. Returns a toast for the
 ## player ("" when Telegram's own chat picker took over).
 static func invite() -> String:
-	return _share("Join my squad in BLACKOFF: hold the waves with me against the dead!")
+	return _share(TranslationServer.translate("Join my squad in BLACKOFF: hold the waves with me against the dead!"))
 
 
 ## The game-over challenge: the player's result plus the same invite link.
 static func challenge(wave: int, kills: int) -> String:
-	return _share("I held out to wave %d in BLACKOFF and put down %d zombies. Think you can beat that? Join my squad:" % [wave, kills])
+	if kills == 1:
+		return _share(str(TranslationServer.translate("I held out to wave %d in BLACKOFF and put down %d zombie. Think you can beat that? Join my squad:")) % [wave, kills])
+	return _share(str(TranslationServer.translate("I held out to wave %d in BLACKOFF and put down %d zombies. Think you can beat that? Join my squad:")) % [wave, kills])
 
 
 static func _share(text: String) -> String:
 	var link := Net.invite_link()
 	if link == "":
-		return "Invites work when you play from the Telegram bot"
+		return TranslationServer.translate("Invites work when you play from the Telegram bot")
 	Platform.haptic("light")
 	match Platform.share(link, text):
 		"copied":
-			return "Invite link copied"
+			return TranslationServer.translate("Invite link copied")
 		"none":
-			return "Could not open sharing here"
+			return TranslationServer.translate("Could not open sharing here")
 	return ""

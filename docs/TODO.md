@@ -133,5 +133,12 @@
 - [ ] Owner: decide whether the amounts suit the prize budget (`shared/constants.json` → `daily`)
 - [ ] Next: a result card image for sharing
 
+## Phase 24: languages
+- [x] English, Arabic, Russian: every menu, HUD, toast, prompt, sign and share text (264 texts), checked by tools/i18n.py in CI
+- [x] Settings → Language, saved, page reloads; first start follows the Telegram language
+- [x] Arabic and Cyrillic fonts (subset, ~100 KB), right-to-left panels in Arabic
+- [ ] Owner: read the Arabic texts on the phone and send any wording to change
+- [ ] Later: the bot's messages in the player's language
+
 ## Open questions for the owner
 - Own subdomain or the free sslip.io address (installer default)

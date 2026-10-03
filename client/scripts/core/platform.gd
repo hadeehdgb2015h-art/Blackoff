@@ -15,7 +15,8 @@ func _ready() -> void:
 	# money on the left, the menu flipped, and controls positioned before they
 	# join the tree stored mirrored. The interface is English and laid out
 	# left-to-right: use an English locale for layout. Arabic text inside labels
-	# (player names) is still shaped and ordered right-to-left by the text server.
+	# is still shaped and ordered right-to-left by the text server, and the
+	# translations (I18n, phase 24) are registered under this English locale.
 	TranslationServer.set_locale("en")
 	get_tree().root.set_layout_direction(Window.LAYOUT_DIRECTION_LTR)
 	is_web = OS.has_feature("web")
@@ -161,6 +162,35 @@ func share(url: String, text: String) -> String:
 		return "none"
 	var v: Variant = _js("window.BlackoffTG ? window.BlackoffTG.share(%s, %s) : 'none'" % [JSON.stringify(url), JSON.stringify(text)])
 	return str(v) if v != null else "none"
+
+
+## The player's language: Telegram's user language inside Telegram, else the
+## browser's (e.g. "ar", "ru-RU"); "" when unknown (phase 24).
+func user_language() -> String:
+	if not is_web:
+		return OS.get_locale_language()
+	var v: Variant = _js("(window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initDataUnsafe && window.Telegram.WebApp.initDataUnsafe.user && window.Telegram.WebApp.initDataUnsafe.user.language_code) || navigator.language || ''")
+	return str(v) if v != null else ""
+
+
+## A small value kept in the browser's localStorage, written at once (unlike
+## user://, which reaches IndexedDB a moment later): survives a page reload.
+func store_value(key: String, value: String) -> void:
+	if is_web:
+		_js("try { localStorage.setItem(%s, %s) } catch (e) {}" % [JSON.stringify(key), JSON.stringify(value)])
+
+
+func stored_value(key: String) -> String:
+	if not is_web:
+		return ""
+	var v: Variant = _js("(function () { try { return localStorage.getItem(%s) || '' } catch (e) { return '' } })()" % JSON.stringify(key))
+	return str(v) if v != null else ""
+
+
+## Reloads the page (the language changed: every text is built again).
+func reload_page() -> void:
+	if is_web:
+		_js("window.location.reload()")
 
 
 func haptic(kind: String = "light") -> void:

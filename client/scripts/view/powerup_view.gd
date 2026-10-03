@@ -43,7 +43,7 @@ func setup(id: int, type: String, display_name: String, pos: Vector2, until_time
 	_light.shadow_enabled = false
 	add_child(_light)
 	_label = Label3D.new()
-	_label.text = display_name
+	_label.text = I18n.name_of(display_name)
 	_label.font_size = 40
 	_label.pixel_size = 0.004
 	_label.outline_size = 10

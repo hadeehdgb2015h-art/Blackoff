@@ -19,6 +19,7 @@ config/icon="res://icon.svg"
 SharedData="*res://scripts/core/shared_data.gd"
 Platform="*res://scripts/core/platform.gd"
 Settings="*res://scripts/core/settings.gd"
+I18n="*res://scripts/core/i18n.gd"
 Net="*res://scripts/core/net.gd"
 Audio="*res://scripts/core/audio.gd"
 

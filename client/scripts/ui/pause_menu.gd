@@ -23,14 +23,15 @@ func _ready() -> void:
 	var panel := PanelContainer.new()
 	center.add_child(panel)
 	_box = VBoxContainer.new()
+	I18n.dir(_box)
 	_box.add_theme_constant_override("separation", 14)
 	panel.add_child(_box)
-	_box.add_child(UiTheme.label("PAUSED", 36, UiTheme.ACCENT))
-	_box.add_child(UiTheme.button("Resume", func(): resume.emit()))
+	_box.add_child(UiTheme.label(tr("PAUSED"), 36, UiTheme.ACCENT))
+	_box.add_child(UiTheme.button(tr("Resume"), func(): resume.emit()))
 	if Social.can_invite():
-		_box.add_child(UiTheme.gold_button("Invite friends", func(): invite.emit()))
-	_box.add_child(UiTheme.button("Settings", _open_settings))
-	_box.add_child(UiTheme.button("Quit to menu", func(): quit.emit()))
+		_box.add_child(UiTheme.gold_button(tr("Invite friends"), func(): invite.emit()))
+	_box.add_child(UiTheme.button(tr("Settings"), _open_settings))
+	_box.add_child(UiTheme.button(tr("Quit to menu"), func(): quit.emit()))
 
 
 func _open_settings() -> void:

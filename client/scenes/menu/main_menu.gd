@@ -48,7 +48,7 @@ func _ready() -> void:
 	Audio.play_music("menu")
 
 	if not SharedData.is_valid():
-		var err := UiTheme.label("Data error: " + "; ".join(SharedData.errors), 18, UiTheme.ACCENT)
+		var err := UiTheme.label(tr("Data error: %s") % "; ".join(SharedData.errors), 18, UiTheme.ACCENT)
 		err.position = Vector2(90, 20)
 		_content.add_child(err)
 	# Inside Telegram: log in right away so the player's stats show here and
@@ -95,7 +95,7 @@ func _ready() -> void:
 		if Net.is_online_available() and (Platform.is_telegram or Platform.query_param("server") != ""):
 			Net.online_requested = true
 			Platform.request_fullscreen()
-			_enter("JOINING YOUR FRIEND")
+			_enter(tr("JOINING YOUR FRIEND"))
 			return
 	_invite_checked = true
 	if Platform.query_param("autostart") == "1":
@@ -160,8 +160,14 @@ func _build_title() -> void:
 	title.position = Vector2(80, 30)
 	title.add_theme_constant_override("outline_size", 6)
 	_content.add_child(title)
-	var sub := UiTheme.title(UiTheme.spaced("dark fantasy zombie survival"), 15, UiTheme.GOLD)
+	var sub := UiTheme.title(UiTheme.spaced(tr("dark fantasy zombie survival")), 15, UiTheme.GOLD)
 	sub.position = Vector2(86, 128)
+	if I18n.rtl:
+		# Arabic is not letter-spaced: a little larger, under the logo's right end
+		sub.add_theme_font_size_override("font_size", 17)
+		sub.custom_minimum_size = Vector2(516, 0)
+		sub.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+		sub.position = Vector2(86, 134)
 	_content.add_child(sub)
 	var r := UiTheme.rule(520)
 	r.position = Vector2(84, 154)
@@ -174,36 +180,40 @@ func _build_left_column() -> void:
 	col.position = Vector2(84, 184)
 	col.custom_minimum_size = Vector2(520, 0)
 	_content.add_child(col)
-	_play = UiTheme.big_button("PLAY ONLINE  ·  ZOMBIES", _play_online)
+	_play = UiTheme.big_button(tr("PLAY ONLINE  ·  ZOMBIES"), _play_online)
 	col.add_child(_play)
-	col.add_child(_caption("Co-op survival: hold the waves with up to 5 players"))
-	_play_inf = UiTheme.big_button("PLAY INFECTION", _play_infection)
+	col.add_child(_caption(tr("Co-op survival: hold the waves with up to 5 players")))
+	_play_inf = UiTheme.big_button(tr("PLAY INFECTION"), _play_infection)
 	col.add_child(_play_inf)
-	col.add_child(_caption("Players vs players: soldiers against the infected, up to 10"))
-	var why := ""
+	col.add_child(_caption(tr("Players vs players: soldiers against the infected, up to 10")))
+	var why := ""  # a template around the button's caption
 	if not Net.is_online_available():
-		why = "  (server not set)"
+		why = tr("%s  (server not set)")
 	elif not Platform.is_telegram and Platform.query_param("server") == "" and Platform.query_param("name") == "":
-		why = "  (open in Telegram)"
+		why = tr("%s  (open in Telegram)")
 	if why != "":
 		for b in [_play, _play_inf]:
 			b.disabled = true
-			b.text += why
+			b.text = why % b.text
 	var row := HBoxContainer.new()
 	row.add_theme_constant_override("separation", 8)
-	row.add_child(UiTheme.button("SOLO PRACTICE", _play_solo))
-	row.add_child(UiTheme.button("SETTINGS", _settings))
-	row.add_child(UiTheme.button("CONTROLS", _open_layout))
+	row.add_child(UiTheme.button(tr("SOLO PRACTICE"), _play_solo))
+	row.add_child(UiTheme.button(tr("SETTINGS"), _settings))
+	row.add_child(UiTheme.button(tr("CONTROLS"), _open_layout))
 	col.add_child(row)
 	var row2 := HBoxContainer.new()
 	row2.add_theme_constant_override("separation", 8)
-	_board_button = UiTheme.gold_button("WEEKLY HUNT  ·  TON", _show_leaderboard)
+	_board_button = UiTheme.gold_button(tr("WEEKLY HUNT  ·  TON"), _show_leaderboard)
 	_board_button.disabled = true
 	row2.add_child(_board_button)
-	row2.add_child(UiTheme.button("HOW TO PLAY", _how_to_play))
+	row2.add_child(UiTheme.button(tr("HOW TO PLAY"), _how_to_play))
 	col.add_child(row2)
 	if Platform.query_param("debug") == "1":
-		col.add_child(UiTheme.button("DIAGNOSTICS", func(): get_tree().change_scene_to_file("res://scenes/boot/boot.tscn")))
+		col.add_child(UiTheme.button(tr("DIAGNOSTICS"), func(): get_tree().change_scene_to_file("res://scenes/boot/boot.tscn")))
+	# right-to-left in Arabic: the column's rows and captions, not the column
+	# itself (an absolutely placed Control would be mirrored to the other side)
+	for c in col.get_children():
+		I18n.dir(c as Control)
 
 
 func _caption(text: String) -> Label:
@@ -224,8 +234,9 @@ func _build_profile_card() -> void:
 	var v := VBoxContainer.new()
 	v.add_theme_constant_override("separation", 4)
 	card.add_child(v)
-	v.add_child(UiTheme.title(UiTheme.spaced("player"), 12, UiTheme.GOLD))
-	_profile_name = UiTheme.title("Guest", 26, UiTheme.TEXT)
+	I18n.dir(v)
+	v.add_child(UiTheme.title(UiTheme.spaced(tr("player")), 12, UiTheme.GOLD))
+	_profile_name = UiTheme.title(tr("Guest"), 26, UiTheme.TEXT)
 	v.add_child(_profile_name)
 	v.add_child(UiTheme.rule(300, UiTheme.BRASS_DARK))
 	_profile_stats = UiTheme.label("", 18, UiTheme.GOLD)
@@ -233,13 +244,13 @@ func _build_profile_card() -> void:
 	_profile_hint = UiTheme.label("", 15, UiTheme.MUTED)
 	_profile_hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	v.add_child(_profile_hint)
-	_invite = UiTheme.gold_button("INVITE FRIENDS", func():
+	_invite = UiTheme.gold_button(tr("INVITE FRIENDS"), func():
 		var note := Social.invite()
 		if note != "":
 			_profile_hint.text = note)
 	_invite.visible = false
 	v.add_child(_invite)
-	_daily_btn = UiTheme.gold_button("DAILY REWARD  ·  MISSIONS", _show_daily)
+	_daily_btn = UiTheme.gold_button(tr("DAILY REWARD  ·  MISSIONS"), _show_daily)
 	_daily_btn.visible = false
 	v.add_child(_daily_btn)
 	# a pulsing ember dot on the button while today's reward waits
@@ -280,7 +291,7 @@ func _loading(text: String) -> Control:
 	var r := UiTheme.rule(360)
 	r.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	box.add_child(r)
-	var hint := UiTheme.label("LOADING THE FACILITY  ·  once per session", 15, UiTheme.MUTED)
+	var hint := UiTheme.label(tr("LOADING THE FACILITY  ·  once per session"), 15, UiTheme.MUTED)
 	hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	box.add_child(hint)
 	# the title breathes so nobody takes the curtain for a frozen screen
@@ -304,21 +315,24 @@ func _on_net_message(msg_name: String, _msg: Dictionary) -> void:
 func _show_profile() -> void:
 	var p := Net.profile
 	if p.is_empty() or Net.display_name == "":
-		_profile_name.text = "Guest"
+		_profile_name.text = tr("Guest")
 		_profile_stats.text = ""
 		if Net.status == "connecting" or Net.status == "handshake":
-			_profile_hint.text = "Logging in…"
+			_profile_hint.text = tr("Logging in…")
 		elif Platform.is_telegram:
-			_profile_hint.text = "Your record is saved to your Telegram account."
+			_profile_hint.text = tr("Your record is saved to your Telegram account.")
 		else:
-			_profile_hint.text = "Open the game from the Telegram bot to play online and keep your record."
+			_profile_hint.text = tr("Open the game from the Telegram bot to play online and keep your record.")
 		return
 	_profile_name.text = Net.display_name
-	_profile_stats.text = "Best wave %d  ·  %d kills  ·  %d games" % [p.bestWave, p.kills, p.games]
-	var ton := "TON %s" % UiTheme.ton_text(int(p.tonMicro))
+	_profile_stats.text = tr("Best wave %d  ·  %d kills  ·  %d games") % [p.bestWave, p.kills, p.games]
+	var ton := tr("TON %s") % UiTheme.ton_text(int(p.tonMicro))
 	if p.weekRank > 0:
-		ton += "   ·   this week #%d with %d kills" % [p.weekRank, p.weekKills]
-	_profile_hint.text = ton if Net.ton_per_kill > 0 else "Online and ready."
+		if int(p.weekKills) == 1:
+			ton = tr("TON %s   ·   this week #%d with %d kill") % [UiTheme.ton_text(int(p.tonMicro)), p.weekRank, p.weekKills]
+		else:
+			ton = tr("TON %s   ·   this week #%d with %d kills") % [UiTheme.ton_text(int(p.tonMicro)), p.weekRank, p.weekKills]
+	_profile_hint.text = ton if Net.ton_per_kill > 0 else tr("Online and ready.")
 	_board_button.disabled = false
 	_invite.visible = Social.can_invite()
 	_daily_btn.visible = true
@@ -330,7 +344,7 @@ func _show_profile() -> void:
 func _on_daily(d: Dictionary) -> void:
 	_update_daily_badge()
 	if int(d.get("paidMicro", 0)) > 0 and int(d.get("paidKind", 0)) == 2:
-		_show_toast("DAILY MISSIONS  ·  +%s TON" % UiTheme.ton_text(int(d.paidMicro)))
+		_show_toast(tr("DAILY MISSIONS  ·  +%s TON") % UiTheme.ton_text(int(d.paidMicro)))
 		Audio.ui_sound("powerup", -8.0)
 	# once per session, a waiting reward opens the panel by itself
 	if not _daily_opened and bool(d.get("canClaim", false)) and _overlay == null and is_inside_tree():
@@ -399,7 +413,7 @@ class Badge extends Control:
 func _play_solo() -> void:
 	Net.online_requested = false
 	Platform.request_fullscreen()
-	_enter("SOLO PRACTICE")
+	_enter(tr("SOLO PRACTICE"))
 
 
 ## Shows the loading curtain, then changes scene after it has been drawn.
@@ -433,14 +447,14 @@ func _play_online() -> void:
 	Net.online_requested = true
 	Net.mode = 0
 	Platform.request_fullscreen()
-	_enter("ENTERING THE FACILITY")
+	_enter(tr("ENTERING THE FACILITY"))
 
 
 func _play_infection() -> void:
 	Net.online_requested = true
 	Net.mode = 1
 	Platform.request_fullscreen()
-	_enter("INFECTION")
+	_enter(tr("INFECTION"))
 
 
 func _settings() -> void:
@@ -478,10 +492,11 @@ func _show_leaderboard() -> void:
 	var v := VBoxContainer.new()
 	v.add_theme_constant_override("separation", 8)
 	panel.add_child(v)
-	var title := UiTheme.title("WEEKLY HUNT", 30, UiTheme.GOLD)
+	I18n.dir(v)
+	var title := UiTheme.title(tr("WEEKLY HUNT"), 30, UiTheme.GOLD)
 	v.add_child(title)
 	v.add_child(UiTheme.rule(620))
-	var sub := UiTheme.label("Loading…", 18, UiTheme.MUTED)
+	var sub := UiTheme.label(tr("Loading…"), 18, UiTheme.MUTED)
 	v.add_child(sub)
 	var grid := GridContainer.new()
 	grid.columns = 4
@@ -490,20 +505,20 @@ func _show_leaderboard() -> void:
 	v.add_child(grid)
 	var me := UiTheme.label("", 20, UiTheme.GOLD)
 	v.add_child(me)
-	var note := UiTheme.label("Every zombie you kill online earns TON points. The week's top hunter gets the prize, paid by the game owner.", 15, UiTheme.MUTED)
+	var note := UiTheme.label(tr("Every zombie you kill online earns TON points. The week's top hunter gets the prize, paid by the game owner."), 15, UiTheme.MUTED)
 	note.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	v.add_child(note)
-	v.add_child(UiTheme.gold_button("CLOSE", func():
+	v.add_child(UiTheme.gold_button(tr("CLOSE"), func():
 		_overlay.queue_free()
 		_overlay = null))
 	var fill := func(b: Dictionary) -> void:
 		if not is_instance_valid(grid):
 			return
-		title.text = "WEEKLY HUNT  ·  %s" % str(b.get("week", ""))
-		sub.text = str(b.get("prize", "")) if str(b.get("prize", "")) != "" else "Top hunters this week"
+		title.text = tr("WEEKLY HUNT  ·  %s") % str(b.get("week", ""))
+		sub.text = str(b.get("prize", "")) if str(b.get("prize", "")) != "" else tr("Top hunters this week")
 		for c in grid.get_children():
 			c.queue_free()
-		for h in ["#", "PLAYER", "KILLS", "TON"]:
+		for h in ["#", tr("PLAYER"), tr("KILLS"), tr("TON")]:
 			grid.add_child(UiTheme.label(h, 16, UiTheme.MUTED))
 		for e in b.get("entries", []):
 			grid.add_child(UiTheme.label(str(int(e.rank)), 20))
@@ -511,11 +526,14 @@ func _show_leaderboard() -> void:
 			grid.add_child(UiTheme.label(str(int(e.kills)), 20))
 			grid.add_child(UiTheme.label(UiTheme.ton_text(int(e.tonMicro)), 20))
 		if b.get("entries", []).is_empty():
-			grid.add_child(UiTheme.label("No kills yet this week. Be the first.", 18))
+			grid.add_child(UiTheme.label(tr("No kills yet this week. Be the first."), 18))
 		if int(b.get("myRank", 0)) > 0:
-			me.text = "You: #%d  ·  %d kills  ·  TON %s this week" % [int(b.myRank), int(b.myKills), UiTheme.ton_text(int(b.myTonMicro))]
+			var mine := tr("You: #%d  ·  %d kills  ·  TON %s this week")
+			if int(b.myKills) == 1:
+				mine = tr("You: #%d  ·  %d kill  ·  TON %s this week")
+			me.text = mine % [int(b.myRank), int(b.myKills), UiTheme.ton_text(int(b.myTonMicro))]
 		else:
-			me.text = "You: no kills yet this week"
+			me.text = tr("You: no kills yet this week")
 	if not Net.leaderboard.is_empty():
 		fill.call(Net.leaderboard)
 	Net.leaderboard_received.connect(fill, CONNECT_ONE_SHOT)
@@ -541,21 +559,22 @@ func _how_to_play() -> void:
 	var v := VBoxContainer.new()
 	v.add_theme_constant_override("separation", 10)
 	panel.add_child(v)
-	v.add_child(UiTheme.title("HOW TO PLAY", 30, UiTheme.GOLD))
+	I18n.dir(v)
+	v.add_child(UiTheme.title(tr("HOW TO PLAY"), 30, UiTheme.GOLD))
 	v.add_child(UiTheme.rule(700))
 	for line in [
-		"Left thumb: move.  Right thumb: drag to aim, FIRE also aims while held.",
-		"Survive the waves. Kills and hits earn credits ($).",
-		"Buy weapons and ammo on the walls, or gamble on the SUPPLY CACHE under the green beam.",
-		"Perk machines give lasting bonuses (health, reload, speed, swap) until you go down.",
-		"Zombies may drop power-ups: INSTA-KILL, DOUBLE POINTS, MAX AMMO, NUKE, FIRE SALE. Walk over them.",
-		"A downed teammate bleeds out in 30 s: stand next to them and hold REVIVE.",
-		"If everyone is down, the game is over. Your best wave is saved to your Telegram account.",
+		tr("Left thumb: move.  Right thumb: drag to aim, FIRE also aims while held."),
+		tr("Survive the waves. Kills and hits earn credits ($)."),
+		tr("Buy weapons and ammo on the walls, or gamble on the SUPPLY CACHE under the green beam."),
+		tr("Perk machines give lasting bonuses (health, reload, speed, swap) until you go down."),
+		tr("Zombies may drop power-ups: INSTA-KILL, DOUBLE POINTS, MAX AMMO, NUKE, FIRE SALE. Walk over them."),
+		tr("A downed teammate bleeds out in 30 s: stand next to them and hold REVIVE."),
+		tr("If everyone is down, the game is over. Your best wave is saved to your Telegram account."),
+		tr("INFECTION: soldiers against infected players. A soldier who falls turns; the infected come back after 5 s. Last soldier standing or the clock decides."),
 	]:
 		var l := UiTheme.label("•  " + line, 18)
 		l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		v.add_child(l)
-	v.add_child(UiTheme.label("•  INFECTION: soldiers against infected players. A soldier who falls turns; the infected come back after 5 s. Last soldier standing or the clock decides.", 18))
-	v.add_child(UiTheme.gold_button("CLOSE", func():
+	v.add_child(UiTheme.gold_button(tr("CLOSE"), func():
 		_overlay.queue_free()
 		_overlay = null))

@@ -44,7 +44,7 @@ func setup(id: String, def: Dictionary, pos: Vector2, yaw: float) -> void:
 	_light.shadow_enabled = false
 	add_child(_light)
 	var name_label := Label3D.new()
-	name_label.text = str(def.get("displayName", id)).to_upper()
+	name_label.text = I18n.name_of(str(def.get("displayName", id))).to_upper()
 	name_label.font_size = 44
 	name_label.pixel_size = 0.004
 	name_label.outline_size = 10

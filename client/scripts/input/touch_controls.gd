@@ -128,25 +128,35 @@ func _buttons() -> Dictionary:
 	var d := {}
 	var at := func(name: String) -> Vector2: return TouchLayout.position(layout, name, s)
 	var rad := func(name: String) -> float: return BASE_RADIUS[name] * TouchLayout.scale(layout, name)
-	var fire_label := "ATTACK" if melee_mode else "FIRE"
+	var fire_label := tr("ATTACK") if melee_mode else tr("FIRE")
 	d["fire"] = {"pos": at.call("fire"), "r": rad.call("fire"), "label": fire_label}
 	if layout.fire2.get("enabled", false) or edit_mode:
 		d["fire2"] = {"pos": at.call("fire2"), "r": rad.call("fire2"), "label": fire_label}
 	if not melee_mode or edit_mode:
-		d["reload"] = {"pos": at.call("reload"), "r": rad.call("reload"), "label": "R"}
-		d["switch"] = {"pos": at.call("switch"), "r": rad.call("switch"), "label": "SWAP"}
+		d["reload"] = {"pos": at.call("reload"), "r": rad.call("reload"), "label": tr("R")}
+		d["switch"] = {"pos": at.call("switch"), "r": rad.call("switch"), "label": tr("SWAP")}
 	d["pause"] = {"pos": at.call("pause"), "r": rad.call("pause"), "label": "II"}
 	if not melee_mode or edit_mode:
-		d["ads"] = {"pos": at.call("ads"), "r": rad.call("ads"), "label": "AIM", "on": ads_on}
-		d["view"] = {"pos": at.call("view"), "r": rad.call("view"), "label": view_label}
+		d["ads"] = {"pos": at.call("ads"), "r": rad.call("ads"), "label": tr("AIM"), "on": ads_on}
+		d["view"] = {"pos": at.call("view"), "r": rad.call("view"), "label": _view_caption()}
 	if voice_buttons or edit_mode:
-		d["mic"] = {"pos": at.call("mic"), "r": rad.call("mic"), "label": "MIC"}
-		d["speaker"] = {"pos": at.call("speaker"), "r": rad.call("speaker"), "label": "SPK"}
+		d["mic"] = {"pos": at.call("mic"), "r": rad.call("mic"), "label": tr("MIC")}
+		d["speaker"] = {"pos": at.call("speaker"), "r": rad.call("speaker"), "label": tr("SPK")}
 	if revive_available:
-		d["revive"] = {"pos": at.call("use"), "r": rad.call("use"), "label": "REVIVE"}
+		d["revive"] = {"pos": at.call("use"), "r": rad.call("use"), "label": tr("REVIVE")}
 	elif interact_label != "" or edit_mode:
-		d["interact"] = {"pos": at.call("use"), "r": rad.call("use"), "label": "USE"}
+		d["interact"] = {"pos": at.call("use"), "r": rad.call("use"), "label": tr("USE")}
 	return d
+
+
+## The view button's caption: the view it switches to (the game sets "TPP" or "FPP").
+func _view_caption() -> String:
+	match view_label:
+		"FPP":
+			return tr("FPP")
+		"TPP":
+			return tr("TPP")
+	return view_label
 
 
 func _stick_home() -> Vector2:

@@ -65,10 +65,11 @@ func _ready() -> void:
 	var row := HBoxContainer.new()
 	row.add_theme_constant_override("separation", 10)
 	bar.add_child(row)
-	_title = UiTheme.title("LAYOUT  ·  drag a button", 16, UiTheme.GOLD)
+	I18n.dir(row)
+	_title = UiTheme.title(tr("LAYOUT  ·  drag a button"), 16, UiTheme.GOLD)
 	_title.custom_minimum_size = Vector2(190, 0)
 	row.add_child(_title)
-	row.add_child(UiTheme.label("Size", 16, UiTheme.MUTED))
+	row.add_child(UiTheme.label(tr("Size"), 16, UiTheme.MUTED))
 	_size_slider = HSlider.new()
 	_size_slider.min_value = TouchLayout.MIN_SCALE
 	_size_slider.max_value = TouchLayout.MAX_SCALE
@@ -78,7 +79,7 @@ func _ready() -> void:
 	_size_slider.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	_size_slider.value_changed.connect(_on_size)
 	row.add_child(_size_slider)
-	row.add_child(UiTheme.label("Opacity", 16, UiTheme.MUTED))
+	row.add_child(UiTheme.label(tr("Opacity"), 16, UiTheme.MUTED))
 	var op := HSlider.new()
 	op.min_value = 0.3
 	op.max_value = 1.0
@@ -91,15 +92,15 @@ func _ready() -> void:
 		_controls.queue_redraw())
 	row.add_child(op)
 	_fire2 = CheckButton.new()
-	_fire2.text = "Left FIRE"
+	_fire2.text = tr("Left FIRE")
 	_fire2.add_theme_font_size_override("font_size", 18)
 	_fire2.button_pressed = bool(_layout.fire2.get("enabled", false))
 	_fire2.toggled.connect(func(on: bool):
 		_layout.fire2["enabled"] = on
 		_controls.queue_redraw())
 	row.add_child(_fire2)
-	for b in [UiTheme.button("RESET", _reset), UiTheme.gold_button("SAVE", func(): _save(op.value)),
-			UiTheme.button("CANCEL", func():
+	for b in [UiTheme.button(tr("RESET"), _reset), UiTheme.gold_button(tr("SAVE"), func(): _save(op.value)),
+			UiTheme.button(tr("CANCEL"), func():
 				closed.emit()
 				queue_free())]:
 		b.add_theme_font_size_override("font_size", 16)
@@ -123,8 +124,25 @@ func _view_size() -> Vector2:
 func _select(name: String) -> void:
 	_selected = name
 	_size_slider.set_value_no_signal(TouchLayout.scale(_layout, name))
-	_title.text = "LAYOUT · %s" % name.to_upper()
+	_title.text = tr("LAYOUT · %s") % _control_name(name)
 	_update_ring()
+
+
+## The selected control's name in the title (English: its id in capitals).
+func _control_name(id: String) -> String:
+	match id:
+		"stick": return tr("STICK")
+		"fire": return tr("FIRE")
+		"fire2": return tr("FIRE2")
+		"reload": return tr("RELOAD")
+		"switch": return tr("SWITCH")
+		"use": return tr("USE")
+		"pause": return tr("PAUSE")
+		"mic": return tr("MIC")
+		"speaker": return tr("SPEAKER")
+		"ads": return tr("ADS")
+		"view": return tr("VIEW")
+	return id.to_upper()
 
 
 func _update_ring() -> void:

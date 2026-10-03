@@ -18,6 +18,8 @@ const STONE := Color(0.13, 0.12, 0.15)
 const STONE_DARK := Color(0.07, 0.065, 0.085)
 
 const FONT_DISPLAY := "res://assets/fonts/Cinzel.ttf"
+const FONT_DISPLAY_AR := "res://assets/fonts/ReemKufi-Arabic.ttf"   ## Arabic titles (phase 24)
+const FONT_DISPLAY_RU := "res://assets/fonts/Forum-Cyrillic.ttf"    ## Cyrillic titles (phase 24)
 
 static var _theme: Theme
 static var _display: Font
@@ -28,11 +30,17 @@ static var _tex_cache := {}
 static func display_font() -> Font:
 	if _display == null:
 		if ResourceLoader.exists(FONT_DISPLAY):
-			# Cinzel has Latin only: player names in Arabic and other scripts fall
-			# back to the engine font instead of showing boxes
+			# Cinzel has Latin only: Arabic falls back to Reem Kufi, Cyrillic to
+			# Forum (both carved, like Cinzel), anything else to the body font
 			var fv := FontVariation.new()
 			fv.base_font = load(FONT_DISPLAY)
-			fv.fallbacks = [ThemeDB.fallback_font]
+			var fallbacks: Array[Font] = []
+			for path in [FONT_DISPLAY_AR, FONT_DISPLAY_RU]:
+				var f := load(path) as Font
+				if f:
+					fallbacks.append(f)
+			fallbacks.append(ThemeDB.fallback_font)
+			fv.fallbacks = fallbacks
 			_display = fv
 		else:
 			_display = ThemeDB.fallback_font
@@ -197,6 +205,10 @@ static func title(text: String, size := 32, color := TEXT) -> Label:
 
 ## Spaced capitals ("D A R K   F A N T A S Y"): the cheap way to look engraved.
 static func spaced(text: String) -> String:
+	# Arabic letters join: spacing them would break the words apart
+	for ch in text:
+		if ch.unicode_at(0) >= 0x0600 and ch.unicode_at(0) <= 0x06FF:
+			return text
 	var out := PackedStringArray()
 	for ch in text.to_upper():
 		out.append("  " if ch == " " else ch)

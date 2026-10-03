@@ -289,7 +289,7 @@ func interact_option(p: SimPlayer) -> Dictionary:
 	var downed := revive_candidate(p)
 	if downed != null:
 		return {"id": "revive", "kind": "revive", "item": "", "action": "revive", "cost": 0,
-			"label": "Hold to revive " + downed.name, "full": false, "affordable": true, "target": downed.id}
+			"label": str(TranslationServer.translate("Hold to revive %s")) % downed.name, "full": false, "affordable": true, "target": downed.id}
 	var best: Dictionary = {}
 	var best_d := INF
 	for it in w.map.interactables:
@@ -304,18 +304,18 @@ func interact_option(p: SimPlayer) -> Dictionary:
 		opt.merge(w.box_sys.option(w.box_sys.boxes[best.id], p), true)
 	elif best.kind == "perk":
 		var pdef: Dictionary = w.defs.perks[best.item]
-		opt.merge({"action": "perk", "cost": int(pdef.price), "label": str(pdef.displayName), "full": best.item in p.perks}, true)
+		opt.merge({"action": "perk", "cost": int(pdef.price), "label": str(TranslationServer.translate(str(pdef.displayName))), "full": best.item in p.perks}, true)
 	elif best.kind == "weapon":
 		var def: Dictionary = w.defs.weapons[best.item]
 		var owned := p.find_weapon(best.item)
 		if owned >= 0:
-			opt.merge({"action": "ammo", "cost": int(def.ammoPrice), "label": "Ammo: " + def.displayName,
+			opt.merge({"action": "ammo", "cost": int(def.ammoPrice), "label": str(TranslationServer.translate("Ammo: %s")) % TranslationServer.translate(str(def.displayName)),
 				"full": p.weapons[owned].reserve >= int(def.reserveMax)}, true)
 		else:
-			opt.merge({"action": "weapon", "cost": int(def.price), "label": def.displayName, "full": false}, true)
+			opt.merge({"action": "weapon", "cost": int(def.price), "label": str(TranslationServer.translate(str(def.displayName))), "full": false}, true)
 	else:
 		var wp := p.weapon()
-		opt.merge({"action": "ammo", "item": wp.id, "cost": int(wp.def.ammoPrice), "label": "Ammo: " + wp.def.displayName,
+		opt.merge({"action": "ammo", "item": wp.id, "cost": int(wp.def.ammoPrice), "label": str(TranslationServer.translate("Ammo: %s")) % TranslationServer.translate(str(wp.def.displayName)),
 			"full": wp.reserve >= int(wp.def.reserveMax)}, true)
 	opt["affordable"] = p.currency >= int(opt.cost) and not opt.get("busy", false)
 	return opt

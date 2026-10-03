@@ -95,6 +95,14 @@ jobs:
             --fixed-fps 60 --quit-after 7200 2>&1 | tee /tmp/game.log
           grep -q "\[game\] wave 1 cleared" /tmp/game.log
           ! grep -E "SCRIPT ERROR|Parse Error" /tmp/game.log
+      - name: Headless game run in Arabic and Russian (translations, fonts)
+        run: |
+          for lang in ar ru; do
+            BLACKOFF_LANG=$lang BLACKOFF_BOT=1 /opt/godot/godot --headless --path client res://scenes/game/game.tscn \
+              --fixed-fps 60 --quit-after 2400 > /tmp/game_$lang.log 2>&1
+            grep -q "\[i18n\] language $lang" /tmp/game_$lang.log
+            ! grep -E "SCRIPT ERROR|Parse Error" /tmp/game_$lang.log
+          done
       - uses: actions/setup-node@v4
         with:
           node-version: 22

@@ -11,6 +11,8 @@ godot="${GODOT:-$(command -v godot || echo /opt/godot/godot)}"
 mode="${EXPORT_MODE:-release}"
 
 "$root/tools/sync_shared.sh"
+# every visible text has its Arabic and Russian translation (phase 24)
+python3 "$root/tools/i18n.py" check
 # First run imports resources and generates .godot/ (needed for class cache and exports).
 "$godot" --headless --path "$root/client" --import >/dev/null 2>&1 || true
 if [ "$(python3 "$root/tools/fix_texture_imports.py")" != "0" ] || [ "$(python3 "$root/tools/fix_audio_imports.py")" != "0" ]; then

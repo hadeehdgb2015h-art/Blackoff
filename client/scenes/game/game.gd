@@ -65,6 +65,7 @@ func _ready() -> void:
 	# props placed and meshes merged once per session (MapCache), then copied
 	_map_root = MapCache.instance(MAP_SCENES[map_id])
 	add_child(_map_root)
+	_translate_signs(_map_root)
 	var t1 := Time.get_ticks_msec()
 	_atmosphere = Atmosphere.build(_map_root)
 	print("[load] map %d ms (%d merged meshes, %d lights), atmosphere %d ms" % [t1 - t0,
@@ -138,11 +139,11 @@ func _ready() -> void:
 		_spawn_box_views(defs)
 		_spawn_machine_views(defs)
 		_apply_quality()
-		_hud.show_status("Connecting...")
+		_hud.show_status(tr("Connecting..."))
 		Net.failed.connect(_on_net_failed)
 		Net.daily_received.connect(func(d: Dictionary):
 			if int(d.get("paidMicro", 0)) > 0 and int(d.get("paidKind", 0)) == 2:
-				_hud.show_toast("Daily missions complete  +%s TON" % UiTheme.ton_text(int(d.paidMicro)), 4.0))
+				_hud.show_toast(tr("Daily missions complete  +%s TON") % UiTheme.ton_text(int(d.paidMicro)), 4.0))
 		if Net.status != "in_zone":
 			if Net.status in ["ready", "connecting", "handshake"]:
 				Net.quick_play()  # joins as soon as the login (started by the menu) completes
@@ -152,7 +153,7 @@ func _ready() -> void:
 	world = SimWorld.new(defs, map_id, randi())
 	_spawn_box_views(defs)
 	_spawn_machine_views(defs)
-	pid = world.add_player("You")
+	pid = world.add_player(tr("You"))
 	_on_player_ready()
 	_apply_quality()
 	var p: SimPlayer = world.players[pid]
@@ -203,9 +204,9 @@ func _process(delta: float) -> void:
 			_sync_voice_buttons()
 			if Net.joined_friend == 1:
 				print("[game] invite: joined %s's game" % Net.joined_friend_name)
-				_hud.show_toast("You joined %s's squad" % Net.joined_friend_name, 4.0)
+				_hud.show_toast(tr("You joined %s's squad") % Net.joined_friend_name, 4.0)
 			elif Net.joined_friend == 2:
-				_hud.show_toast("Your friend's game was full or over: here is a new one", 4.0)
+				_hud.show_toast(tr("Your friend's game was full or over: here is a new one"), 4.0)
 			Net.joined_friend = 0
 			if Net.dev and nw.mode == 0:
 				_add_dev_button()
@@ -359,7 +360,7 @@ func _sync_powerup_views() -> void:
 			v = PowerupView.new()
 			add_child(v)
 			var def: Dictionary = world.constants.powerups.types.get(d.type, {})
-			v.setup(d.id, d.type, str(def.get("displayName", d.type)), d.pos, d.until)
+			v.setup(d.id, d.type, I18n.name_of(str(def.get("displayName", d.type))), d.pos, d.until)
 			_puviews[d.id] = v
 		v.until = d.until
 
@@ -478,7 +479,7 @@ func _on_event(e: Dictionary) -> void:
 		"zombie_spawned":
 			var bv := Visuals.zombie(str(e.get("ztype", "")))
 			if bv.has("bossName"):
-				_hud.boss_arrived(str(bv.bossName))
+				_hud.boss_arrived(_boss_name(str(e.get("ztype", "")), str(bv.bossName)))
 				_sfx.play("zombie_groan4", 2.0, 0.0, 0.6)  # a slowed, deep roar
 				_sfx.play("thunder", -4.0, 0.0)
 				_rig.on_damage(30.0)  # the ground shakes
@@ -487,7 +488,7 @@ func _on_event(e: Dictionary) -> void:
 		"zombie_killed":
 			var v: ZombieView = _zviews.get(e.zid)
 			if v and v.vis.has("bossName"):
-				_hud.boss_fell(str(v.vis.bossName))
+				_hud.boss_fell(_boss_name(v.ztype, str(v.vis.bossName)))
 				_sfx.play("wave_end", -2.0, 0.0, 0.8)
 				for i in 3:
 					_effects.gore(Vector3(e.pos.x + randf_range(-0.6, 0.6), 1.6, e.pos.y + randf_range(-0.6, 0.6)))
@@ -638,6 +639,13 @@ func _on_event(e: Dictionary) -> void:
 	_hud.on_event(e, pid)
 
 
+## A boss's name for the arrival and fall banners: its data name in the
+## interface language, upper case like the banner art.
+func _boss_name(ztype: String, fallback: String) -> String:
+	var def: Dictionary = _defs.zombies.get(ztype, {})
+	return I18n.name_of(str(def.displayName)).to_upper() if def.has("displayName") else fallback
+
+
 ## True when a wall sits between the player's eye and `pos` (muffled sound).
 func _occluded(pos: Vector3) -> bool:
 	if world == null or not world.players.has(pid):
@@ -781,7 +789,7 @@ func _ambient_groans(delta: float) -> void:
 func _add_dev_button() -> void:
 	DevPanel.god = false  # a new game: the server starts every player without powers
 	DevPanel.ammo = false
-	var b := UiTheme.gold_button("DEV", func():
+	var b := UiTheme.gold_button(tr("DEV"), func():
 		_controls.enabled = false
 		_controls.release_all()
 		var panel := DevPanel.new()
@@ -924,7 +932,7 @@ func _prewarm_gpu() -> void:
 	cover.color = Color(0.02, 0.02, 0.03, 1.0)
 	cover.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	cover.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	var l := UiTheme.title("PREPARING", 26, UiTheme.GOLD)
+	var l := UiTheme.title(tr("PREPARING"), 26, UiTheme.GOLD)
 	l.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
 	l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	cover.add_child(l)
@@ -1102,7 +1110,7 @@ func _retry() -> void:
 
 
 func _on_net_failed(reason: String) -> void:
-	_hud.show_status("Connection failed: %s" % reason)
+	_hud.show_status(tr("Connection failed: %s") % reason)
 
 
 # ---- voice chat buttons (online only; frames flow through Net and web/voice.js)
@@ -1111,10 +1119,10 @@ func _on_voice_toggled(which: String) -> void:
 	if which == "mic":
 		Net.set_voice_mic(not Net.voice_mic)
 		if Net.voice_mic:
-			_hud.show_toast("Microphone on")
+			_hud.show_toast(tr("Microphone on"))
 	else:
 		Net.set_voice_speaker(not Net.voice_speaker)
-		_hud.show_toast("Voice chat on" if Net.voice_speaker else "Voice chat muted")
+		_hud.show_toast(tr("Voice chat on") if Net.voice_speaker else tr("Voice chat muted"))
 
 
 func _sync_voice_buttons() -> void:
@@ -1124,7 +1132,7 @@ func _sync_voice_buttons() -> void:
 	_controls.mic_talking = Net.voice_talking
 	var blocked := Net.voice_mic_state in ["denied", "unsupported"]
 	if blocked and not _controls.mic_blocked:
-		_hud.show_toast("Microphone not allowed here" if Net.voice_mic_state == "denied" else "Microphone not available in this app")
+		_hud.show_toast(tr("Microphone not allowed here") if Net.voice_mic_state == "denied" else tr("Microphone not available in this app"))
 	_controls.mic_blocked = blocked
 	_controls.queue_redraw()
 
@@ -1146,3 +1154,15 @@ func _to_menu() -> void:
 		Net.online_requested = false
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 	get_tree().change_scene_to_file("res://scenes/menu/main_menu.tscn")
+
+
+## The map's painted wall signs (Label3D: weapon names in capitals, AMMO) in
+## the interface language (phase 24).
+func _translate_signs(root: Node) -> void:
+	var signs := {"AMMO": tr("AMMO")}
+	for w in SharedData.weapons.values():
+		signs[str(w.displayName).to_upper()] = I18n.name_of(str(w.displayName)).to_upper()
+	for l in root.find_children("*", "Label3D", true, false):
+		var label := l as Label3D
+		if signs.has(label.text):
+			label.text = signs[label.text]

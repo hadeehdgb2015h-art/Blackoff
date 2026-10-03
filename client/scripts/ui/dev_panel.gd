@@ -29,9 +29,10 @@ func _ready() -> void:
 	panel.add_theme_stylebox_override("panel", UiTheme.panel_box(22))
 	center.add_child(panel)
 	var v := VBoxContainer.new()
+	I18n.dir(v)
 	v.add_theme_constant_override("separation", 10)
 	panel.add_child(v)
-	var title := UiTheme.title("DEVELOPER POWERS", 30, UiTheme.GOLD)
+	var title := UiTheme.title(tr("DEVELOPER POWERS"), 30, UiTheme.GOLD)
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	v.add_child(title)
 	var grid := GridContainer.new()
@@ -48,13 +49,13 @@ func _ready() -> void:
 		_send(Cmd.AMMO)
 		_refresh())
 	_add(grid, "+10,000 $", func(): _send(Cmd.MONEY, 10000))
-	_add(grid, "FULL HEAL", func(): _send(Cmd.HEAL))
-	_add(grid, "SKIP WAVE", func(): _send(Cmd.SKIP_WAVE))
-	_add(grid, "KILL ALL", func(): _send(Cmd.KILL_ALL))
-	_add(grid, "SUMMON THE WARDEN", func(): _send(Cmd.SPAWN_BOSS))
+	_add(grid, tr("FULL HEAL"), func(): _send(Cmd.HEAL))
+	_add(grid, tr("SKIP WAVE"), func(): _send(Cmd.SKIP_WAVE))
+	_add(grid, tr("KILL ALL"), func(): _send(Cmd.KILL_ALL))
+	_add(grid, tr("SUMMON THE WARDEN"), func(): _send(Cmd.SPAWN_BOSS))
 	for n in [5, 10, 25]:
-		_add(grid, "JUMP TO WAVE %d" % n, func(): _send(Cmd.GOTO_WAVE, n))
-	var close := UiTheme.gold_button("CLOSE", func():
+		_add(grid, tr("JUMP TO WAVE %d") % n, func(): _send(Cmd.GOTO_WAVE, n))
+	var close := UiTheme.gold_button(tr("CLOSE"), func():
 		closed.emit()
 		queue_free())
 	close.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
@@ -70,8 +71,8 @@ func _add(grid: GridContainer, text: String, cb: Callable) -> Button:
 
 
 func _refresh() -> void:
-	_god_btn.text = "GOD MODE: %s" % ("ON" if god else "OFF")
-	_ammo_btn.text = "INFINITE AMMO: %s" % ("ON" if ammo else "OFF")
+	_god_btn.text = tr("GOD MODE: ON") if god else tr("GOD MODE: OFF")
+	_ammo_btn.text = tr("INFINITE AMMO: ON") if ammo else tr("INFINITE AMMO: OFF")
 
 
 func _send(cmd: int, arg := 0) -> void:

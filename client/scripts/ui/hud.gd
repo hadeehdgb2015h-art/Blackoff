@@ -10,9 +10,8 @@ signal menu_pressed
 signal challenge_pressed  ## game over: share the result with the invite link
 signal streak(kills: int)  ## the local player chained kills (the game plays a sound)
 
-## Kills chained within STREAK_GAP seconds of each other, and what is called out.
+## Kills chained within STREAK_GAP seconds of each other (what is called out: _streak_name).
 const STREAK_GAP := 2.6
-const STREAK_NAMES := {2: "DOUBLE KILL", 3: "TRIPLE KILL", 4: "QUAD KILL", 5: "RAMPAGE", 7: "MASSACRE", 10: "UNSTOPPABLE", 15: "GODLIKE"}
 
 var _hp_bar: ColorRect
 var _hp_back: ColorRect
@@ -110,10 +109,10 @@ class TeamPanel extends Control:
 		var y := 0.0
 		for r in rows:
 			var col := Color(0.85, 0.85, 0.82)
-			var text: String = r.name
+			var tags := PackedStringArray([str(r.name)])  # the name, then status tags
 			if r.get("infected", false):
 				col = Color(0.45, 0.85, 0.5)
-				text += "  RESPAWNING" if r.state == SimPlayer.State.DEAD else "  INFECTED"
+				tags.append(tr("RESPAWNING") if r.state == SimPlayer.State.DEAD else tr("INFECTED"))
 			if r.get("speaking", false):
 				# sound waves next to a talking teammate
 				var c := Vector2(-14, y + 8)
@@ -122,15 +121,16 @@ class TeamPanel extends Control:
 				draw_arc(c, 10.0, -0.9, 0.9, 10, Color(0.45, 0.85, 0.5, 0.7), 1.5, true)
 			if r.state == SimPlayer.State.DOWNED:
 				col = UiTheme.ACCENT
-				text += "  REVIVING" if r.revived else "  DOWN %d" % ceili(r.bleed)
+				tags.append(tr("REVIVING") if r.revived else tr("DOWN %d") % ceili(r.bleed))
 			elif r.state == SimPlayer.State.DEAD:
 				col = Color(0.5, 0.5, 0.5)
-				text += "  DEAD"
+				tags.append(tr("DEAD"))
 			draw_rect(Rect2(0, y + 4, 150, 8), Color(0, 0, 0, 0.55))
 			if r.state == SimPlayer.State.ALIVE:
 				draw_rect(Rect2(1, y + 5, 148.0 * r.hp_k, 6), col)
 			if r.get("infected", false) and r.state != SimPlayer.State.DEAD:
-				text = r.name + "  INFECTED"
+				tags = PackedStringArray([str(r.name), tr("INFECTED")])
+			var text := "  ".join(tags)
 			draw_string(font, Vector2(160, y + 14), text, HORIZONTAL_ALIGNMENT_LEFT, -1, 18, col)
 			y += 26.0
 
@@ -154,7 +154,7 @@ class Markers extends Control:
 			draw_circle(p, 17, Color(0, 0, 0, 0.45))
 			draw_rect(Rect2(p.x - 4, p.y - 12, 8, 24), col)
 			draw_rect(Rect2(p.x - 12, p.y - 4, 24, 8), col)
-			var label := "%d m" % roundi(m.dist)
+			var label := tr("%d m") % roundi(m.dist)
 			draw_string(font, p + Vector2(-20, 34), label, HORIZONTAL_ALIGNMENT_CENTER, 40, 16, col)
 			if not m.on_screen:
 				var c := size / 2.0
@@ -307,11 +307,11 @@ func update_state(p: SimPlayer, w: SimWorld, interact: Dictionary, delta: float)
 	else:
 		match w.zone_state:
 			SimWorld.ZoneState.WAVE:
-				_wave_label.text = "WAVE %d" % d.wave
-				_wave_sub.text = "%d left" % d.remaining()
+				_wave_label.text = tr("WAVE %d") % d.wave
+				_wave_sub.text = tr("%d left") % d.remaining()
 			SimWorld.ZoneState.INTERMISSION:
-				_wave_label.text = "WAVE %d" % d.wave if d.wave > 0 else "GET READY"
-				_wave_sub.text = "next wave in %d" % ceili(maxf(0.0, d.phase_end - w.time))
+				_wave_label.text = tr("WAVE %d") % d.wave if d.wave > 0 else tr("GET READY")
+				_wave_sub.text = tr("next wave in %d") % ceili(maxf(0.0, d.phase_end - w.time))
 			_:
 				_wave_sub.text = ""
 	_credits.text = "" if infection else "$ %d" % p.currency
@@ -320,16 +320,16 @@ func update_state(p: SimPlayer, w: SimWorld, interact: Dictionary, delta: float)
 	if wp:
 		_ammo.text = "%d / %d" % [wp.mag, wp.reserve]
 		_ammo.add_theme_color_override("font_color", UiTheme.ACCENT if wp.mag == 0 else UiTheme.TEXT)
-		_weapon_name.text = str(wp.def.displayName)
+		_weapon_name.text = I18n.name_of(str(wp.def.displayName))
 	elif p.team == 1:
 		_ammo.text = ""
-		_weapon_name.text = "CLAWS"
+		_weapon_name.text = tr("CLAWS")
 	if p.is_reloading():
-		_status.text = "RELOADING"
+		_status.text = tr("RELOADING")
 	elif wp and wp.mag == 0 and wp.reserve == 0:
-		_status.text = "NO AMMO"
+		_status.text = tr("NO AMMO")
 	elif infection and p.team == 1 and p.is_alive() and w.zone_state == SimWorld.ZoneState.WAVE:
-		_status.text = "INFECTED  ·  hunt the soldiers"
+		_status.text = tr("INFECTED  ·  hunt the soldiers")
 	else:
 		_status.text = ""
 	if interact.is_empty():
@@ -337,29 +337,35 @@ func update_state(p: SimPlayer, w: SimWorld, interact: Dictionary, delta: float)
 	else:
 		match interact.action:
 			"box":
-				_prompt.text = "Open Supply Cache  $%d" % interact.cost
+				_prompt.text = tr("Open Supply Cache  $%d") % interact.cost
 			"take":
-				_prompt.text = "Take %s" % interact.label
+				_prompt.text = tr("Take %s") % _offer_name(w, interact, "weapons")
 			"wait":
-				_prompt.text = str(interact.label)
+				_prompt.text = _wait_text(str(interact.label))
 			"perk":
-				_prompt.text = ("%s  (owned)" % interact.label) if interact.full else "Buy %s  $%d" % [interact.label, interact.cost]
+				var perk := _offer_name(w, interact, "perks")
+				_prompt.text = (tr("%s  (owned)") % perk) if interact.full else tr("Buy %s  $%d") % [perk, interact.cost]
 			"revive":
-				_prompt.text = str(interact.label)
+				var downed: SimPlayer = w.players.get(interact.get("target", -1))
+				_prompt.text = (tr("Hold to revive %s") % downed.name) if downed else str(interact.label)
+			"weapon":
+				_prompt.text = tr("Buy %s  $%d") % [_offer_name(w, interact, "weapons"), interact.cost]
 			_:
-				var verb := "Buy" if interact.action == "weapon" else "Refill"
-				var suffix := "  (full)" if interact.full else ""
-				_prompt.text = "%s %s  $%d%s" % [verb, interact.label, interact.cost, suffix]
+				var gun := _offer_name(w, interact, "weapons")
+				if interact.full:
+					_prompt.text = tr("Refill Ammo: %s  $%d  (full)") % [gun, interact.cost]
+				else:
+					_prompt.text = tr("Refill Ammo: %s  $%d") % [gun, interact.cost]
 		_prompt.add_theme_color_override("font_color", UiTheme.TEXT if interact.affordable and not interact.full else UiTheme.MUTED)
 	var boosts := PackedStringArray()
 	for t in ["instaKill", "doublePoints", "fireSale"]:
 		var left := w.powerups.seconds_left(t)
 		if left > 0:
-			boosts.append("%s %d" % [str(w.constants.powerups.types[t].displayName), left])
+			boosts.append("%s %d" % [I18n.name_of(str(w.constants.powerups.types[t].displayName)), left])
 	_boosts.text = "   ".join(boosts)
 	var chips := PackedStringArray()
 	for id in p.perks:
-		chips.append(str(w.defs.perks.get(id, {}).get("displayName", id)).to_upper())
+		chips.append(I18n.name_of(str(w.defs.perks.get(id, {}).get("displayName", id))).to_upper())
 	_perks.text = "  ·  ".join(chips)
 	_cross.spread = 1.6 if p.moving else 1.0
 	_cross.visible = p.is_alive()
@@ -378,12 +384,12 @@ func update_state(p: SimPlayer, w: SimWorld, interact: Dictionary, delta: float)
 	var prog := w.revive_progress(p)
 	if infection and p.state == SimPlayer.State.DEAD:
 		var left := float(w.constants.infection.zombieRespawnSec) - (w.time - _dead_at) if _dead_at >= 0.0 else 0.0
-		_downed.text = "YOU FELL\nBack in %d" % ceili(maxf(0.0, left))
+		_downed.text = tr("YOU FELL\nBack in %d") % ceili(maxf(0.0, left))
 	elif p.state == SimPlayer.State.DOWNED:
-		var line := "BEING REVIVED" if w.is_being_revived(p) else ("Hold on, a teammate can revive you" if mates > 0 else "No one left to revive you")
-		_downed.text = "YOU ARE DOWN  %d\n%s" % [ceili(w.bleedout_left(p)), line]
+		var line := tr("BEING REVIVED") if w.is_being_revived(p) else (tr("Hold on, a teammate can revive you") if mates > 0 else tr("No one left to revive you"))
+		_downed.text = tr("YOU ARE DOWN  %d\n%s") % [ceili(w.bleedout_left(p)), line]
 	elif p.state == SimPlayer.State.DEAD:
-		_downed.text = "YOU BLED OUT\nBack at the next wave" if mates > 0 else ""
+		_downed.text = tr("YOU BLED OUT\nBack at the next wave") if mates > 0 else ""
 	else:
 		_downed.text = ""
 	var show_bar := prog > 0.0
@@ -395,7 +401,7 @@ func update_state(p: SimPlayer, w: SimWorld, interact: Dictionary, delta: float)
 		_revive_bar.position = c - Vector2(157, 4)
 		_revive_bar.size.x = 314.0 * prog
 		var target: SimPlayer = w.players.get(p.revive_target)
-		_revive_label.text = ("REVIVING " + target.name) if p.is_alive() and target else ("" if p.is_alive() else "")
+		_revive_label.text = (tr("REVIVING %s") % target.name) if p.is_alive() and target else ""
 	else:
 		_revive_label.text = ""
 	_fps.visible = Settings.show_fps
@@ -433,30 +439,30 @@ func on_event(e: Dictionary, local_pid: int) -> void:
 			if e.pid == local_pid:
 				_damage = minf(1.0, _damage + float(e.amount) / 35.0)
 		"wave_started":
-			_show_banner("WAVE %d" % e.wave)
+			_show_banner(tr("WAVE %d") % e.wave)
 		"wave_cleared":
-			_show_banner("WAVE %d CLEARED" % e.wave)
+			_show_banner(tr("WAVE %d CLEARED") % e.wave)
 		"currency":
 			if e.pid == local_pid and e.amount > 0:
 				_pop_amount = (_pop_amount if _pop_t > 0.0 else 0) + int(e.amount)
 				_pop_t = 1.0
 		"purchase_denied":
 			if e.pid == local_pid:
-				_show_toast("Not enough credits" if e.reason == "funds" else "Ammo already full")
+				_show_toast(tr("Not enough credits") if e.reason == "funds" else tr("Ammo already full"))
 		"purchase":
 			if e.pid == local_pid:
-				_show_toast("Purchased")
+				_show_toast(tr("Purchased"))
 		"box_offer":
 			if e.pid == local_pid:
-				_show_toast("Take it before it's gone!")
+				_show_toast(tr("Take it before it's gone!"))
 		"player_revived":
 			if e.pid == local_pid:
-				_show_toast("You were revived")
+				_show_toast(tr("You were revived"))
 			elif e.by == local_pid:
-				_show_toast("Teammate revived")
+				_show_toast(tr("Teammate revived"))
 		"player_respawned":
 			if e.pid == local_pid:
-				_show_banner("BACK IN THE FIGHT")
+				_show_banner(tr("BACK IN THE FIGHT"))
 		"player_hit":
 			if e.pid == local_pid:
 				_cross.hit_t = 0.12
@@ -471,18 +477,19 @@ func on_event(e: Dictionary, local_pid: int) -> void:
 				_on_local_kill(bool(e.get("head", false)))
 		"infected":
 			if e.pid == local_pid:
-				_show_banner("YOU ARE INFECTED")
-				_show_toast("Hunt the soldiers: tap ATTACK next to them")
+				_show_banner(tr("YOU ARE INFECTED"))
+				_show_toast(tr("Hunt the soldiers: tap ATTACK next to them"))
 			else:
 				var who: SimPlayer = _world.players.get(e.pid) if _world else null
-				_show_toast("%s was infected" % (who.name if who else "A soldier"))
+				_show_toast((tr("%s was infected") % who.name) if who else tr("A soldier was infected"))
 		"round_start":
-			_show_banner("ROUND %d" % e.round)
-			_show_toast("%d infected among you. Survive %d:%02d" % [e.infected, int(e.seconds) / 60, int(e.seconds) % 60])
+			_show_banner(tr("ROUND %d") % e.round)
+			_show_toast(tr("%d infected among you. Survive %d:%02d") % [e.infected, int(e.seconds) / 60, int(e.seconds) % 60])
 		"round_end":
-			_show_banner("SOLDIERS WIN" if e.soldiersWin else "INFECTED WIN")
+			_show_banner(tr("SOLDIERS WIN") if e.soldiersWin else tr("INFECTED WIN"))
 		"powerup_taken":
-			_show_banner(str(e.ptype).to_upper().replace("INSTAKILL", "INSTA-KILL").replace("DOUBLEPOINTS", "DOUBLE POINTS").replace("MAXAMMO", "MAX AMMO").replace("FIRESALE", "FIRE SALE"))
+			var pdef: Dictionary = SharedData.constants.get("powerups", {}).get("types", {}).get(str(e.ptype), {})
+			_show_banner(I18n.name_of(str(pdef.get("displayName", str(e.ptype).to_upper()))))
 
 
 ## Infection mode: round, clock and soldiers left (or the lobby countdown).
@@ -490,15 +497,15 @@ func _infection_top(p: SimPlayer, nw: NetWorld) -> void:
 	var left := ceili(nw.phase_left)
 	match nw.zone_state:
 		SimWorld.ZoneState.WAVE:
-			_wave_label.text = "ROUND %d   %d:%02d" % [nw.director.wave, left / 60, left % 60]
-			_wave_sub.text = "%d soldier%s left" % [nw.soldiers_left, "" if nw.soldiers_left == 1 else "s"]
+			_wave_label.text = tr("ROUND %d   %d:%02d") % [nw.director.wave, left / 60, left % 60]
+			_wave_sub.text = (tr("%d soldier left") if nw.soldiers_left == 1 else tr("%d soldiers left")) % nw.soldiers_left
 		SimWorld.ZoneState.INTERMISSION:
-			_wave_label.text = "SOLDIERS WIN" if nw.round_result == 1 else "INFECTED WIN"
-			_wave_sub.text = "next round in %d" % left
+			_wave_label.text = tr("SOLDIERS WIN") if nw.round_result == 1 else tr("INFECTED WIN")
+			_wave_sub.text = tr("next round in %d") % left
 		_:
-			_wave_label.text = "INFECTION"
+			_wave_label.text = tr("INFECTION")
 			var need := int(nw.constants.infection.minPlayers)
-			_wave_sub.text = ("Starting in %d" % left) if nw.phase_left > 0.0 else "Waiting for players  %d / %d" % [nw.players.size(), need]
+			_wave_sub.text = (tr("Starting in %d") % left) if nw.phase_left > 0.0 else tr("Waiting for players  %d / %d") % [nw.players.size(), need]
 
 
 ## Positions of downed teammates on screen (computed by the game from its camera).
@@ -507,15 +514,15 @@ func set_markers(items: Array) -> void:
 
 
 func show_game_over(wave: int, p: SimPlayer, scores: Array = []) -> void:
-	_go_stats.text = "Reached wave %d" % wave
+	_go_stats.text = tr("Reached wave %d") % wave
 	if _ton_game > 0:
-		_go_stats.text += "\nTON earned this game: %s  (credited to your weekly hunt)" % UiTheme.ton_text(_ton_game)
+		_go_stats.text += "\n" + (tr("TON earned this game: %s  (credited to your weekly hunt)") % UiTheme.ton_text(_ton_game))
 	for c in _go_table.get_children():
 		c.queue_free()
 	if scores.is_empty():
 		scores = [{"id": p.id, "name": p.name, "kills": p.kills, "headshots": p.headshots, "downs": p.downs, "revives": p.revives}]
 	scores.sort_custom(func(a, b): return int(a.kills) > int(b.kills))
-	for h in ["PLAYER", "KILLS", "HEADSHOTS", "DOWNS", "REVIVES"]:
+	for h in [tr("PLAYER"), tr("KILLS"), tr("HEADSHOTS"), tr("DOWNS"), tr("REVIVES")]:
 		_go_table.add_child(UiTheme.label(h, 18, UiTheme.MUTED))
 	for r in scores:
 		var col := UiTheme.ACCENT if int(r.id) == p.id else UiTheme.TEXT
@@ -569,17 +576,69 @@ func _on_local_kill(head: bool) -> void:
 	var now := Time.get_ticks_msec() / 1000.0
 	_streak = _streak + 1 if now - _streak_last <= STREAK_GAP else 1
 	_streak_last = now
-	if STREAK_NAMES.has(_streak):
-		_callout.text = STREAK_NAMES[_streak]
+	var called := _streak_name(_streak)
+	if called != "":
+		_callout.text = called
 		_callout.add_theme_color_override("font_color", UiTheme.GOLD if _streak < 5 else UiTheme.ACCENT)
 		_callout_t = 1.6
 		_pop(_callout, 1.8)
 		streak.emit(_streak)
 	elif head and _callout_t <= 0.2:
-		_callout.text = "HEADSHOT"
+		_callout.text = tr("HEADSHOT")
 		_callout.add_theme_color_override("font_color", UiTheme.TEXT)
 		_callout_t = 0.7
 		_pop(_callout, 1.25)
+
+
+## What a chain of n kills is called out as ("" for none).
+func _streak_name(n: int) -> String:
+	match n:
+		2:
+			return tr("DOUBLE KILL")
+		3:
+			return tr("TRIPLE KILL")
+		4:
+			return tr("QUAD KILL")
+		5:
+			return tr("RAMPAGE")
+		7:
+			return tr("MASSACRE")
+		10:
+			return tr("UNSTOPPABLE")
+		15:
+			return tr("GODLIKE")
+	return ""
+
+
+## The translated display name of the weapon or perk an interaction offers
+## (defs group "weapons" or "perks"); falls back to the sim's English label.
+func _offer_name(w: SimWorld, interact: Dictionary, group: String) -> String:
+	var def: Dictionary = w.defs.get(group, {}).get(str(interact.get("item", "")), {})
+	return I18n.name_of(str(def.get("displayName", str(interact.label).trim_prefix("Ammo: "))))
+
+
+## The sim's "wait" prompts (supply cache busy) in the interface language.
+func _wait_text(label: String) -> String:
+	match label:
+		"Rolling...":
+			return tr("Rolling...")
+		"Supply Cache in use":
+			return tr("Supply Cache in use")
+	return label
+
+
+## A boss's title for the bar and banners: its zombie display name, translated,
+## in capitals (THE WARDEN). Found by zombie type, or by the visuals' bossName.
+func _boss_title(type: String, boss_name := "") -> String:
+	if type == "":
+		for id in SharedData.zombies:
+			if str(Visuals.zombie(str(id)).get("bossName", "")) == boss_name:
+				type = str(id)
+				break
+	var def: Dictionary = SharedData.get_zombie(type)
+	if def.has("displayName"):
+		return I18n.name_of(str(def.displayName)).to_upper()
+	return boss_name if boss_name != "" else str(Visuals.zombie(type).get("bossName", type))
 
 
 ## A label punches in: starts big and settles to its size.
@@ -668,7 +727,7 @@ func _update_boss_bar(w: SimWorld) -> void:
 			boss = z
 	_boss_box.visible = boss != null
 	if boss:
-		_boss_name.text = str(Visuals.zombie(boss.type).bossName)
+		_boss_name.text = _boss_title(boss.type)
 		_boss_fill.size.x = 540.0 * clampf(boss.hp / maxf(1.0, boss.max_hp), 0.0, 1.0)
 
 
@@ -685,11 +744,11 @@ func set_aim(ads: float, scoped: bool, delta: float) -> void:
 
 ## A boss has come: a banner and a call-out.
 func boss_arrived(boss_name: String) -> void:
-	_show_banner("%s HAS RISEN" % boss_name)
+	_show_banner(tr("%s HAS RISEN") % _boss_title("", boss_name))
 
 
 func boss_fell(boss_name: String) -> void:
-	_show_banner("%s FALLS" % boss_name)
+	_show_banner(tr("%s FALLS") % _boss_title("", boss_name))
 
 
 func _build_game_over() -> void:
@@ -701,8 +760,9 @@ func _build_game_over() -> void:
 	var v := VBoxContainer.new()
 	v.add_theme_constant_override("separation", 18)
 	v.alignment = BoxContainer.ALIGNMENT_CENTER
+	I18n.dir(v)  # Arabic: right-to-left table and button row
 	_game_over.add_child(v)
-	var title := UiTheme.title("OVERRUN", 52, UiTheme.ACCENT)
+	var title := UiTheme.title(tr("OVERRUN"), 52, UiTheme.ACCENT)
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	v.add_child(title)
 	var r := UiTheme.rule(420)
@@ -719,10 +779,10 @@ func _build_game_over() -> void:
 	var row := HBoxContainer.new()
 	row.add_theme_constant_override("separation", 16)
 	row.alignment = BoxContainer.ALIGNMENT_CENTER
-	row.add_child(UiTheme.big_button("PLAY AGAIN", func(): retry_pressed.emit()))
-	_go_challenge = UiTheme.gold_button("CHALLENGE FRIENDS", func(): challenge_pressed.emit())
+	row.add_child(UiTheme.big_button(tr("PLAY AGAIN"), func(): retry_pressed.emit()))
+	_go_challenge = UiTheme.gold_button(tr("CHALLENGE FRIENDS"), func(): challenge_pressed.emit())
 	row.add_child(_go_challenge)
-	row.add_child(UiTheme.button("MAIN MENU", func(): menu_pressed.emit()))
+	row.add_child(UiTheme.button(tr("MAIN MENU"), func(): menu_pressed.emit()))
 	v.add_child(row)
 	add_child(_game_over)
 

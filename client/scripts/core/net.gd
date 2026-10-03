@@ -138,13 +138,13 @@ func _init_data() -> String:
 
 func _open() -> void:
 	if url == "":
-		_fail("no server configured")
+		_fail(tr("no server configured"))
 		return
 	_ws = WebSocketPeer.new()
 	_ws.inbound_buffer_size = 1 << 18
 	var err := _ws.connect_to_url(url)
 	if err != OK:
-		_fail("cannot connect (%d)" % err)
+		_fail(tr("cannot connect (%d)") % err)
 		return
 	_set_status("connecting")
 
@@ -329,7 +329,7 @@ func take_buffer() -> Array:
 func _on_closed(code: int) -> void:
 	# 4001 = refused (bad version / identity / abuse), 4000 = replaced, 1000 = normal.
 	if code in [4000, 4001, 1000] or status == "offline":
-		_fail(last_error if last_error != "" else "connection closed (%d)" % code)
+		_fail(last_error if last_error != "" else tr("connection closed (%d)") % code)
 		return
 	if _retry_until == 0.0:
 		_retry_until = _clock + float(SharedData.constants.net.reconnectGraceSec)
@@ -337,7 +337,7 @@ func _on_closed(code: int) -> void:
 		_set_status("connecting")
 		_retry_t = RETRY_SEC
 	else:
-		_fail("connection lost")
+		_fail(tr("connection lost"))
 
 
 func _fail(reason: String) -> void:

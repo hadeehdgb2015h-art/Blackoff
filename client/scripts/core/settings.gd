@@ -21,6 +21,7 @@ var hud_opacity: float = 1.0
 var layout: Dictionary = {}       ## touch control layout (TouchLayout), {} = defaults
 var voice_speaker: bool = true    ## hear other players (the mic is off at every start)
 var third_person: bool = true     ## over-the-shoulder camera (phase 22); false = first person
+var language: String = ""         ## interface language: en, ar, ru; "" = the player's own (phase 24, see I18n)
 
 
 func _ready() -> void:
@@ -51,6 +52,7 @@ func _ready() -> void:
 		layout = l if l is Dictionary else {}
 		voice_speaker = bool(cf.get_value("voice", "speaker", voice_speaker))
 		third_person = bool(cf.get_value("video", "third_person", third_person))
+		language = str(cf.get_value("ui", "language", language))
 	_apply_audio()
 
 
@@ -69,6 +71,7 @@ func save() -> void:
 	cf.set_value("hud", "layout", layout)
 	cf.set_value("voice", "speaker", voice_speaker)
 	cf.set_value("video", "third_person", third_person)
+	cf.set_value("ui", "language", language)
 	cf.save(PATH)
 	_apply_audio()
 	changed.emit()

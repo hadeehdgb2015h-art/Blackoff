@@ -7,8 +7,6 @@ extends Control
 
 signal closed
 
-const MISSION_TEXT := ["Kill %d zombies", "Land %d headshot kills", "Reach wave %d", "Slay the Warden", "Finish %d online games"]
-
 var _tiles: Array[DayTile] = []
 var _claim: Button
 var _status: Label
@@ -35,9 +33,10 @@ func _ready() -> void:
 	var v := VBoxContainer.new()
 	v.add_theme_constant_override("separation", 7)
 	panel.add_child(v)
+	I18n.dir(v)
 
 	var head := HBoxContainer.new()
-	head.add_child(UiTheme.title("DAILY REWARD", 28, UiTheme.GOLD))
+	head.add_child(UiTheme.title(tr("DAILY REWARD"), 28, UiTheme.GOLD))
 	var gap := Control.new()
 	gap.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	head.add_child(gap)
@@ -58,7 +57,7 @@ func _ready() -> void:
 
 	var act := HBoxContainer.new()
 	act.add_theme_constant_override("separation", 14)
-	_claim = UiTheme.big_button("CLAIM", _on_claim)
+	_claim = UiTheme.big_button(tr("CLAIM"), _on_claim)
 	_claim.add_theme_font_size_override("font_size", 22)
 	act.add_child(_claim)
 	_status = UiTheme.label("", 16, UiTheme.MUTED)
@@ -69,13 +68,13 @@ func _ready() -> void:
 	v.add_child(act)
 
 	v.add_child(UiTheme.rule(700, UiTheme.BRASS_DARK))
-	v.add_child(UiTheme.title("DAILY MISSIONS", 20, UiTheme.GOLD))
+	v.add_child(UiTheme.title(tr("DAILY MISSIONS"), 20, UiTheme.GOLD))
 	_rows = VBoxContainer.new()
 	_rows.add_theme_constant_override("separation", 6)
 	v.add_child(_rows)
 	_bonus = UiTheme.label("", 16, UiTheme.MUTED)
 	v.add_child(_bonus)
-	var close := UiTheme.gold_button("CLOSE", func():
+	var close := UiTheme.gold_button(tr("CLOSE"), func():
 		closed.emit()
 		queue_free())
 	close.size_flags_horizontal = Control.SIZE_SHRINK_END
@@ -90,7 +89,7 @@ func _ready() -> void:
 
 	Net.daily_received.connect(_on_daily)
 	if Net.daily.is_empty():
-		_status.text = "Loading…" if Net.status in ["ready", "in_zone"] else "Open the game from the Telegram bot to collect daily rewards."
+		_status.text = tr("Loading…") if Net.status in ["ready", "in_zone"] else tr("Open the game from the Telegram bot to collect daily rewards.")
 		_claim.disabled = true
 	else:
 		_fill(Net.daily)
@@ -102,7 +101,7 @@ func _process(_delta: float) -> void:
 	if _reset_at <= 0.0:
 		return
 	var left := int(maxf(0.0, _reset_at - Time.get_ticks_msec() / 1000.0))
-	var text := "New day in %dh %02dm" % [left / 3600, (left % 3600) / 60] if left >= 60 else "New day in %ds" % left
+	var text := tr("New day in %dh %02dm") % [left / 3600, (left % 3600) / 60] if left >= 60 else tr("New day in %ds") % left
 	if _reset.text != text:
 		_reset.text = text
 
@@ -118,7 +117,7 @@ func _on_daily(d: Dictionary) -> void:
 	if int(d.get("paidMicro", 0)) > 0 and int(d.get("paidKind", 0)) == 1:
 		var tile := _tiles[clampi(int(d.get("streak", 1)) - 1, 0, 6)]
 		tile.flash()
-		_rise("+%s TON" % UiTheme.ton_text(int(d.paidMicro)), tile.get_global_rect().get_center())
+		_rise(tr("+%s TON") % UiTheme.ton_text(int(d.paidMicro)), tile.get_global_rect().get_center())
 		Audio.ui_sound("buy", -4.0)
 
 
@@ -139,12 +138,12 @@ func _fill(d: Dictionary) -> void:
 				t.state = DayTile.TAKEN
 		t.queue_redraw()
 	_claim.disabled = not can
-	_claim.text = "CLAIM DAY %d" % next if can else "CLAIMED"
+	_claim.text = tr("CLAIM DAY %d") % next if can else tr("CLAIMED")
 	if can:
-		_status.text = "Come back every day: the reward grows to day 7. Miss a day and it starts again." if next == 1 \
-			else "Day %d in a row. Keep the streak going!" % next
+		_status.text = tr("Come back every day: the reward grows to day 7. Miss a day and it starts again.") if next == 1 \
+			else tr("Day %d in a row. Keep the streak going!") % next
 	else:
-		_status.text = "Day %d taken. Come back tomorrow for day %d." % [streak, streak % 7 + 1]
+		_status.text = tr("Day %d taken. Come back tomorrow for day %d.") % [streak, streak % 7 + 1]
 	_reset_at = Time.get_ticks_msec() / 1000.0 + float(d.get("resetSec", 0))
 
 	for c in _rows.get_children():
@@ -152,20 +151,27 @@ func _fill(d: Dictionary) -> void:
 	for m in d.get("missions", []):
 		_rows.add_child(_mission_row(m))
 	if d.get("missions", []).is_empty():
-		_rows.add_child(UiTheme.label("No missions today.", 16, UiTheme.MUTED))
+		_rows.add_child(UiTheme.label(tr("No missions today."), 16, UiTheme.MUTED))
 	if bool(d.get("bonusDone", false)):
-		_bonus.text = "All three done: bonus +%s TON paid. New missions tomorrow." % UiTheme.ton_text(int(d.get("bonusMicro", 0)))
+		_bonus.text = tr("All three done: bonus +%s TON paid. New missions tomorrow.") % UiTheme.ton_text(int(d.get("bonusMicro", 0)))
 		_bonus.add_theme_color_override("font_color", UiTheme.GREEN)
 	else:
-		_bonus.text = "Finish all three for a bonus of +%s TON. Missions count online games." % UiTheme.ton_text(int(d.get("bonusMicro", 0)))
+		_bonus.text = tr("Finish all three for a bonus of +%s TON. Missions count online games.") % UiTheme.ton_text(int(d.get("bonusMicro", 0)))
 		_bonus.add_theme_color_override("font_color", UiTheme.MUTED)
 
 
+## A mission's line; kinds follow the protocol's missionKind order
+## (kills, headshots, wave, boss, games).
 static func mission_text(kind: int, goal: int) -> String:
-	if kind == 3 and goal > 1:
-		return "Slay the Warden %d times" % goal
-	var t: String = MISSION_TEXT[clampi(kind, 0, MISSION_TEXT.size() - 1)]
-	return t % goal if t.contains("%d") else t
+	match clampi(kind, 0, 4):
+		0: return String(TranslationServer.translate("Kill %d zombies")) % goal
+		1: return String(TranslationServer.translate("Land %d headshot kills")) % goal
+		2: return String(TranslationServer.translate("Reach wave %d")) % goal
+		3:
+			if goal > 1:
+				return String(TranslationServer.translate("Slay the Warden %d times")) % goal
+			return String(TranslationServer.translate("Slay the Warden"))
+	return String(TranslationServer.translate("Finish %d online games")) % goal
 
 
 func _mission_row(m: Dictionary) -> Control:
@@ -176,7 +182,7 @@ func _mission_row(m: Dictionary) -> Control:
 	var text := UiTheme.label(mission_text(int(m.kind), int(m.goal)), 18, UiTheme.GREEN if done else UiTheme.TEXT)
 	text.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	line.add_child(text)
-	line.add_child(UiTheme.label("DONE  +%s TON" % UiTheme.ton_text(int(m.tonMicro)) if done else "+%s TON" % UiTheme.ton_text(int(m.tonMicro)),
+	line.add_child(UiTheme.label(tr("DONE  +%s TON") % UiTheme.ton_text(int(m.tonMicro)) if done else tr("+%s TON") % UiTheme.ton_text(int(m.tonMicro)),
 		16, UiTheme.GREEN if done else UiTheme.GOLD))
 	box.add_child(line)
 	var bar := ProgressLine.new()
@@ -252,7 +258,7 @@ class DayTile extends Control:
 		var font := UiTheme.display_font()
 		var dim := state == LATER or state == TOMORROW
 		var col := UiTheme.MUTED if dim else UiTheme.TEXT
-		_text(font, "DAY %d" % day, 14, 22.0, UiTheme.GOLD if state == TODAY else col)
+		_text(font, tr("DAY %d") % day, 14, 22.0, UiTheme.GOLD if state == TODAY else col)
 		# a coin: brass disc with an inner ring
 		var c := Vector2(size.x / 2.0, 50.0)
 		var coin := UiTheme.GOLD if not dim else UiTheme.GOLD.darkened(0.45)
@@ -261,9 +267,9 @@ class DayTile extends Control:
 		_text(font, reward, 13, 82.0, UiTheme.GOLD if not dim else UiTheme.MUTED)
 		var tag := ""
 		match state:
-			TAKEN: tag = "TAKEN"
-			TODAY: tag = "TODAY"
-			TOMORROW: tag = "NEXT"
+			TAKEN: tag = tr("TAKEN")
+			TODAY: tag = tr("TODAY")
+			TOMORROW: tag = tr("NEXT")
 		if tag != "":
 			_text(ThemeDB.fallback_font, tag, 11, 98.0, UiTheme.GREEN if state == TAKEN else UiTheme.MUTED)
 
