@@ -52,6 +52,9 @@ var _room_t: float = 0.0
 var _machines := {} ## perk id -> PerkMachineView
 var _acc: float = 0.0
 var _paused: bool = false
+var _puzzles: PuzzleViews          ## the zone's puzzle objects (online, phase 31)
+var _puzzle_target := 0            ## the puzzle object USE would act on now
+var _keypad: KeypadPanel
 var _stat_time := 0.0       ## seconds of play measured for the owner's statistics (phase 29)
 var _stat_frames := 0
 var _stat_sent := false
@@ -129,6 +132,7 @@ func _ready() -> void:
 		Settings.third_person = not Settings.third_person
 		Settings.save())
 	_controls.voice_toggled.connect(_on_voice_toggled)
+	_controls.use_pressed.connect(_on_use_pressed)
 	Net.voice_changed.connect(_sync_voice_buttons)
 	if Platform.query_param("nohud") == "1":  # clean captures (menu backdrop)
 		_hud.visible = false
@@ -158,6 +162,15 @@ func _ready() -> void:
 		_apply_quality()
 		_hud.show_status(tr("Connecting..."))
 		Net.failed.connect(_on_net_failed)
+		_puzzles = PuzzleViews.new()
+		_puzzles.carrier_pos = func(id: int) -> Variant:
+			var o: SimPlayer = world.players.get(id)
+			if o == null:
+				return null
+			var back := -SimMath.dir3(o.yaw, 0.0) * 0.32 if id != pid else Vector3.ZERO
+			return Vector3(o.pos.x, 1.15 if id != pid else 0.9, o.pos.y) + back
+		add_child(_puzzles)
+		Net.puzzle_msg.connect(_on_puzzle_msg)
 		Net.level_up.connect(func(_from: int, to: int):
 			_hud.show_toast(tr("LEVEL UP: %s  ·  Level %d") % [Progression.rank_name(str(Progression.rank_for(to).id)), to], 4.0))
 		Net.daily_received.connect(func(d: Dictionary):
@@ -169,6 +182,17 @@ func _ready() -> void:
 			else:
 				Net.connect_to_server(true)
 		return
+	if Platform.query_param("puzzleshow") == "1":
+		# art review: every puzzle prop in front of the spawn, offline
+		_puzzles = PuzzleViews.new()
+		add_child(_puzzles)
+		var kinds := [[0, 1, "7\n••"], [1, 2, ""], [2, 1, ""], [3, 1, ""], [5, 0, ""], [6, 2, ""], [7, 1, ""]]
+		for i in kinds.size():
+			Net.puzzles[i + 1] = {"id": i + 1, "kind": kinds[i][0], "x": -4.0 + i * 1.4, "y": 1.6 if kinds[i][0] == 0 else 0.0, "z": 11.5,
+				"yaw": 0.0, "size": 0.55, "state": kinds[i][1], "text": kinds[i][2], "label": "", "useRadius": 0.0, "shootRadius": 0.0, "codeLength": 0}
+		Net.puzzles[20] = {"id": 20, "kind": 4, "x": 3.2, "y": 0.0, "z": 13.4, "yaw": 0.0, "size": 0.9, "state": 1, "text": "", "label": "",
+			"useRadius": 0.0, "shootRadius": 0.0, "codeLength": 0}
+		Net.puzzles_changed.emit()
 	world = SimWorld.new(defs, map_id, randi())
 	_spawn_box_views(defs)
 	_spawn_machine_views(defs)
@@ -295,6 +319,13 @@ func _process(delta: float) -> void:
 	_controls.revive_available = revive
 	_controls.interact_label = "" if opt.is_empty() or revive else str(opt.label)
 	_controls.interact_ok = not opt.is_empty() and opt.affordable and not opt.full
+	_puzzle_target = 0
+	if opt.is_empty() and _puzzles and p.is_alive():
+		var pz := _puzzles.usable_near(p.pos)
+		if not pz.is_empty():
+			_puzzle_target = int(pz.id)
+			_controls.interact_label = str(pz.label)
+			_controls.interact_ok = true
 	_pm("interact")
 	_hud.update_state(p, world, opt, delta)
 	_pm("hud")
@@ -1178,8 +1209,38 @@ func _send_perf() -> void:
 	Net.send_perf(_stat_frames / _stat_time, _stat_time)
 
 
+## USE on a puzzle object: the server decides; a keypad first for codes (phase 31).
+func _on_use_pressed() -> void:
+	if _puzzle_target == 0 or not Net.puzzles.has(_puzzle_target) or _keypad:
+		return
+	var o: Dictionary = Net.puzzles[_puzzle_target]
+	var id := _puzzle_target
+	if int(o.codeLength) > 0:
+		_keypad = KeypadPanel.new().setup(int(o.codeLength), str(o.label))
+		_controls.enabled = false
+		_controls.release_all()
+		_keypad.submitted.connect(func(code: String): Net.use_puzzle(id, code))
+		_keypad.closed.connect(func():
+			_keypad = null
+			_controls.enabled = not _paused)
+		_hud.add_child(_keypad)
+	else:
+		Net.use_puzzle(id)
+	print("[puzzle] use %d" % id)
+
+
+func _on_puzzle_msg(text: String, big: bool) -> void:
+	_hud.show_puzzle(text, big)
+	if big:
+		_sfx.play("powerup", -6.0, 0.0)
+		Platform.haptic("heavy")
+	print("[puzzle] %s" % text)
+
+
 func _exit_tree() -> void:
 	_send_perf()
+	if Net.puzzle_msg.is_connected(_on_puzzle_msg):
+		Net.puzzle_msg.disconnect(_on_puzzle_msg)
 	if world is NetWorld:
 		(world as NetWorld).close()
 	if Net.failed.is_connected(_on_net_failed):

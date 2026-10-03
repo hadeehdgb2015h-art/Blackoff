@@ -399,8 +399,46 @@ def gale(k):
             "kick": 2.6}
 
 
-WEAPONS = {"rifle": rifle, "pistol": pistol, "shotgun": shotgun, "smg": smg, "lmg": lmg, "sniper": sniper, "arc": arc, "gale": gale}
-EMIT_COLORS = {"arc": "#59d9ff", "gale": "#ffb347"}
+def ember(k):
+    """Ember Reaper (phase 31): the five puzzles' reward. A dark iron receiver
+    with an ember core burning behind slotted vents, a heavy finned barrel, a
+    curved blade under it, and a glowing ember cell as the magazine."""
+    k.prism("Weapon", METAL, [(-0.1, 0.0), (0.22, 0.0), (0.245, 0.035), (0.245, 0.1), (-0.1, 0.1), (-0.11, 0.045)], 0.056, bevel=0.003)  # receiver
+    k.box("Weapon", POLY, (0, 0.07, 0.108), (0.034, 0.24, 0.014), 0.0015)                       # top rail housing
+    k.box("Weapon", METAL, (0, 0.13, 0.122), (0.02, 0.05, 0.012), 0.0012)                      # sight block
+    k.sphere("Weapon", EMIT, (0, 0.157, 0.128), 0.0022)
+    for i in range(4):                                                                         # vents with the core glowing through
+        y = 0.0 + i * 0.05
+        k.box("Weapon", EMIT, (0.0285, y + 0.02, 0.055), (0.003, 0.03, 0.04), 0.0004)
+        k.box("Weapon", EMIT, (-0.0285, y + 0.02, 0.055), (0.003, 0.03, 0.04), 0.0004)
+    k.cyl("Weapon", METAL, (0, 0.245, 0.06), (0, 0.6, 0.06), 0.022, 18, 0.0015)                 # barrel
+    for i in range(6):                                                                         # cooling fins
+        y = 0.27 + i * 0.045
+        k.box("Weapon", POLY, (0, y, 0.06), (0.062, 0.008, 0.062), 0.0008)
+    k.cyl("Weapon", EMIT, (0, 0.6, 0.06), (0, 0.612, 0.06), 0.017, 16, 0.0004)                   # glowing muzzle
+    k.cyl("Weapon", METAL, (0, 0.612, 0.06), (0, 0.64, 0.06), 0.026, 16, 0.001)                  # muzzle brake
+    k.prism("Weapon", ACCENT, [(0.25, 0.02), (0.56, -0.005), (0.6, -0.04), (0.5, -0.03), (0.3, -0.012), (0.25, 0.0)], 0.008, bevel=0.0008)  # blade
+    k.box("Weapon", METAL, (0, 0.27, 0.025), (0.02, 0.05, 0.02), 0.001)                        # blade mount
+    # ember cell (Mag): a glowing core in an iron cage
+    k.cyl("Mag", METAL, (0, 0.08, -0.004), (0, 0.08, -0.12), 0.026, 14, 0.0012)
+    k.cyl("Mag", EMIT, (0, 0.08, -0.018), (0, 0.08, -0.106), 0.0275, 14, 0.0005)
+    for sx in (-1, 1):
+        k.box("Mag", METAL, (sx * 0.026, 0.08, -0.062), (0.004, 0.012, 0.11), 0.0005)
+    k.cyl("Mag", METAL, (0, 0.08, -0.12), (0, 0.08, -0.134), 0.022, 14, 0.001)
+    k.prism("Weapon", POLY, [(-0.035, 0.002), (0.005, 0.002), (-0.018, -0.105), (-0.058, -0.1)], 0.031, bevel=0.004)  # grip
+    k.box("Weapon", METAL, (0, 0.04, -0.03), (0.024, 0.075, 0.005), 0.001)
+    k.box("Weapon", METAL, (0, 0.076, -0.015), (0.008, 0.006, 0.03), 0.001)
+    k.prism("Weapon", METAL, [(0.03, -0.002), (0.038, -0.002), (0.036, -0.022), (0.03, -0.026)], 0.005, bevel=0.0006)
+    k.prism("Weapon", POLY, [(-0.11, 0.1), (-0.3, 0.095), (-0.32, 0.06), (-0.31, -0.04), (-0.24, -0.04), (-0.17, 0.03), (-0.11, 0.035)], 0.046, bevel=0.004)  # stock
+    k.box("Weapon", METAL, (0, -0.322, 0.028), (0.048, 0.012, 0.118), 0.002)
+    right_hand(k, top=(-0.015, 0.0), bottom=(-0.039, -0.1), trigger=(0.034, -0.014))
+    left_hand(k, palm=(0.0, 0.33, 0.0), forearm_dir=(-0.26, -0.3, -0.32))
+    return {"muzzle": (0, 0.64, 0.06), "mag_out": (0.0, 0.0, -0.3), "place": ((0.12, 0.25, -0.145), (1.5, 3.0, 7.0)),
+            "kick": 1.0}
+
+
+WEAPONS = {"rifle": rifle, "pistol": pistol, "shotgun": shotgun, "smg": smg, "lmg": lmg, "sniper": sniper, "arc": arc, "gale": gale, "ember": ember}
+EMIT_COLORS = {"arc": "#59d9ff", "gale": "#ffb347", "ember": "#ff5a1f"}
 
 
 # ---------------------------------------------------------------- texturing

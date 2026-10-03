@@ -31,7 +31,9 @@ export function createApp(env: Env, shared: SharedData, store: ProfileStore = ne
   const codec = new Codec(shared.protocol);
   const zones = new ZoneManager(shared, codec);
   const hub = new SessionHub(env, shared, codec, zones, store);
-  void hub.settings.load(); // the owner's switches (bans, maintenance, TON) from the store
+  // the owner's switches (bans, maintenance, TON) from the store, then the
+  // secret puzzles if their key is known (phase 31)
+  void hub.settings.load().then(() => hub.loadPuzzles());
   const version = releaseVersion();
 
   const server = http.createServer((req, res) => {

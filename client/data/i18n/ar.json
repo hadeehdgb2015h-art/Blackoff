@@ -317,5 +317,7 @@
  "Could not send the report. Check the connection and try again.": "تعذر إرسال البلاغ. تحقق من الاتصال وحاول مجدداً.",
  "AI": "آلي",
  "AI soldier %s joined your squad": "انضم الجندي الآلي %s إلى فرقتك",
- "%s left to make room for a player": "غادر %s ليفسح المكان للاعب"
+ "%s left to make room for a player": "غادر %s ليفسح المكان للاعب",
+ "Ember Reaper": "حاصد الجمر",
+ "ENTER": "إدخال"
 }

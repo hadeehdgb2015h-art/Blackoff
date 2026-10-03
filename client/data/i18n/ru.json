@@ -317,5 +317,7 @@
  "Could not send the report. Check the connection and try again.": "Не удалось отправить отчёт. Проверьте соединение и попробуйте снова.",
  "AI": "ИИ",
  "AI soldier %s joined your squad": "Боец ИИ %s вступил в ваш отряд",
- "%s left to make room for a player": "%s уступил место игроку"
+ "%s left to make room for a player": "%s уступил место игроку",
+ "Ember Reaper": "Жнец углей",
+ "ENTER": "ВВОД"
 }

@@ -1,3 +1,6 @@
 build/
 __pycache__/
 server/dist-bundle/
+
+# phase 31: the secret puzzle module in plain text (only its encrypted copy is committed)
+server/puzzles-private/

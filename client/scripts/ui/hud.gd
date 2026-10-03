@@ -35,7 +35,9 @@ var _go_stats: Label
 var _go_table: GridContainer
 var _go_challenge: Button
 var _team: TeamPanel
-var _bots_seen := {}  ## AI soldiers in the squad (phase 30): id -> name, for join / leave toasts
+var _bots_seen := {}
+var _puzzle_line: Label   ## a puzzle's words to the squad (phase 31)
+var _puzzle_t := 0.0  ## AI soldiers in the squad (phase 30): id -> name, for join / leave toasts
 var _markers: Markers
 var _revive_back: ColorRect
 var _revive_bar: ColorRect
@@ -309,6 +311,7 @@ func _apply_safe_area() -> void:
 
 
 func update_state(p: SimPlayer, w: SimWorld, interact: Dictionary, delta: float) -> void:
+	_fade_puzzle(delta)
 	_world = w
 	_update_boss_bar(w)
 	var hp_k := clampf(p.hp / p.max_hp, 0.0, 1.0)
@@ -838,3 +841,33 @@ func _announce_bots(w) -> void:
 		if not now.has(id):
 			show_toast(tr("%s left to make room for a player") % _bots_seen[id], 3.0)
 	_bots_seen = now
+
+
+## A line from the puzzles (phase 31): under the wave counter, gold when it
+## matters (big), long enough to read.
+func show_puzzle(text: String, big: bool) -> void:
+	if _puzzle_line == null:
+		_puzzle_line = UiTheme.label("", 20, UiTheme.TEXT)
+		_puzzle_line.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		_puzzle_line.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		_puzzle_line.anchor_left = 0.18
+		_puzzle_line.anchor_right = 0.82
+		_puzzle_line.offset_top = 96
+		_puzzle_line.offset_bottom = 190
+		_puzzle_line.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.9))
+		_puzzle_line.add_theme_constant_override("outline_size", 6)
+		_puzzle_line.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		add_child(_puzzle_line)
+	_puzzle_line.text = text
+	_puzzle_line.add_theme_font_size_override("font_size", 23 if big else 19)
+	_puzzle_line.add_theme_color_override("font_color", UiTheme.GOLD if big else UiTheme.TEXT)
+	_puzzle_line.modulate.a = 1.0
+	_puzzle_t = 7.0 if big else 4.5
+	_pop(_puzzle_line, 1.12)
+
+
+func _fade_puzzle(delta: float) -> void:
+	if _puzzle_line == null or _puzzle_t <= 0.0:
+		return
+	_puzzle_t -= delta
+	_puzzle_line.modulate.a = clampf(_puzzle_t / 0.8, 0.0, 1.0)

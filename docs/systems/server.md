@@ -142,3 +142,15 @@ An online zombies game with fewer than `zone.squadBots.fillTo` humans (3) gets A
 They cannot buy: from wave 3 they carry the rifle and from wave 8 the LMG, and they never run dry.
 
 They are never recorded: no profile, TON, leaderboard, missions, activity or card. In the roster their level is 0, which the client shows as an AI tag with join and leave toasts. Each one counts as `waveWeight` (0.5) of a player for wave size and boss health (`SimWorld.squadSize()`).
+
+## Secret puzzles (phase 31)
+
+The owner asked for five very hard puzzles whose solutions only they know. The repository is public, so the rules never appear in it in plain form.
+
+- **What is secret:** `server/assets/puzzles/pack.bin` holds the compiled puzzle module and `source.bin` its sources. Both are AES-256-GCM sealed with a 32-byte key (43 characters, base64url) that only the owner holds.
+- **Opening it:** the owner sends the key once to the bot (/admin → 🧩 → 🔑). The bot deletes the message, checks the key by opening the pack, and keeps it in the runtime settings. `PUZZLE_KEY` in `.env` also works. Without the key there are no puzzles.
+- **Editing them:** `npx tsx tools/puzzles.ts open <key>` writes the sources to `server/puzzles-private/` (git-ignored). After editing, `seal <key>` writes both files back, and `check <key>` loads the pack the way the server does. The private folder also holds a solve test (`npx tsx puzzles-private/solve.ts`) that plays a whole match of the chain.
+- **The contract:** `src/puzzles/api.ts`. A module places generic objects (text, lantern, terminal, lever, cage, canister, transmitter, case), hears uses (with a keypad code), shots that pass close to an object, and the game's events. It can talk to the zone (texts in en/ar/ru), spawn zombies, give a weapon and pay the reward. `src/puzzles/host.ts` runs one module instance per zombies zone. It works out which object a shot hit, checks that a player using an object is within reach, sends `puzzleObjects`, `puzzleState` and `puzzleMsg` (protocol v15) in each player's language, and switches the puzzles off in that zone if the module throws.
+- **The client** (`scripts/view/puzzle_views.gd`, `scripts/ui/keypad_panel.gd`) only draws the objects and sends `puzzleUse`; it never learns a rule. `?puzzleshow=1` (offline) lines every prop up in the safe room for art review.
+- **The reward:** the Ember Reaper (`ember` in `shared/weapons.json`: never in the box or on a wall) and TON for every human in the zone. The amount is `PUZZLE_TON_MICRO`, changeable from the bot. Every owner is told who solved them.
+- **For the owner only:** the bot shows how the puzzles are solved (📖) and the answers of every match being played (🔍).

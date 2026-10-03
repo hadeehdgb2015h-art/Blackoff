@@ -36,6 +36,7 @@ BUDGET = {
     "vm_sniper.glb": 3800,
     "vm_arc.glb": 4000,
     "vm_gale.glb": 4000,
+    "vm_ember.glb": 4500,
     "env_props.glb": 11000,
     "dark_props.glb": 14000,
     "backdrop.glb": 5000,

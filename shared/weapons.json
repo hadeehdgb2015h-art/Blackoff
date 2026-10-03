@@ -163,6 +163,28 @@
       "boxWeight": 0.3,
       "coneDeg": 50,
       "adsSpreadMul": 1.0
+    },
+    "ember": {
+      "displayName": "Ember Reaper",
+      "slot": "primary",
+      "fireMode": "auto",
+      "damage": 240,
+      "headMultiplier": 1.5,
+      "fireRateRpm": 450,
+      "magSize": 45,
+      "reserveStart": 270,
+      "reserveMax": 450,
+      "reloadSec": 2.2,
+      "range": 70,
+      "spreadDeg": 0.7,
+      "moveSpreadDeg": 1.4,
+      "pellets": 1,
+      "price": 0,
+      "ammoPrice": 0,
+      "boxWeight": 0,
+      "splashRadius": 2.6,
+      "splashDamage": 150,
+      "adsSpreadMul": 0.35
     }
   }
 }

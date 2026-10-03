@@ -10,6 +10,8 @@ import { BTN_MASK, Btn, PlayerState, Team, WeaponState, ZombieState, emptyIntent
 import { GameMode, SimWorld, ZoneState } from "../sim/simWorld.js";
 import { Phase } from "../sim/waveDirector.js";
 import { BOT_NAMES, SquadBot } from "../sim/squadBot.js";
+import type { Lang, PuzzleModule } from "../puzzles/api.js";
+import { PuzzleHost } from "../puzzles/host.js";
 /** What a zone knows about a member's play when they leave (the hub turns it
  *  into a MatchResult with TON points and anti-cheat flags). */
 export interface ZoneResult {
@@ -30,6 +32,8 @@ export interface ZoneClient {
   readonly displayName: string;
   /** the player's level, shown to teammates (phase 26) */
   readonly level?: number;
+  /** interface language for puzzle texts (phase 31): en, ar, ru */
+  readonly lang?: string;
   /** false while the player has the speaker off: no voice frames are sent to them */
   readonly voiceListen?: boolean;
   sendBytes(bytes: Uint8Array): void;
@@ -76,6 +80,10 @@ export class Zone {
   gameOverAt: number | null = null;
   /** Most human members held at once (for the match record). */
   peakPlayers = 0;
+  /** the secret puzzles of this zone (phase 31), when the module is loaded */
+  puzzles: PuzzleHost | null = null;
+  /** the puzzles' reward was earned by these accounts (TON, the owner's notice) */
+  onPuzzleReward: ((accounts: { accountId: string; name: string }[]) => void) | null = null;
   /** AI soldiers allowed (the owner's switch); set by the ZoneManager */
   botsAllowed: () => boolean = () => true;
   private lastHumanJoin = 0;
@@ -134,6 +142,39 @@ export class Zone {
     while (this.botCount > 0 && this.members.size > Math.max(fill, this.size)) this.removeBot();
     this.welcomeMember(m, friend);
     return m;
+  }
+
+  // ------------------------------------------------------------------ puzzles (phase 31)
+
+  startPuzzles(module: PuzzleModule, seed: number): void {
+    if (this.mode !== GameMode.CLASSIC || this.puzzles) return;
+    const zone = this;
+    this.puzzles = new PuzzleHost({
+      id: this.id,
+      world: this.world,
+      humans: () => [...zone.members.values()].filter((m) => !m.bot).map((m) => zone.world.players.get(m.entityId)!).filter(Boolean),
+      sendEach: (name, build, to) => zone.sendEach(name, build, to),
+      reward: (pids) => {
+        const won = pids.map((pid) => zone.members.get(pid)).filter((m): m is Member => !!m && !m.bot).map((m) => ({ accountId: m.accountId, name: m.name }));
+        if (won.length) zone.onPuzzleReward?.(won);
+      },
+    }, module, seed);
+  }
+
+  puzzleUse(entityId: number, objectId: number, code: string): void {
+    this.puzzles?.use(entityId, objectId, code);
+  }
+
+  /** One message per language, each member gets theirs (or only `to`). */
+  private sendEach(name: string, build: (lang: Lang) => Record<string, unknown>, to?: number): void {
+    const cache = new Map<Lang, Uint8Array>();
+    for (const m of this.members.values()) {
+      if (!m.client || (to !== undefined && m.entityId !== to)) continue;
+      const lang = (m.client.lang === "ar" || m.client.lang === "ru" ? m.client.lang : "en") as Lang;
+      let bytes = cache.get(lang);
+      if (!bytes) cache.set(lang, (bytes = this.codec.encode("S2C", name, build(lang) as Msg)));
+      m.client.sendBytes(bytes);
+    }
   }
 
   // ------------------------------------------------------------------ AI soldiers (phase 30)
@@ -275,6 +316,7 @@ export class Zone {
     }
     w.step();
     for (const e of w.events) this.forwardEvent(e);
+    this.puzzles?.tick(w.events);
     if (w.zoneState === ZoneState.GAME_OVER && this.gameOverAt === null) this.gameOverAt = now;
     if (Math.floor(w.tick / this.snapEvery) !== Math.floor((w.tick - 1) / this.snapEvery)) this.sendSnapshots();
   }
@@ -321,6 +363,7 @@ export class Zone {
   private welcomeMember(m: Member, friend: FriendJoin = NO_FRIEND): void {
     this.sendTo(m, "zoneJoined", { zoneId: this.id, mapId: this.mapId, entityId: m.entityId, mode: this.mode, friend: friend.status, friendName: friend.name.slice(0, 32) });
     this.broadcastRoster();
+    if (this.puzzles && this.puzzles.objects.size > 0) this.sendEach("puzzleObjects", (lang) => this.puzzles!.message(lang), m.entityId);
   }
 
   private broadcastRoster(): void {

@@ -8,6 +8,7 @@ extends Control
 signal pause_requested
 signal voice_toggled(which: String)   ## "mic" or "speaker" tapped
 signal view_toggled                   ## the TPP/FPP button (or V)
+signal use_pressed                    ## USE tapped (or E): the game may route it to a puzzle object (phase 31)
 
 const AIM_DEG_PER_PX := 0.22     ## touch look at sensitivity 1.0 (view is 720 px tall); 0.16 felt heavy
 const AIM_PITCH_SCALE := 0.9     ## vertical look is a bit slower than horizontal
@@ -218,6 +219,7 @@ func _on_key(e: InputEventKey) -> void:
 			_latched |= PlayerIntent.SWITCH
 		KEY_E:
 			_latched |= PlayerIntent.INTERACT
+			use_pressed.emit()
 		KEY_F:
 			_latched |= PlayerIntent.REVIVE
 		KEY_V:
@@ -314,6 +316,8 @@ func _press(name: String) -> void:
 		_:
 			_held_buttons[name] = true
 			_latched |= _bit(name)
+			if name == "interact":
+				use_pressed.emit()
 	Platform.haptic("light")
 
 

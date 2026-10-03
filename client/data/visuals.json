@@ -173,6 +173,29 @@
    "sound": "gale_shot",
    "fx": "blast",
    "adsFov": 64
+  },
+  "ember": {
+   "model": "res://assets/models/vm_ember.glb",
+   "shape": "ember",
+   "body": "#2b2422",
+   "accent": "#ff6a2a",
+   "glove": "#1c1d1f",
+   "offset": [
+    0.16,
+    -0.15,
+    -0.3
+   ],
+   "muzzle": [
+    0.0,
+    0.03,
+    -0.5
+   ],
+   "recoilKick": 0.07,
+   "recoilPitch": 0.05,
+   "sound": "arc_shot",
+   "fx": "bolt",
+   "tracer": "#ff8a3a",
+   "adsFov": 52
   }
  },
  "zombies": {
@@ -252,7 +275,8 @@
     "lmg": "long",
     "sniper": "long",
     "arc": "long",
-    "gale": "long"
+    "gale": "long",
+    "ember": "long"
    }
   }
  }

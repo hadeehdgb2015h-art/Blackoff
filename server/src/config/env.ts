@@ -29,6 +29,10 @@ const EnvSchema = z.object({
   TON_MICRO_PER_KILL: z.coerce.number().int().nonnegative().default(1000),
   /** Shown on the weekly leaderboard, e.g. "1 TON for the week's top hunter". */
   TON_PRIZE_TEXT: z.string().max(200).default(""),
+  /** opens the encrypted puzzle module (phase 31); usually given through the bot instead */
+  PUZZLE_KEY: z.string().default(""),
+  /** TON points (millionths) for each player who solves the five puzzles; the bot can change it */
+  PUZZLE_TON_MICRO: z.coerce.number().int().nonnegative().default(1_000_000),
   /** Voice chat relay (phase 12). 0 switches it off for every player. */
   VOICE_CHAT: z
     .enum(["0", "1", "true", "false"])

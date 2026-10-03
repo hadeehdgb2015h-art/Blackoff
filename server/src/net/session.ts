@@ -27,6 +27,11 @@ import { CardService, cardsBaseUrl, cardsDir } from "../card/cardService.js";
 import type { CardLang } from "../card/cardRender.js";
 import type { TelegramBot } from "../bot/telegramBot.js";
 import { addDays, computeAnalytics, utcDay, type ActivityPatch, type Analytics } from "../stats/analytics.js";
+import fs from "node:fs";
+import path from "node:path";
+import type { PuzzleModule } from "../puzzles/api.js";
+import { loadModule, puzzlesDir } from "../puzzles/pack.js";
+import type { Zone as ZoneT } from "../zone/zone.js";
 import { REPORT_CATEGORIES, ReportLimiter, ShotBuffer, cleanClientInfo, cleanDetails, type ClientInfo } from "../report/report.js";
 
 export interface Account { id: string; name: string; playerId: number; profile: Profile; weekly: WeeklyStanding }
@@ -58,6 +63,9 @@ export class SessionHub implements ZoneSink {
   readonly lastResult = new Map<string, ZoneResult>();
   private readonly inviteKey: Buffer;
   botUsername: string;
+  /** the secret puzzle module (phase 31), once the owner's key opened it */
+  puzzles: PuzzleModule | null = null;
+  puzzleError = "";
   /** problem reports: one a minute, ten a day per account (phase 29) */
   readonly reportLimit = new ReportLimiter();
 
@@ -68,6 +76,7 @@ export class SessionHub implements ZoneSink {
     this.botUsername = env.TELEGRAM_BOT_USERNAME;
     this.settings = new RuntimeSettings(env, store);
     zones.botsAllowed = () => this.settings.squadBots;
+    zones.puzzleModule = () => (this.settings.puzzlesOn ? this.puzzles : null);
     this.daily = new DailyService(store, shared.constants.daily, () => this.settings.tonPerKill());
     this.cards = new CardService(cardsDir(env), cardsBaseUrl(env));
     this.owners = new Set(env.ADMIN_TELEGRAM_IDS.split(",").map((s) => s.trim()).filter(Boolean).map((id) => "tg:" + id));
@@ -133,6 +142,39 @@ export class SessionHub implements ZoneSink {
       },
       (err: Error) => log.warn("profile write failed", { account: r.accountId, error: err.message }),
     ));
+  }
+
+  /** Opens the encrypted puzzle module with a key (the owner's, from the bot or
+   *  .env). Returns "" when loaded, else why not. New zombies games get them. */
+  async loadPuzzles(key = this.env.PUZZLE_KEY || this.settings.puzzleKey): Promise<string> {
+    if (!key) return (this.puzzleError = "no key");
+    const dir = puzzlesDir();
+    if (!dir) return (this.puzzleError = "no puzzle pack in this release");
+    try {
+      this.puzzles = await loadModule(key, fs.readFileSync(path.join(dir, "pack.bin")));
+      this.puzzleError = "";
+      log.info("puzzles loaded", { module: this.puzzles.name });
+      return "";
+    } catch (err) {
+      this.puzzleError = (err as Error).message;
+      log.warn("puzzles not loaded", { error: this.puzzleError });
+      return this.puzzleError;
+    }
+  }
+
+  /** The five puzzles were solved: TON to each solver, a word to the owners. */
+  onPuzzleReward(zone: ZoneT, accounts: { accountId: string; name: string }[]): void {
+    const micro = this.settings.puzzleTon();
+    log.info("puzzles solved", { zone: zone.id, wave: zone.world.director.wave, accounts: accounts.map((a) => a.accountId), tonMicro: micro });
+    for (const a of accounts) {
+      if (micro > 0) {
+        this.track(this.store.addTon(a.accountId, micro).then(async (p) => {
+          const s = this.byAccount.get(a.accountId);
+          if (p && s) s.onProfile(p, await this.store.weekly(a.accountId));
+        }).catch((err: Error) => log.warn("puzzle reward failed", { account: a.accountId, error: err.message })));
+      }
+    }
+    void this.bot?.onPuzzlesSolved(zone.id, zone.world.director.wave, accounts, micro);
   }
 
   /** Adds to today's activity of an account (the owner's statistics, phase 29). */
@@ -235,6 +277,8 @@ export class Session implements ZoneClient {
   private lastCardAt = 0;
   /** the device the game runs on (clientInfo, phase 29): shown to the owner, never trusted */
   client: ClientInfo | null = null;
+  /** interface language for the puzzles' texts */
+  get lang(): string { return this.client?.lang || "en"; }
   private readonly shot = new ShotBuffer();
   private readonly inputs: Bucket;
   private readonly other = new Bucket(10, 20);
@@ -308,6 +352,7 @@ export class Session implements ZoneClient {
       case "perf": return this.onPerf(msg);
       case "reportShot": this.shot.add(msg.part as number, msg.total as number, msg.data as Uint8Array); return;
       case "report": return void this.onReport(msg);
+      case "puzzleUse": this.zone?.puzzleUse(this.entityId, msg.id as number, String(msg.code ?? "")); return;
       default: return this.strike("unexpected message " + name);
     }
   }

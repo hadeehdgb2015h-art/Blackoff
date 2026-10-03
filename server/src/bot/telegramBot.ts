@@ -195,7 +195,7 @@ export class TelegramBot {
     const wait = this.pending.get(chat);
     if (wait && this.isOwner(m.from) && !text.startsWith("/")) {
       this.pending.delete(chat);
-      if (Date.now() <= wait.until) return this.onAdminInput(chat, wait.action, text);
+      if (Date.now() <= wait.until) return this.onAdminInput(chat, wait.action, text, m.message_id);
     }
     const follow = this.followups.get(chat);
     if (follow && !text.startsWith("/")) {
@@ -308,6 +308,7 @@ export class TelegramBot {
     const s = this.hub.settings;
     return [
       [{ text: "📈 الإحصائيات", callback_data: "a:stats" }, { text: "🐞 البلاغات", callback_data: "a:reports" }],
+      [{ text: "🧩 الألغاز", callback_data: "a:pz" }],
       [{ text: "📊 الحالة الآن", callback_data: "a:live" }, { text: "👥 اللاعبون", callback_data: "a:users" }],
       [{ text: "🏆 المتصدرون", callback_data: "a:top" }, { text: "🕵️ المشتبه بهم", callback_data: "a:sus" }],
       [{ text: "📢 رسالة للجميع", callback_data: "a:bc" }, { text: "🔎 بحث عن لاعب", callback_data: "a:find" }],
@@ -343,6 +344,20 @@ export class TelegramBot {
     if (rep) return this.onReportAction(chat, rep[1]!, Number(rep[2]));
     switch (cmd) {
       case "stats": return this.statsPanel(chat);
+      case "pz": return this.puzzlePanel(chat);
+      case "pzkey": return void this.ask(chat, "pzkey", "🔑 أرسل مفتاح الألغاز (43 حرفاً). سأحذف رسالتك فور قراءتها ليبقى المفتاح سرياً.");
+      case "pzton": return void this.ask(chat, "pzton", `💰 كم TON يأخذ كل من يحل الألغاز الخمسة؟ الآن ${ton(s.puzzleTon())}\nمثال: 1 (أو «افتراضي»)`);
+      case "pzon":
+        s.puzzlesOn = !s.puzzlesOn;
+        await s.save();
+        return void this.send(chat, s.puzzlesOn ? "🧩 الألغاز تعمل في المباريات الجديدة." : "🧩 أُوقفت الألغاز في المباريات الجديدة (الجارية تكمل).", [[{ text: "🧩 الألغاز", callback_data: "a:pz" }]]);
+      case "pzhow":
+        if (!this.hub.puzzles) return void this.send(chat, "الألغاز غير مفتوحة بعد: أدخل المفتاح أولاً.", [[{ text: "🧩 الألغاز", callback_data: "a:pz" }]]);
+        return void this.sendLong(chat, "📖 <b>طريقة حل الألغاز</b> <i>(لك وحدك)</i>\n\n" + esc(this.hub.puzzles.explain()));
+      case "pzlive": {
+        const lines = [...this.hub.zones.zones.values()].filter((z) => z.puzzles).map((z) => `🗺 <b>مباراة #${z.id}</b> · الموجة ${z.world.director.wave}\n${esc(z.puzzles!.answers())}`);
+        return void this.sendLong(chat, "🔍 <b>حلول المباريات الجارية</b>\n\n" + (lines.join("\n\n") || "لا مباريات زومبي بألغاز الآن."));
+      }
       case "reports": return this.reportList(chat);
       case "panel": return this.panel(chat);
       case "live": return this.live_(chat);
@@ -421,6 +436,48 @@ export class TelegramBot {
       `💾 الذاكرة: ${mem} MB · يعمل منذ ${Math.floor(up / 3600)} س ${Math.floor((up % 3600) / 60)} د\n` +
       `🏷 الإصدار: ${esc(info.version)}\n\n` + (zones.join("\n") || "لا مباريات الآن."),
       [[{ text: "♻️ تحديث", callback_data: "a:live" }, { text: "⬅️ اللوحة", callback_data: "a:panel" }]]);
+  }
+
+  // ------------------------------------------------------------------ puzzles (phase 31)
+
+  private async puzzlePanel(chat: number): Promise<void> {
+    const s = this.hub.settings;
+    const loaded = this.hub.puzzles;
+    const live = [...this.hub.zones.zones.values()].filter((z) => z.puzzles).length;
+    await this.send(chat,
+      "🧩 <b>الألغاز السرية</b>\n\n" +
+      (loaded ? `✅ مفتوحة: ${esc(loaded.name)}` : `🔒 مقفلة: ${esc(this.hub.puzzleError || "لا مفتاح")}`) + "\n" +
+      `⏯ ${s.puzzlesOn ? "تعمل" : "متوقفة"} · 🗺 مباريات فيها ألغاز الآن: ${live}\n` +
+      `💰 مكافأة كل من يحلها: ${ton(s.puzzleTon())} TON + السلاح الخارق`,
+      [
+        [{ text: "🔑 أدخل المفتاح", callback_data: "a:pzkey" }, { text: "💰 المكافأة", callback_data: "a:pzton" }],
+        [{ text: "📖 طريقة الحل", callback_data: "a:pzhow" }, { text: "🔍 حلول المباريات الآن", callback_data: "a:pzlive" }],
+        [{ text: s.puzzlesOn ? "⏯ إيقاف الألغاز" : "⏯ تشغيل الألغاز", callback_data: "a:pzon" }, { text: "⬅️ اللوحة", callback_data: "a:panel" }],
+      ]);
+  }
+
+  /** Someone solved the five puzzles: every owner hears it. */
+  async onPuzzlesSolved(zoneId: number, wave: number, accounts: { accountId: string; name: string }[], micro: number): Promise<void> {
+    if (!this.env.TELEGRAM_BOT_TOKEN) return;
+    const who = accounts.map((a) => `• ${esc(a.name)} (<code>${esc(a.accountId.replace(/^tg:/, ""))}</code>)`).join("\n");
+    for (const chat of this.ownerChats()) {
+      await this.send(chat, `🧩🏆 <b>حُلّت الألغاز الخمسة!</b>\nمباراة #${zoneId} · الموجة ${wave}\n\n${who}\n\nأخذ كل منهم ${ton(micro)} TON والسلاح الخارق.`);
+    }
+  }
+
+  /** Telegram allows 4096 characters a message: long texts go in parts. */
+  private async sendLong(chat: number, text: string): Promise<void> {
+    const parts: string[] = [];
+    let rest = text;
+    while (rest.length > 3800) {
+      const cut = rest.lastIndexOf("\n", 3800);
+      parts.push(rest.slice(0, cut > 1000 ? cut : 3800));
+      rest = rest.slice(cut > 1000 ? cut : 3800);
+    }
+    parts.push(rest);
+    for (let i = 0; i < parts.length; i++) {
+      await this.send(chat, parts[i]!, i === parts.length - 1 ? [[{ text: "🧩 الألغاز", callback_data: "a:pz" }]] : undefined);
+    }
   }
 
   // ------------------------------------------------------------------ statistics (phase 29)
@@ -525,8 +582,27 @@ export class TelegramBot {
     return false;
   }
 
-  private async onAdminInput(chat: number, action: string, text: string): Promise<void> {
+  private async onAdminInput(chat: number, action: string, text: string, messageId = 0): Promise<void> {
     const s = this.hub.settings;
+    if (action === "pzkey") {
+      if (messageId) await this.api("deleteMessage", { chat_id: chat, message_id: messageId }).catch(() => undefined);
+      const key = text.trim();
+      const err = await this.hub.loadPuzzles(key);
+      if (err) return void this.send(chat, `🔒 لم تُفتح الألغاز: ${esc(err === "wrong key" ? "المفتاح غير صحيح" : err)}`, [[{ text: "🧩 الألغاز", callback_data: "a:pz" }]]);
+      s.puzzleKey = key;
+      await s.save();
+      return void this.send(chat, "✅ فُتحت الألغاز وحُفظ المفتاح (حذفتُ رسالتك). كل مباراة زومبي جديدة فيها الألغاز الخمسة.", [[{ text: "🧩 الألغاز", callback_data: "a:pz" }]]);
+    }
+    if (action === "pzton") {
+      if (/^(افتراضي|default)$/i.test(text.trim())) s.puzzleTonOverride = null;
+      else {
+        const v = Number(text.trim().replace(",", "."));
+        if (!Number.isFinite(v) || v < 0 || v > 1000) return void this.send(chat, "رقم غير صالح. مثال: 1");
+        s.puzzleTonOverride = Math.round(v * 1_000_000);
+      }
+      await s.save();
+      return void this.send(chat, `💰 مكافأة الألغاز الآن ${ton(s.puzzleTon())} TON لكل من يحلها.`, [[{ text: "🧩 الألغاز", callback_data: "a:pz" }]]);
+    }
     if (action.startsWith("rr:")) {
       const r = await this.hub.store.report(Number(action.slice(3)));
       const tg = r ? /^tg:(\d+)$/.exec(r.accountId) : null;

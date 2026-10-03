@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "protocolVersion": 14,
+  "protocolVersion": 15,
   "endianness": "little",
   "frame": "u8 messageId followed by fields in declared order; one message per WebSocket binary frame. Decoders reject unknown ids, short frames and trailing bytes.",
   "primitives": {
@@ -83,7 +83,8 @@
     "dailyPaid": {"none": 0, "streak": 1, "missions": 2},
     "cardStatus": {"ok": 0, "nothing": 1, "unavailable": 2, "busy": 3, "error": 4},
     "reportCategory": {"lag": 0, "controls": 1, "connection": 2, "sound": 3, "visual": 4, "other": 5},
-    "reportStatus": {"ok": 0, "tooSoon": 1, "error": 2}
+    "reportStatus": {"ok": 0, "tooSoon": 1, "error": 2},
+    "puzzleKind": {"text": 0, "lantern": 1, "terminal": 2, "lever": 3, "cage": 4, "canister": 5, "transmitter": 6, "case": 7}
   },
   "types": {
     "inputButtons": "u8 bitmask: 1=fireHeld 2=reload 4=interact 8=revive 16=switchWeapon 32=firePressed (latched edge since last input) 64=aimDownSights (held)",
@@ -111,6 +112,10 @@
     ],
     "leaderboardEntry": [["rank", "u8"], ["name", "str8"], ["kills", "u32"], ["tonMicro", "u32"]],
     "dayReward": [["tonMicro", "u32"]],
+    "puzzleObject": [
+      ["id", "u16"], ["kind", "u8"], ["x", "f32"], ["y", "f32"], ["z", "f32"], ["yaw", "f32"], ["size", "f32"],
+      ["state", "u16"], ["text", "str8"], ["label", "str8"], ["useRadius", "f32"], ["shootRadius", "f32"], ["codeLength", "u8"]
+    ],
     "missionEntry": [["kind", "u8"], ["goal", "u16"], ["progress", "u16"], ["tonMicro", "u32"], ["done", "bool"]]
   },
   "messages": {
@@ -144,7 +149,8 @@
       "clientInfo": {"id": 14, "fields": [["platform", "str8"], ["tgVersion", "str8"], ["lang", "str8"], ["build", "str8"], ["screen", "str8"]]},
       "perf": {"id": 15, "fields": [["fps", "u8"], ["seconds", "u16"]]},
       "reportShot": {"id": 16, "fields": [["part", "u8"], ["total", "u8"], ["data", "bytes16"]]},
-      "report": {"id": 17, "fields": [["category", "u8"], ["where", "str8"], ["fps", "u8"], ["details", "str16"]]}
+      "report": {"id": 17, "fields": [["category", "u8"], ["where", "str8"], ["fps", "u8"], ["details", "str16"]]},
+      "puzzleUse": {"id": 18, "fields": [["id", "u16"], ["code", "str8"]]}
     },
     "S2C": {
       "welcome": {
@@ -265,7 +271,10 @@
         ]
       },
       "card": {"id": 78, "fields": [["status", "u8"], ["url", "str16"], ["prepared", "str8"], ["preview", "str16"]]},
-      "reported": {"id": 79, "fields": [["status", "u8"], ["id", "u32"]]}
+      "reported": {"id": 79, "fields": [["status", "u8"], ["id", "u32"]]},
+      "puzzleObjects": {"id": 80, "fields": [["objects", "array8:puzzleObject"]]},
+      "puzzleState": {"id": 81, "fields": [["id", "u16"], ["state", "u16"], ["text", "str8"]]},
+      "puzzleMsg": {"id": 82, "fields": [["text", "str16"], ["big", "bool"]]}
     }
   },
   "coordinates": "Sim plane is Godot (x, z); y is up. yaw=0 faces -Z, positive yaw turns left (Godot rotation.y). pitch>0 looks up.",
@@ -317,6 +326,7 @@
   "_dailyNote": "Phase 23. C2S daily asks for the state, claimDaily takes today's streak reward. S2C daily is sent after welcome, on request, after a claim and after each recorded game; paidMicro/paidKind tell what that message just paid (missions are paid automatically when done, the all-missions bonus with them). nextDay = the streak day (1-7) today's claim pays, or paid if already claimed; resetSec = seconds to the next day (00:00 UTC).",
   "_cardNote": "Phase 25. C2S card {lang} asks for the result card of the game being played (or the last one recorded); S2C card answers with the status (cardStatus), the public URL of the JPEG the server drew from its own numbers, a small PNG preview (the web engine has no JPEG decoder), and the id of a prepared Telegram message (savePreparedInlineMessage) for WebApp.shareMessage, \"\" when there is none.",
   "_reportNote": "Phase 29. clientInfo (once after welcome) and perf (average FPS over a game, sent when it ends) describe the device for the owner's statistics only; nothing in them is trusted for play. A problem report is reportShot parts (an optional WebP screenshot, at most 12 parts) followed by report {category (reportCategory), where (menu / game / wave), fps, details: short JSON of the client's settings}; the server adds what it knows itself, sends it to the owners through the bot and answers reported {status (reportStatus), id}.",
+  "_puzzleNote": "Phase 31. The puzzles are server logic the owner keeps secret (an encrypted module); the client only draws generic objects and sends what the player does. puzzleObjects is the zone's whole set (sent on join and whenever objects come or go), with labels in the player's language; puzzleState changes one object (state meaning by kind: text 0 hidden 1 shown; lantern 0 dark 1 lit 2 flash; terminal 0 off 1 on 2 locked; lever 0 down 1 up; cage 0 off 1 live; canister 0 resting, else the carrier's entity id; transmitter 0 dead 1 powered 2 sending; case 0 closed 1 open). puzzleUse asks to use an object (code for a keypad: codeLength digits). puzzleMsg is a line of text for everyone in the zone (big = a banner). Shots at objects are worked out by the server from its own shots.",
   "_levelNote": "Phase 26. welcome and profile carry the account's xp and level (computed by the server from shared constants.progression); roster entries carry each player's level so teammates see ranks.",
   "_tonNote": "tonMicro = TON points in millionths (1000 = 0.001 TON). Earned per kill in online zones only; the server owns every number. Prizes are paid by the owner by hand from the weekly leaderboard.",
   "_voiceNote": "Voice frames are opaque to the server: it relays each C2S voice frame to the other connected members of the zone that listen (voiceListen), stamped with the speaker's entityId. Format (client/web/voice.js): 40 ms of 16 kHz mono IMA ADPCM, 4-byte header + 320 bytes.",

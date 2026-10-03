@@ -172,8 +172,11 @@
 - [ ] Owner: try a solo online game (two AI soldiers after a few seconds) and say how smooth 30 FPS feels now
 - [ ] Read the FPS per device in 📈 after a few days; slow devices get more cuts if needed
 
-## Ideas from the owner (to discuss before building)
-- Puzzles in the game (owner, phase 30 request: "we will discuss the puzzles later, keep them in mind")
+## Phase 31: five secret puzzles
+- [x] Five chained puzzles, very hard, new answers every match; only the owner knows how to solve them (encrypted module, the owner's key)
+- [x] Reward: the Ember Reaper (new weapon, Blender model) and TON for every solver; the owner is told
+- [x] Bot 🧩 page: key, reward, how to solve (owner only), the answers of every running match
+- [ ] Owner: send the key to the bot (/admin → 🧩 → 🔑), then try the first puzzle with the answers page open
 
 ## Open questions for the owner
 - Own subdomain or the free sslip.io address (installer default)

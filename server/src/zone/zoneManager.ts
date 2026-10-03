@@ -8,6 +8,7 @@ import type { SharedData } from "../shared/loadShared.js";
 import { GameMode, ZoneState } from "../sim/simWorld.js";
 import { log } from "../log.js";
 import type { MatchSummary } from "../db/profileStore.js";
+import type { PuzzleModule } from "../puzzles/api.js";
 import { Zone, type FriendJoin, type Member, type ZoneClient, type ZoneResult } from "./zone.js";
 
 export const GAME_OVER_LINGER_MS = 10_000;
@@ -26,12 +27,16 @@ export interface ZoneStats {
 export interface ZoneSink {
   onResult(r: ZoneResult): void;
   onMatch(s: MatchSummary): void;
+  /** the five puzzles were solved (phase 31) */
+  onPuzzleReward?(zone: Zone, accounts: { accountId: string; name: string }[]): void;
 }
 
 export class ZoneManager {
   sink: ZoneSink | null = null;
   /** AI soldiers allowed in new and running zones (the owner's switch, phase 30) */
   botsAllowed: () => boolean = () => true;
+  /** the loaded puzzle module, if any (phase 31); new zombies zones get puzzles */
+  puzzleModule: () => PuzzleModule | null = () => null;
   readonly zones = new Map<number, Zone>();
   private nextZoneId = 1;
   private timer: NodeJS.Timeout | null = null;
@@ -74,6 +79,12 @@ export class ZoneManager {
       best = new Zone(id, this.shared, this.codec, this.shared.constants.maps.default, (Math.random() * 0xffffffff) >>> 0, this.now(), mode);
       best.onResult = (r) => this.sink?.onResult(r);
       best.botsAllowed = () => this.botsAllowed();
+      const pm = this.puzzleModule();
+      if (pm && mode === GameMode.CLASSIC) {
+        const zone = best;
+        zone.startPuzzles(pm, (Math.random() * 0xffffffff) >>> 0);
+        zone.onPuzzleReward = (accounts) => this.sink?.onPuzzleReward?.(zone, accounts);
+      }
       this.zones.set(id, best);
       log.info("zone created", { zone: id, map: best.mapId, mode: GameMode[mode] });
     }

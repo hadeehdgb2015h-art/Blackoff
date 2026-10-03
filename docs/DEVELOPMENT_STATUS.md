@@ -65,6 +65,7 @@ Also added on request: the supply cache (random weapon box) and two box-only wea
 - Phase 28, owner: "aim like GTA, zoom in when aiming". In third person, AIM no longer switches to first person: the camera closes in over the right shoulder and the field of view narrows; the sniper scope stays first person.
 - Phase 29, owner chose "statistics and a report button" before new content. The bot panel has 📈 statistics (active and new players, return rates, where new players stop, devices with FPS, languages). REPORT A PROBLEM (settings and pause) sends a screenshot, the device and the settings; owners can reply to the player, mark it solved or close it from the bot (protocol v14, migration 6).
 - Phase 30, owner: "AI soldiers + smoothness (stutter and camera/aim); puzzles later". AI soldiers fill solo online games (server only, never recorded). The judder came from the engine's web frame cap: frames landed at 33 or 50 ms. The page now paces frames on display refreshes, exactly 33 ms at 30 FPS. The third-person camera no longer flickers at edges. Puzzles are noted in TODO for a later discussion.
+- Phase 31, owner: "five very hard puzzles, understandable, and only I know the solutions; reward a super weapon and big TON; answers change every match; solo or with a team". The repository is public, so the puzzle rules ship encrypted and only the owner's key (given in chat, entered in the bot) opens them. The game draws generic objects; the rules live only on the server. New weapon: the Ember Reaper (protocol v15).
 
 ## Known limitations
 

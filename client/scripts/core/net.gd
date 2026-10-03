@@ -14,6 +14,9 @@ signal daily_received(daily: Dictionary)  ## daily reward and missions state (ph
 signal card_received(card: Dictionary)    ## result card: status, url, preview, prepared (phase 25)
 signal level_up(from_level: int, to_level: int)  ## the server counted a game that raised the level (phase 26)
 signal reported(status: int, id: int)     ## a problem report arrived (0) or was refused (1 too soon, 2 error) (phase 29)
+signal puzzles_changed                    ## the zone's puzzle objects came or went (phase 31)
+signal puzzle_state(id: int)              ## one puzzle object changed state
+signal puzzle_msg(text: String, big: bool)  ## a puzzle line for everyone
 
 const RETRY_SEC := 2.0
 
@@ -27,6 +30,7 @@ var profile: Dictionary = {}  ## lifetime stats from the server: games, kills, b
 var ton_per_kill: int = 0     ## TON points (millionths) the server pays per kill; 0 = off
 var leaderboard: Dictionary = {}  ## last weekly leaderboard received
 var daily: Dictionary = {}        ## last daily reward and missions state (S2C daily)
+var puzzles: Dictionary = {}      ## this zone's puzzle objects (phase 31): id -> object (puzzleObject fields)
 var tick_rate: int = 20
 var invite_code: String = ""      ## this player's invite code (from welcome)
 var bot_username: String = ""     ## the bot's @username, for t.me links ("" = invites off)
@@ -207,7 +211,24 @@ func _on_packet(data: PackedByteArray) -> void:
 				_send_client_info()
 			if _want_zone and not resumed:
 				send("quickPlay", {"mode": mode, "friend": friend_code})
+		"puzzleObjects":
+			puzzles.clear()
+			for o in msg.objects:
+				puzzles[int(o.id)] = o
+			puzzles_changed.emit()
+			return
+		"puzzleState":
+			if puzzles.has(int(msg.id)):
+				puzzles[int(msg.id)].state = int(msg.state)
+				puzzles[int(msg.id)].text = str(msg.text)
+				puzzle_state.emit(int(msg.id))
+			return
+		"puzzleMsg":
+			puzzle_msg.emit(str(msg.text), bool(msg.big))
+			return
 		"zoneJoined":
+			puzzles.clear()
+			puzzles_changed.emit()
 			joined_friend = int(msg.get("friend", 0))
 			joined_friend_name = str(msg.get("friendName", ""))
 			if joined_friend != 0:
@@ -342,6 +363,12 @@ func _send_client_info() -> void:
 func send_perf(fps: float, seconds: float) -> void:
 	if status in ["ready", "in_zone"] and seconds >= 20.0:
 		send("perf", {"fps": clampi(roundi(fps), 1, 240), "seconds": clampi(roundi(seconds), 0, 65535)})
+
+
+## Uses a puzzle object (a keypad's digits in `code`).
+func use_puzzle(id: int, code: String = "") -> void:
+	if status == "in_zone":
+		send("puzzleUse", {"id": id, "code": code})
 
 
 ## Whether a problem report can be sent now.

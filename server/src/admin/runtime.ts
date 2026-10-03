@@ -18,6 +18,9 @@ interface Saved {
   tonMultiplier?: number;
   prizeText?: string | null;
   squadBots?: boolean;
+  puzzleKey?: string;
+  puzzleTon?: number | null;
+  puzzlesOn?: boolean;
 }
 
 export class RuntimeSettings {
@@ -31,12 +34,22 @@ export class RuntimeSettings {
   prizeOverride: string | null = null;
   /** AI soldiers fill online squads (phase 30) */
   squadBots = true;
+  /** the owner's key for the encrypted puzzles (phase 31), "" = none given */
+  puzzleKey = "";
+  /** TON (millionths) per solver; null = PUZZLE_TON_MICRO */
+  puzzleTonOverride: number | null = null;
+  puzzlesOn = true;
 
   constructor(private readonly env: Env, private readonly store: ProfileStore) {}
 
   /** TON points per kill in force (millionths). */
   tonPerKill(): number {
     return Math.round((this.tonPerKillOverride ?? this.env.TON_MICRO_PER_KILL) * this.tonMultiplier);
+  }
+
+  /** TON points (millionths) per puzzle solver. */
+  puzzleTon(): number {
+    return this.puzzleTonOverride ?? this.env.PUZZLE_TON_MICRO;
   }
 
   prizeText(): string {
@@ -54,6 +67,9 @@ export class RuntimeSettings {
       this.tonMultiplier = typeof s.tonMultiplier === "number" && s.tonMultiplier > 0 ? s.tonMultiplier : 1;
       this.prizeOverride = typeof s.prizeText === "string" ? s.prizeText : null;
       this.squadBots = s.squadBots !== false;
+      this.puzzleKey = typeof s.puzzleKey === "string" ? s.puzzleKey : "";
+      this.puzzleTonOverride = typeof s.puzzleTon === "number" ? s.puzzleTon : null;
+      this.puzzlesOn = s.puzzlesOn !== false;
     } catch (err) {
       log.warn("runtime settings load failed", { error: (err as Error).message });
     }
@@ -63,6 +79,7 @@ export class RuntimeSettings {
     const s: Saved = {
       banned: [...this.banned], maintenance: this.maintenance, maintenanceText: this.maintenanceText,
       tonPerKill: this.tonPerKillOverride, tonMultiplier: this.tonMultiplier, prizeText: this.prizeOverride, squadBots: this.squadBots,
+      puzzleKey: this.puzzleKey, puzzleTon: this.puzzleTonOverride, puzzlesOn: this.puzzlesOn,
     };
     try {
       await this.store.setSetting(KEY, s);
