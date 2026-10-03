@@ -3,6 +3,9 @@ import { z } from "zod";
 const num = z.number().finite();
 const pos = num.nonnegative();
 
+/** One daily mission kind: goal and reward (in kills) per tier; goal 0 = not offered at that tier. */
+const MissionDef = z.object({ goals: z.array(z.number().int().nonnegative()).length(3), rewardKills: z.array(pos).length(3) });
+
 export const ConstantsSchema = z.object({
   schemaVersion: z.literal(1),
   sim: z.object({ tickRate: z.number().int().positive(), snapshotRate: z.number().int().positive(), floorHeight: pos, gravity: num }),
@@ -45,6 +48,10 @@ export const ConstantsSchema = z.object({
   anticheat: z.object({
     speedToleranceFactor: num.min(1), fireRateToleranceMs: pos, logOnly: z.boolean(),
     minShotsForRates: z.number().int().nonnegative(), maxHeadshotRate: num.min(0).max(1), maxHitRate: num.min(0).max(1), maxKillsPerMin: pos,
+  }),
+  daily: z.object({
+    streakKills: z.array(pos).length(7), allMissionsBonusKills: pos, minGameSec: pos,
+    missions: z.object({ kills: MissionDef, headshots: MissionDef, wave: MissionDef, boss: MissionDef, games: MissionDef }),
   }),
   powerups: z.object({
     dropChance: num.min(0).max(1), minSecondsBetween: pos, lifetimeSec: num.positive(), pickupRadius: num.positive(),

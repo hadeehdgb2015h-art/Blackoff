@@ -21,6 +21,7 @@ export interface ZoneResult {
   shots: number;
   hits: number;
   mode: GameMode;
+  bossKills: number;
 }
 
 /** What a zone needs from a connection (implemented by Session). */
@@ -200,7 +201,7 @@ export class Zone {
       accountId: m.accountId, name: m.name, kills: p?.kills ?? 0, headshots: p?.headshots ?? 0,
       // a dropped player's time ends when the connection did, not after the grace period
       wave: this.world.director.wave, seconds: Math.max(0, (m.client ? now : m.disconnectedAt) - m.joinedAt) / 1000,
-      shots: m.shots, hits: m.hits, mode: this.mode,
+      shots: m.shots, hits: m.hits, mode: this.mode, bossKills: p?.bossKills ?? 0,
     });
   }
 

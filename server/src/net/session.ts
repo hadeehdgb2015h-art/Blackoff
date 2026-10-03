@@ -21,6 +21,7 @@ import type { ZoneResult } from "../zone/zone.js";
 import { flagsFor } from "../anticheat.js";
 import { RuntimeSettings } from "../admin/runtime.js";
 import { applyDev } from "../admin/devPowers.js";
+import { DailyService, type DailyUpdate } from "../daily/dailyService.js";
 
 export interface Account { id: string; name: string; playerId: number; profile: Profile; weekly: WeeklyStanding }
 
@@ -42,6 +43,8 @@ export class SessionHub implements ZoneSink {
   readonly settings: RuntimeSettings;
   /** Telegram ids of the owners ("tg:<id>" accounts get dev powers). */
   readonly owners: Set<string>;
+  /** Daily reward and missions (phase 23). */
+  readonly daily: DailyService;
   private readonly inviteKey: Buffer;
   botUsername: string;
 
@@ -51,6 +54,7 @@ export class SessionHub implements ZoneSink {
     this.inviteKey = crypto.createHash("sha256").update("blackoff-invite:" + (env.TELEGRAM_BOT_TOKEN || crypto.randomBytes(16).toString("hex"))).digest();
     this.botUsername = env.TELEGRAM_BOT_USERNAME;
     this.settings = new RuntimeSettings(env, store);
+    this.daily = new DailyService(store, shared.constants.daily, () => this.settings.tonPerKill());
     this.owners = new Set(env.ADMIN_TELEGRAM_IDS.split(",").map((s) => s.trim()).filter(Boolean).map((id) => "tg:" + id));
   }
 
@@ -81,7 +85,8 @@ export class SessionHub implements ZoneSink {
   }
 
   /** A member left a zone: TON points for the kills, anti-cheat flags from the
-   *  play statistics, then the profile and weekly standing are written. */
+   *  play statistics, then the profile and weekly standing are written, then
+   *  the game counts towards the daily missions (which may pay more TON). */
   onResult(z: ZoneResult): void {
     const flags = flagsFor({ shots: z.shots, hits: z.hits, headshots: z.headshots, kills: z.kills, seconds: z.seconds }, this.shared.constants.anticheat);
     if (flags.length) {
@@ -91,8 +96,18 @@ export class SessionHub implements ZoneSink {
     const r = { ...z, tonMicro: z.mode === GameMode.INFECTION ? 0 : z.kills * this.settings.tonPerKill(), flags };
     this.track(this.store.record(r).then(
       async (profile) => {
+        let daily: DailyUpdate | null = null;
+        try {
+          daily = await this.daily.onGame(r.accountId, {
+            kills: z.kills, headshots: z.headshots, wave: z.wave, bossKills: z.bossKills, seconds: z.seconds, zombies: z.mode === GameMode.CLASSIC,
+          });
+        } catch (err) {
+          log.warn("daily missions failed", { account: r.accountId, error: (err as Error).message });
+        }
         const session = this.byAccount.get(r.accountId);
-        if (session) session.onProfile(profile, await this.store.weekly(r.accountId));
+        if (!session) return;
+        session.onProfile(daily?.profile ?? profile, await this.store.weekly(r.accountId));
+        if (daily) session.send("daily", daily.msg);
       },
       (err: Error) => log.warn("profile write failed", { account: r.accountId, error: err.message }),
     ));
@@ -220,6 +235,8 @@ export class Session implements ZoneClient {
       case "leaderboard": return void this.onLeaderboard();
       case "voiceListen": this.voiceListen = !!msg.on; return;
       case "dev": return this.onDev(msg);
+      case "daily": return void this.onDaily(false);
+      case "claimDaily": return void this.onDaily(true);
       default: return this.strike("unexpected message " + name);
     }
   }
@@ -296,6 +313,20 @@ export class Session implements ZoneClient {
     }
   }
 
+  /** The daily reward and missions; with `claim`, takes today's streak reward first. */
+  private async onDaily(claim: boolean): Promise<void> {
+    const account = this.account;
+    if (!account) return;
+    try {
+      const u = claim ? await this.hub.daily.claim(account.id) : await this.hub.daily.view(account.id);
+      if (this.account !== account || this.ws.readyState !== this.ws.OPEN) return;
+      if (u.profile) this.onProfile(u.profile, account.weekly);
+      this.send("daily", u.msg);
+    } catch (err) {
+      log.warn("daily failed", { account: account.id, error: (err as Error).message });
+    }
+  }
+
   /** Becomes the single live session of this account. An older connection of the
    *  same account is closed and its zone slot moves to this one. */
   private adopt(account: Account, token: string, slot?: { zoneId: number; entityId: number }): void {
@@ -312,6 +343,7 @@ export class Session implements ZoneClient {
       inviteCode: this.hub.inviteCodeFor(account.id), botUsername: this.hub.botUsername,
       dev: this.hub.isOwner(account.id),
     });
+    void this.onDaily(false);
     const zone = slot ? this.hub.zones.zones.get(slot.zoneId) : undefined;
     if (zone && slot && zone.attach(slot.entityId, this)) {
       this.zone = zone;

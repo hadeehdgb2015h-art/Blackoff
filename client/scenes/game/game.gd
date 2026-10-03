@@ -140,6 +140,9 @@ func _ready() -> void:
 		_apply_quality()
 		_hud.show_status("Connecting...")
 		Net.failed.connect(_on_net_failed)
+		Net.daily_received.connect(func(d: Dictionary):
+			if int(d.get("paidMicro", 0)) > 0 and int(d.get("paidKind", 0)) == 2:
+				_hud.show_toast("Daily missions complete  +%s TON" % UiTheme.ton_text(int(d.paidMicro)), 4.0))
 		if Net.status != "in_zone":
 			if Net.status in ["ready", "connecting", "handshake"]:
 				Net.quick_play()  # joins as soon as the login (started by the menu) completes

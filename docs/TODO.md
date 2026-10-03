@@ -114,7 +114,7 @@
 - [x] The bot answers players (Arabic): Play button, stats, weekly top, invite, how to play
 - [x] Owner panel in the bot (/admin): live zones, players, top, suspects, broadcast, find/ban/unban, TON per kill and x2, give TON, prize, maintenance, warnings, restart
 - [x] Owner DEV powers in game: god mode, infinite ammo, money, heal, skip wave, kill all, summon the Warden, jump to wave
-- [ ] Next: daily reward and missions, a result card image for sharing
+- [x] Daily reward and missions: phase 23
 
 ## Phase 21: sky visions
 - [x] Six original visions beside the moon (no copied art), one cheap additive quad, ~97 KB
@@ -125,6 +125,13 @@
 - [x] Sniper scope overlay (lens, mil reticle, red dot)
 - [x] Third-person camera over the shoulder (default), VIEW button and setting, camera never through walls, shots go to the crosshair, ADS switches to first person
 - [ ] Owner: try both views on the phone and say which should be the default
+
+## Phase 23: daily reward and missions
+- [x] Daily reward: 7-day streak calendar, one claim per day, resets after a missed day
+- [x] Three daily missions (easy, medium, hard) with progress after each online game, paid at once, bonus for all three
+- [x] Paid in TON points from the TON per kill in force; stored in Postgres (migration 4); protocol v11
+- [ ] Owner: decide whether the amounts suit the prize budget (`shared/constants.json` → `daily`)
+- [ ] Next: a result card image for sharing
 
 ## Open questions for the owner
 - Own subdomain or the free sslip.io address (installer default)

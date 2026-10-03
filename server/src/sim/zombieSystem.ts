@@ -175,6 +175,7 @@ export class ZombieSystem {
     const reward = z.def.killReward + (head ? w.constants.economy.headshotKillBonus : 0);
     by.kills += 1;
     if (head) by.headshots += 1;
+    if (z.type === w.defs.waves.boss.type) by.bossKills += 1;
     w.addCurrency(by, reward, "kill");
     w.zombies.delete(z.id);
     w.director.killed += 1;

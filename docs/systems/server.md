@@ -89,3 +89,11 @@ Owners are the Telegram ids in `ADMIN_TELEGRAM_IDS` (the release's `deploy/owner
 ## Owner dev powers (phase 20)
 `welcome.dev` is true for owners; the game then shows a DEV button in online zombie games (`client/scripts/ui/dev_panel.gd`). It sends `dev {cmd, arg}` (protocol v9); `Session.onDev` strikes anyone else and applies `src/admin/devPowers.ts` to the live zone: god mode (no damage), infinite ammo, +10,000 credits, full heal, skip the wave, kill every zombie, summon the Warden, jump to wave 5, 10 or 25. Tests: `test/dev.test.ts`, `test/bot.test.ts` (a fake Telegram API).
 
+
+## Daily reward and missions (phase 23)
+Pure rules in `src/daily/daily.ts`, run by `DailyService` (`src/daily/dailyService.ts`), which keeps one step at a time per account, so a claim and a game result arriving together never pay twice. The state lives in the store (`getDaily`/`setDaily`; Postgres table `daily_state`, migration 4) as a small JSON object per account. Numbers are in `shared/constants.json` → `daily`.
+- **Streak reward**: one claim per UTC day (`claimDaily`). Consecutive days walk a 7-day calendar (5, 10, 15, 20, 30, 40, 80 kills' worth); day 8 starts again at day 1, and a missed day restarts the streak.
+- **Missions**: three a day, easy, medium and hard, three different kinds (kill zombies, headshot kills, reach a wave, slay the Warden, finish online games). They are picked from the account id and the date, so they are the same on every device and after a restart. Each finished game (`SessionHub.onResult`, after the profile write) adds progress; a mission pays as soon as it is done, and finishing all three pays a bonus. Only zombie games count, except "finish games" (any mode, at least `minGameSec`). Boss kills are counted by the sim (`SimPlayer.bossKills`).
+- **Payment**: TON points = the reward in kills × the TON per kill in force (the owner's override and ×2 apply). They go to the profile total, not to the weekly hunt (which ranks kills).
+- **Protocol v11**: C2S `daily` (ask) and `claimDaily`; S2C `daily` after welcome, on request, after a claim and after each recorded game, with `paidMicro`/`paidKind` saying what that message just paid.
+Tests: `test/daily.test.ts` (rules, racing claims, over the wire), `test/hunt.test.ts` (Postgres round trip).

@@ -71,6 +71,8 @@ export class SimPlayer {
   shotsFired = 0;
   downs = 0;
   revives = 0;
+  /** bosses this player killed (daily missions, server only) */
+  bossKills = 0;
   /** owned perk ids (lost when downed) */
   perks: string[] = [];
   /** infection mode: soldier or infected */

@@ -10,6 +10,7 @@ signal status_changed(status: String)   ## offline, connecting, ready, in_zone, 
 signal failed(reason: String)
 signal leaderboard_received(board: Dictionary)
 signal voice_changed   ## mic or speaker state changed (buttons redraw)
+signal daily_received(daily: Dictionary)  ## daily reward and missions state (phase 23)
 
 const RETRY_SEC := 2.0
 
@@ -22,6 +23,7 @@ var display_name: String = ""
 var profile: Dictionary = {}  ## lifetime stats from the server: games, kills, bestWave, tonMicro, weekKills, weekRank
 var ton_per_kill: int = 0     ## TON points (millionths) the server pays per kill; 0 = off
 var leaderboard: Dictionary = {}  ## last weekly leaderboard received
+var daily: Dictionary = {}        ## last daily reward and missions state (S2C daily)
 var tick_rate: int = 20
 var invite_code: String = ""      ## this player's invite code (from welcome)
 var bot_username: String = ""     ## the bot's @username, for t.me links ("" = invites off)
@@ -212,6 +214,9 @@ func _on_packet(data: PackedByteArray) -> void:
 		"leaderboard":
 			leaderboard = msg
 			leaderboard_received.emit(msg)
+		"daily":
+			daily = msg
+			daily_received.emit(msg)
 		"voice":
 			if voice_speaker and voice_available:
 				Platform.voice_play(int(msg.entityId), int(msg.seq), msg.data)
@@ -300,6 +305,18 @@ static func _profile_of(msg: Dictionary) -> Dictionary:
 func request_leaderboard() -> void:
 	if status in ["ready", "in_zone"]:
 		send("leaderboard", {})
+
+
+## Asks for the daily reward and missions (answered with `daily_received`).
+func request_daily() -> void:
+	if status in ["ready", "in_zone"]:
+		send("daily", {})
+
+
+## Takes today's streak reward; the server answers with `daily` (and `profile`).
+func claim_daily() -> void:
+	if status in ["ready", "in_zone"]:
+		send("claimDaily", {})
 
 
 ## Messages received while no scene was listening (e.g. during the scene change).

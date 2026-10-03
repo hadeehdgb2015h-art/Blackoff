@@ -29,6 +29,7 @@ Read this first in a new session. Then read `docs/TECHNICAL_ARCHITECTURE.md`, `d
 | 20 Boss wave, bot replies and owner panel, dev powers | done (`docs/systems/server.md`, `presentation.md`) |
 | 21 Sky visions beside the moon | done (`docs/systems/presentation.md`) |
 | 22 Aim down sights, sniper scope, third-person camera (protocol v10) | done (`docs/systems/presentation.md`, `input-and-hud.md`) |
+| 23 Daily reward (7-day streak) and daily missions, paid in TON points (protocol v11) | done (`docs/systems/server.md`, `presentation.md`) |
 
 ## Live preview
 

@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "protocolVersion": 10,
+  "protocolVersion": 11,
   "endianness": "little",
   "frame": "u8 messageId followed by fields in declared order; one message per WebSocket binary frame. Decoders reject unknown ids, short frames and trailing bytes.",
   "primitives": {
@@ -78,7 +78,9 @@
     },
     "selfFlags": {"reloading": 1, "switching": 2},
     "shotHit": {"none": 0, "wall": 1, "zombie": 2},
-    "gameMode": {"classic": 0, "infection": 1}
+    "gameMode": {"classic": 0, "infection": 1},
+    "missionKind": {"kills": 0, "headshots": 1, "wave": 2, "boss": 3, "games": 4},
+    "dailyPaid": {"none": 0, "streak": 1, "missions": 2}
   },
   "types": {
     "inputButtons": "u8 bitmask: 1=fireHeld 2=reload 4=interact 8=revive 16=switchWeapon 32=firePressed (latched edge since last input) 64=aimDownSights (held)",
@@ -104,7 +106,9 @@
       ["downs", "u8"],
       ["revives", "u8"]
     ],
-    "leaderboardEntry": [["rank", "u8"], ["name", "str8"], ["kills", "u32"], ["tonMicro", "u32"]]
+    "leaderboardEntry": [["rank", "u8"], ["name", "str8"], ["kills", "u32"], ["tonMicro", "u32"]],
+    "dayReward": [["tonMicro", "u32"]],
+    "missionEntry": [["kind", "u8"], ["goal", "u16"], ["progress", "u16"], ["tonMicro", "u32"], ["done", "bool"]]
   },
   "messages": {
     "C2S": {
@@ -130,7 +134,9 @@
       "leaderboard": {"id": 7, "fields": []},
       "voice": {"id": 8, "fields": [["seq", "u16"], ["data", "bytes16"]]},
       "voiceListen": {"id": 9, "fields": [["on", "bool"]]},
-      "dev": {"id": 10, "fields": [["cmd", "u8"], ["arg", "u16"]]}
+      "dev": {"id": 10, "fields": [["cmd", "u8"], ["arg", "u16"]]},
+      "daily": {"id": 11, "fields": []},
+      "claimDaily": {"id": 12, "fields": []}
     },
     "S2C": {
       "welcome": {
@@ -229,7 +235,23 @@
           ["myTonMicro", "u32"]
         ]
       },
-      "voice": {"id": 76, "fields": [["entityId", "u16"], ["seq", "u16"], ["data", "bytes16"]]}
+      "voice": {"id": 76, "fields": [["entityId", "u16"], ["seq", "u16"], ["data", "bytes16"]]},
+      "daily": {
+        "id": 77,
+        "fields": [
+          ["day", "str8"],
+          ["streak", "u8"],
+          ["canClaim", "bool"],
+          ["nextDay", "u8"],
+          ["rewards", "array8:dayReward"],
+          ["missions", "array8:missionEntry"],
+          ["bonusMicro", "u32"],
+          ["bonusDone", "bool"],
+          ["resetSec", "u32"],
+          ["paidMicro", "u32"],
+          ["paidKind", "u8"]
+        ]
+      }
     }
   },
   "coordinates": "Sim plane is Godot (x, z); y is up. yaw=0 faces -Z, positive yaw turns left (Godot rotation.y). pitch>0 looks up.",
@@ -278,6 +300,7 @@
     "doublePoints": "seconds left",
     "fireSale": "seconds left"
   },
+  "_dailyNote": "Phase 23. C2S daily asks for the state, claimDaily takes today's streak reward. S2C daily is sent after welcome, on request, after a claim and after each recorded game; paidMicro/paidKind tell what that message just paid (missions are paid automatically when done, the all-missions bonus with them). nextDay = the streak day (1-7) today's claim pays, or paid if already claimed; resetSec = seconds to the next day (00:00 UTC).",
   "_tonNote": "tonMicro = TON points in millionths (1000 = 0.001 TON). Earned per kill in online zones only; the server owns every number. Prizes are paid by the owner by hand from the weekly leaderboard.",
   "_voiceNote": "Voice frames are opaque to the server: it relays each C2S voice frame to the other connected members of the zone that listen (voiceListen), stamped with the speaker's entityId. Format (client/web/voice.js): 40 ms of 16 kHz mono IMA ADPCM, 4-byte header + 320 bytes.",
   "_infectionNote": "Infection mode (gameMode 1): no AI zombies. Player entities on the infected team carry entityFlags.zombie; selfState.flags bit 4 marks the local player infected. snapshot.wave is the round, remaining the soldiers left, timer tenths of a second left in the lobby countdown, round or result pause. Events: playerKilled (a victim, b killer, flags 1 head), infected (a victim, b by), roundStart (a round, b infected count, value seconds), roundEnd (a round, flags 1 soldiers win)."

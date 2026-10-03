@@ -39,7 +39,7 @@
     "maxLevel": 100
   },
   "net": {
-    "protocolVersion": 10,
+    "protocolVersion": 11,
     "maxMessageBytes": 4096,
     "interestRadius": 45,
     "reconnectGraceSec": 30,
@@ -84,6 +84,19 @@
     "vadHoldFrames": 8,
     "jitterMs": 80,
     "speakingHoldMs": 350
+  },
+  "daily": {
+    "_comment": "Daily reward and missions (phase 23, server only). Rewards are TON points counted in kills: amount x the TON paid per kill in force. The day turns at 00:00 UTC. A mission goal of 0 means that kind is not offered at that tier (slot 1 easy, 2 medium, 3 hard). Only zombie games count, except 'games' (any mode, at least minGameSec long).",
+    "streakKills": [5, 10, 15, 20, 30, 40, 80],
+    "allMissionsBonusKills": 25,
+    "minGameSec": 60,
+    "missions": {
+      "kills": {"goals": [40, 90, 160], "rewardKills": [10, 20, 35]},
+      "headshots": {"goals": [10, 25, 45], "rewardKills": [10, 20, 35]},
+      "wave": {"goals": [4, 7, 10], "rewardKills": [10, 20, 35]},
+      "boss": {"goals": [0, 1, 2], "rewardKills": [0, 25, 40]},
+      "games": {"goals": [2, 3, 5], "rewardKills": [10, 15, 25]}
+    }
   },
   "infection": {
     "_comment": "Infection mode (phase 13): real players only. Soldiers hold the start weapons; every soldier killed by an infected player turns infected on the spot; infected players killed by soldiers come back after zombieRespawnSec at a zombie entry. A round ends when no soldier is left (infected win) or when roundSec run out (soldiers win). Kills here earn no TON.",

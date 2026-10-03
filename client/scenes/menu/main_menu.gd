@@ -20,6 +20,10 @@ var _play_inf: Button
 var _overlay: Control
 var _board_button: Button
 var _invite: Button
+var _daily_btn: Button
+var _daily_dot: Control
+var _toast: Label
+static var _daily_opened := false   ## the daily panel opens by itself once per session when a reward waits
 static var _invite_checked := false  ## the launch link's invite is honoured once per session
 var _content: Control   ## everything but the backdrop, inset from the host's buttons (Telegram)
 
@@ -51,6 +55,7 @@ func _ready() -> void:
 	# quick play starts faster. Listening also keeps Net from buffering.
 	Net.status_changed.connect(_on_net_status)
 	Net.message.connect(_on_net_message)
+	Net.daily_received.connect(_on_daily)
 	if Net.is_online_available() and Platform.is_telegram and Net.status in ["offline", "failed"]:
 		Net.connect_to_server(false)
 	_show_profile()
@@ -60,6 +65,14 @@ func _ready() -> void:
 		_settings.call_deferred()
 	elif Platform.query_param("screen") == "howto":
 		_how_to_play.call_deferred()
+	elif Platform.query_param("screen") == "daily":
+		# screenshot tests: open the daily panel once logged in (needs ?server= and ?name=)
+		_daily_opened = true
+		if Net.status in ["offline", "failed"] and Net.is_online_available():
+			Net.connect_to_server(false)
+		Net.status_changed.connect(func(st: String):
+			if st == "ready" and _overlay == null:
+				_show_daily())
 	elif Platform.query_param("screen") == "hunt":
 		# screenshot tests: open the weekly hunt once logged in (needs ?server= and ?name=)
 		if Net.status in ["offline", "failed"] and Net.is_online_available():
@@ -226,6 +239,13 @@ func _build_profile_card() -> void:
 			_profile_hint.text = note)
 	_invite.visible = false
 	v.add_child(_invite)
+	_daily_btn = UiTheme.gold_button("DAILY REWARD  ·  MISSIONS", _show_daily)
+	_daily_btn.visible = false
+	v.add_child(_daily_btn)
+	# a pulsing ember dot on the button while today's reward waits
+	_daily_dot = Badge.new()
+	_daily_dot.visible = false
+	_daily_btn.add_child(_daily_dot)
 
 
 func _build_footer() -> void:
@@ -301,6 +321,77 @@ func _show_profile() -> void:
 	_profile_hint.text = ton if Net.ton_per_kill > 0 else "Online and ready."
 	_board_button.disabled = false
 	_invite.visible = Social.can_invite()
+	_daily_btn.visible = true
+	_update_daily_badge()
+
+
+# ------------------------------------------------------------------ daily (phase 23)
+
+func _on_daily(d: Dictionary) -> void:
+	_update_daily_badge()
+	if int(d.get("paidMicro", 0)) > 0 and int(d.get("paidKind", 0)) == 2:
+		_show_toast("DAILY MISSIONS  ·  +%s TON" % UiTheme.ton_text(int(d.paidMicro)))
+		Audio.ui_sound("powerup", -8.0)
+	# once per session, a waiting reward opens the panel by itself
+	if not _daily_opened and bool(d.get("canClaim", false)) and _overlay == null and is_inside_tree():
+		_daily_opened = true
+		_show_daily()
+
+
+func _update_daily_badge() -> void:
+	if _daily_dot:
+		_daily_dot.visible = bool(Net.daily.get("canClaim", false))
+
+
+func _show_daily() -> void:
+	if _overlay:
+		return
+	_daily_opened = true
+	var panel := DailyPanel.new()
+	_overlay = panel
+	panel.closed.connect(func(): _overlay = null)
+	_content.add_child(panel)
+
+
+func _show_toast(text: String) -> void:
+	if _toast == null:
+		_toast = UiTheme.title("", 24, UiTheme.GOLD)
+		_toast.add_theme_constant_override("outline_size", 6)
+		_toast.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.85))
+		_toast.set_anchors_and_offsets_preset(Control.PRESET_CENTER_TOP)
+		_toast.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		_toast.grow_horizontal = Control.GROW_DIRECTION_BOTH
+		_toast.offset_top = 120
+		add_child(_toast)
+	_toast.text = text
+	_toast.modulate.a = 1.0
+	var tw := _toast.create_tween()
+	tw.tween_interval(3.0)
+	tw.tween_property(_toast, "modulate:a", 0.0, 0.8)
+
+
+## The ember dot on DAILY REWARD while a reward waits.
+class Badge extends Control:
+	var _t := 0.0
+
+	func _init() -> void:
+		mouse_filter = Control.MOUSE_FILTER_IGNORE
+		custom_minimum_size = Vector2(16, 16)
+
+	func _process(delta: float) -> void:
+		if not is_visible_in_tree():
+			return
+		_t += delta
+		var parent := get_parent() as Control
+		if parent:
+			position = Vector2(parent.size.x - 12.0, -4.0)
+		queue_redraw()
+
+	func _draw() -> void:
+		var pulse := 0.5 + 0.5 * sin(_t * 5.0)
+		draw_circle(Vector2(8, 8), 9.0 + 2.0 * pulse, Color(0.9, 0.3, 0.1, 0.25 + 0.2 * pulse))
+		draw_circle(Vector2(8, 8), 7.0, UiTheme.ACCENT)
+		draw_circle(Vector2(8, 8), 7.0, UiTheme.GOLD, false, 1.5, true)
 
 
 # ------------------------------------------------------------------ actions

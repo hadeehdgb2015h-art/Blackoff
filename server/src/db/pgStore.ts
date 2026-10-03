@@ -68,6 +68,16 @@ export const MIGRATIONS: Migration[] = [
       );
       CREATE INDEX players_last_seen ON players (last_seen DESC);`,
   },
+  {
+    id: 4,
+    name: "daily reward and missions",
+    sql: `
+      CREATE TABLE daily_state (
+        account_id text PRIMARY KEY,
+        data       jsonb NOT NULL,
+        updated_at timestamptz NOT NULL DEFAULT now()
+      );`,
+  },
 ];
 
 const LOCK_ID = 0x0b1ac0ff;
@@ -242,6 +252,19 @@ export class PgProfileStore implements ProfileStore {
       `INSERT INTO settings (key, value) VALUES ($1, $2::jsonb)
        ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value, updated_at = now()`,
       [key, JSON.stringify(value)],
+    );
+  }
+
+  async getDaily(accountId: string): Promise<unknown> {
+    const r = await this.pool.query<{ data: unknown }>("SELECT data FROM daily_state WHERE account_id = $1", [accountId]);
+    return r.rows[0]?.data ?? null;
+  }
+
+  async setDaily(accountId: string, state: unknown): Promise<void> {
+    await this.pool.query(
+      `INSERT INTO daily_state (account_id, data) VALUES ($1, $2::jsonb)
+       ON CONFLICT (account_id) DO UPDATE SET data = EXCLUDED.data, updated_at = now()`,
+      [accountId, JSON.stringify(state)],
     );
   }
 

@@ -108,6 +108,16 @@ func ui_click() -> void:
 		_ui.play()
 
 
+## A one-off interface sound from assets/sfx (daily reward claims): played on
+## the UI player, so it is heard in the menu too.
+func ui_sound(name: String, db := -6.0) -> void:
+	var stream := load("res://assets/sfx/%s.wav" % name) as AudioStream
+	if stream:
+		_ui.stream = stream
+		_ui.volume_db = db + sfx_offset_db()
+		_ui.play()
+
+
 ## Reverb for the local player's surroundings (indoors: longer, wetter).
 func set_room(indoor: bool) -> void:
 	_reverb_wet_target = 0.22 if indoor else 0.06

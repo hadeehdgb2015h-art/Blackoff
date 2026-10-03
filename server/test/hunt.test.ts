@@ -100,7 +100,7 @@ describe.skipIf(!dbUrl)("weekly hunt (postgres)", () => {
   let pool: pg.Pool;
   beforeAll(async () => {
     pool = new pg.Pool({ connectionString: dbUrl });
-    await pool.query("DROP TABLE IF EXISTS players, matches, weekly_scores, settings, schema_migrations");
+    await pool.query("DROP TABLE IF EXISTS players, matches, weekly_scores, settings, daily_state, schema_migrations");
     await migrate(pool);
   });
   afterAll(() => pool.end());
@@ -116,5 +116,10 @@ describe.skipIf(!dbUrl)("weekly hunt (postgres)", () => {
     expect((await s.load("tg:2", "2")).suspicion).toBe(2);
     expect((await s.suspects(5)).map((x) => [x.accountId, x.suspicion, x.shots, x.hits])).toEqual([["tg:2", 2, 27, 9]]);
     expect((await s.leaderboard(10, "2020-01-06")).length).toBe(0); // another week is empty
+    // daily state (phase 23): stored as JSON per account, overwritten on save
+    expect(await s.getDaily("tg:1")).toBeNull();
+    await s.setDaily("tg:1", { day: "2026-10-03", streak: 1 });
+    await s.setDaily("tg:1", { day: "2026-10-04", streak: 2 });
+    expect(await s.getDaily("tg:1")).toEqual({ day: "2026-10-04", streak: 2 });
   });
 });

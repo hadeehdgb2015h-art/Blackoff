@@ -81,6 +81,9 @@ export interface ProfileStore {
   /** Small persistent settings (the owner's runtime switches). */
   getSetting(key: string): Promise<unknown>;
   setSetting(key: string, value: unknown): Promise<void>;
+  /** The account's daily reward and missions state (phase 23), null before the first. */
+  getDaily(accountId: string): Promise<unknown>;
+  setDaily(accountId: string, state: unknown): Promise<void>;
   /** Creates the profile on first sight; refreshes the display name. */
   load(accountId: string, name: string): Promise<Profile>;
   /** Adds one match to the profile and returns the updated totals. */
@@ -118,6 +121,7 @@ export class MemoryProfileStore implements ProfileStore {
   readonly names = new Map<string, string>();
   readonly seen = new Map<string, number>();
   readonly settings = new Map<string, unknown>();
+  readonly daily = new Map<string, string>();
 
   async load(accountId: string, name = ""): Promise<Profile> {
     let p = this.profiles.get(accountId);
@@ -162,6 +166,15 @@ export class MemoryProfileStore implements ProfileStore {
 
   async setSetting(key: string, value: unknown): Promise<void> {
     this.settings.set(key, value);
+  }
+
+  async getDaily(accountId: string): Promise<unknown> {
+    const s = this.daily.get(accountId);
+    return s ? JSON.parse(s) : null;
+  }
+
+  async setDaily(accountId: string, state: unknown): Promise<void> {
+    this.daily.set(accountId, JSON.stringify(state));
   }
 
   async record(r: MatchResult): Promise<Profile> {
