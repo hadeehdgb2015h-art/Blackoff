@@ -1,0 +1,92 @@
+search 'dark ambient': 25 results
+  faq: licence '', skipped
+  oves-essential-game-audio-pack-collection-160-files-updated: licence 'CC-BY 3.0', skipped
+  town-theme-rpg: kept TownTheme.mp3 (CC0)
+  loading-screen-loop: kept b423b42.wav (CC0)
+  rain-and-thunders: kept Dark_Rainy_Night_ambience_.ogg (CC0)
+  enchanted-tiki-86: kept enchanted_tiki_86_0.mp3 (CC0)
+  mysterious-ambience-song21: licence 'CC-BY 3.0 CC-BY-SA 3.0 GPL 3.0 CC0', skipped
+  bleeding-out: licence 'OGA-BY 3.0 CC0', skipped
+  dungeon-ambience: kept dungeon002_0.ogg (CC0)
+search 'horror ambient': 25 results
+  dark-ambiance: licence 'CC-BY-SA 3.0', skipped
+  horror-atmosphere: https://opengameart.org/sites/default/files/Juhani%20Junkala%20-%20Post%20Apocalyptic%20Wastelands%20%5BLoop%20Ready%5D.ogg too big (14246543)
+  at-the-end-of-hope: kept at_the_end_of_hope_0.mp3 (CC0)
+  emptycity-background-music: kept EmptyCity.ogg (CC0)
+  horror-soundtrack-8-tracks-the-hangar: licence 'CC-BY 3.0', skipped
+  eric-taylor-royalty-free-music-pack-50-songs-cc-by: licence 'CC-BY 3.0', skipped
+  scary-ambient-wind: licence 'CC-BY 3.0', skipped
+  haunted-woods-horror-drone: licence 'CC-BY-SA 3.0', skipped
+  space-graveyard-ambient-track: kept space_graveyard_4.mp3 (CC0)
+  dark-cavern-ambient: kept dark_cavern_ambient_001.ogg (CC0)
+search 'horror music': 25 results
+  soliloquy: licence 'CC-BY 3.0', skipped
+  dark-ambience-loop: licence 'CC-BY 3.0 GPL 3.0 GPL 2.0', skipped
+  imminent-threat: licence 'CC-BY-SA 3.0', skipped
+  creepy: kept CrEEP_0.mp3 (CC0)
+  insistent-background-loop: kept Insistent.ogg (CC0)
+  undead-rising: licence 'CC-BY-SA 3.0', skipped
+  ambience-pack-1-sci-fi-horror: kept The_Surreal_Truth.mp3 (CC0)
+search 'creepy loop': 25 results
+  the-9th-circle: kept The_9th_Circle_V2.mp3 (CC0)
+  victoriana-loop: licence 'CC-BY 3.0', skipped
+  water-temple: licence 'CC-BY 3.0', skipped
+  short-loop-winter-theme: kept rememberWinter.ogg (CC0)
+  creepy-sci-fi-synth-loop: licence 'CC-BY 3.0', skipped
+  mandatory-overtime: kept Mandatory_Overtime.mp3 (CC0)
+search 'dungeon ambient': 24 results
+  dark-forest-theme: kept GameMusic_ForestTheme_24_0.mp3 (CC0)
+  magical-theme: licence 'CC-BY 3.0', skipped
+  temple-of-the-mystics: licence 'CC-BY-SA 3.0', skipped
+  evil-temple-ambiance-loop: licence 'OGA-BY 3.0 CC0', skipped
+  rpg-the-graveyard: licence 'CC-BY 3.0', skipped
+  skin-cells-touch: licence 'OGA-BY 3.0 CC0', skipped
+  mystical-enigmatic-background-music: kept CleytonRX_-_Mystical_Enigmatic_Background_Music.mp3 (CC0)
+  celtic-dungeon-synth: licence 'CC-BY 4.0', skipped
+  rpg-ambience-dungeon: licence 'CC-BY 3.0', skipped
+  pioneers-of-future: licence 'CC-BY 3.0', skipped
+  fieldstheme: licence 'CC-BY 3.0', skipped
+  dark-the-whispering-shadows-dungeon: licence 'CC-BY 4.0', skipped
+  eternal-sleep: https://opengameart.org/sites/default/files/10_eternal_sleep.flac too big (42164966)
+  mk149: licence 'CC-BY 4.0', skipped
+  into-the-ruined-temple: kept into_the_ruined_temple.mp3 (CC0)
+search 'tension music': 24 results
+  perpetual-tension: licence 'CC-BY 3.0', skipped
+  sirens-in-darkness: https://opengameart.org/sites/default/files/012_Sirens_in_Darkness_0.mp3 too big (7042393)
+  blinding-lights: licence 'CC-BY 3.0', skipped
+  decision: licence 'CC-BY 3.0', skipped
+  battle-theme-0: kept Battle.mp3 (CC0)
+  tactical-pursuit: licence 'CC-BY 3.0', skipped
+  ironbound: licence 'CC-BY 3.0', skipped
+  dragged-through-hellfire: licence 'CC-BY 3.0', skipped
+  bumblebee-loop: licence 'CC-BY 3.0 CC-BY-SA 3.0 GPL 3.0 GPL 2.0 CC0', skipped
+  last-minute: licence 'CC-BY 3.0', skipped
+  assasins-assault: licence 'CC-BY 3.0', skipped
+  omens: licence 'CC-BY 3.0', skipped
+  article-160-section-2: licence 'CC-BY 3.0', skipped
+  article-196-section-1: licence 'CC-BY 3.0', skipped
+  stonemason: licence 'CC-BY 3.0', skipped
+  rpg-for-wenches-ale-and-loot: licence 'CC-BY 3.0', skipped
+  round-1multiple-tracks: licence 'OGA-BY 3.0', skipped
+  fantasy-0: https://opengameart.org/sites/default/files/FantasyWav.wav too big (17309344)
+  bestial-paragon-interface: licence 'CC-BY 3.0', skipped
+search 'dark fantasy music': 25 results
+  dark-descent: licence 'CC-BY 3.0', skipped
+  orchestral-epic-fantasy-music: licence 'CC-BY-SA 3.0 GPL 3.0', skipped
+  vampires-piano: https://opengameart.org/sites/default/files/vampires_piano_1.wav too big (15797472)
+  theme-of-com-mecha: licence 'CC-BY 3.0', skipped
+  medieval-minstrel-dance: https://opengameart.org/sites/default/files/Minstrel_Dance_0.mp3 too big (5548500)
+  wasteland-showdown-battle-music: licence 'CC-BY 3.0', skipped
+  wasteland-overdrive: licence 'CC-BY 3.0', skipped
+  dark-descent-extended-cut: licence 'CC-BY 3.0', skipped
+  a-journeys-end: licence 'CC-BY 3.0', skipped
+  a-darkness-opus: licence 'OGA-BY 3.0', skipped
+  cold-silence: https://opengameart.org/sites/default/files/cold_silence.ogg too big (5156680)
+  rpg-the-enchanted-forest-of-min: licence 'CC-BY 3.0', skipped
+  midnight-creeping-rpg-orchestral-essentials-stealth-music: licence 'CC-BY 3.0', skipped
+  essentials-pack-for-fantasy-games-loop-box-3-orchestral-soundtracks-for-rpgs-and-adventures: licence 'CC-BY 4.0', skipped
+  final-boss-appearance-dark-fantasy: licence 'OGA-BY 3.0', skipped
+  ove-melaa-dark-blue-orchestral-tune: licence 'CC-BY 3.0', skipped
+  black-drought: licence 'CC-BY 3.0', skipped
+  city-of-rain: licence 'CC-BY 4.0', skipped
+total 59248 KB
