@@ -531,7 +531,7 @@ func show_game_over(wave: int, p: SimPlayer, scores: Array = []) -> void:
 			var l := UiTheme.label(str(int(r[k])), 22, col)
 			l.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 			_go_table.add_child(l)
-	_go_challenge.visible = Social.can_invite()
+	_go_challenge.visible = Social.can_invite() or Net.status in ["ready", "in_zone"]
 	_game_over.visible = true
 
 

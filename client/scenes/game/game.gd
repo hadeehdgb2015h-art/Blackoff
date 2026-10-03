@@ -104,7 +104,15 @@ func _ready() -> void:
 		Platform.haptic("medium" if n < 5 else "heavy"))
 	_hud.challenge_pressed.connect(func():
 		var me: SimPlayer = world.players.get(pid) if world else null
-		_hud.show_toast(Social.challenge(_last_wave, me.kills if me else 0)))
+		var kills := me.kills if me else 0
+		if Net.status in ["ready", "in_zone"]:
+			# online: the result card drawn by the server (phase 25)
+			_hud.add_child(CardPanel.new().setup(_last_wave, kills))
+		else:
+			_hud.show_toast(Social.challenge(_last_wave, kills)))
+	if Platform.query_param("card") == "1":
+		# screenshot tests: the result card panel after half a minute of play
+		get_tree().create_timer(30.0).timeout.connect(func(): _hud.challenge_pressed.emit())
 	_controls = TouchControls.new()
 	ui.add_child(_controls)
 	_controls.pause_requested.connect(_toggle_pause)

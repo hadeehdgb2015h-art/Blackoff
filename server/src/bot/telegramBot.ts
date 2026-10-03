@@ -11,6 +11,7 @@
  * (RuntimeSettings). Actions that need a value ask for it, and the owner's
  * next message answers.
  */
+import crypto from "node:crypto";
 import type { Env } from "../config/env.js";
 import { recentProblems, log } from "../log.js";
 import type { SessionHub } from "../net/session.js";
@@ -57,6 +58,24 @@ export class TelegramBot {
   }
 
   // ------------------------------------------------------------------ Telegram API
+
+  /** A message the player can send to any chat from the Mini App (WebApp.shareMessage):
+   *  their result card, a caption and a Play button with their invite link (Bot API
+   *  savePreparedInlineMessage, phase 25). Its id, or "" when Telegram refused. */
+  async prepareCard(userId: number, photoUrl: string, caption: string, button: string, link: string): Promise<string> {
+    const r = await this.api("savePreparedInlineMessage", {
+      user_id: userId,
+      result: {
+        type: "photo", id: crypto.randomBytes(8).toString("hex"), photo_url: photoUrl, thumbnail_url: photoUrl,
+        photo_width: 1080, photo_height: 1350, caption, parse_mode: "HTML",
+        reply_markup: { inline_keyboard: [[{ text: button, url: link }]] },
+      },
+      allow_user_chats: true, allow_group_chats: true, allow_channel_chats: true,
+    }).catch((err: Error) => ({ ok: false, description: err.message } as { ok: boolean; result?: unknown; description?: string }));
+    const id = r.ok ? String((r.result as { id?: string } | undefined)?.id ?? "") : "";
+    if (!id) log.warn("prepared card message refused", { error: r.description });
+    return id;
+  }
 
   private async api(method: string, body: Json = {}, timeoutMs = 15_000): Promise<{ ok: boolean; result?: unknown; error_code?: number; description?: string }> {
     const res = await fetch(`${this.apiBase}/bot${this.env.TELEGRAM_BOT_TOKEN}/${method}`, {

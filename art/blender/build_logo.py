@@ -6,6 +6,11 @@ the centred circle Telegram crops to. Original work from the game's models.
 
 Run:  /opt/blender-venv/bin/python art/blender/build_logo.py [size] [samples]
 Output: art/logo/bot_logo.png (default 1024 px) and art/logo/bot_logo_640.png
+
+With --card the same scene is rendered as the background of the shareable
+result card (phase 25): 1080 x 1350, no title, the figures in the upper part
+(the server writes the player's result over the dark lower part).
+Output: server/assets/card/card_bg.jpg
 """
 import math
 import os
@@ -20,8 +25,10 @@ MODELS = os.path.join(ROOT, "client", "assets", "models")
 # variable font's overlapping outlines break Blender's text fill)
 FONT = os.path.join(ROOT, "art", "logo", "Cinzel-Bold-static.ttf")
 OUT = os.path.join(ROOT, "art", "logo")
-SIZE = int(sys.argv[1]) if len(sys.argv) > 1 else 1024
-SAMPLES = int(sys.argv[2]) if len(sys.argv) > 2 else 96
+CARD = "--card" in sys.argv
+ARGS = [a for a in sys.argv[1:] if not a.startswith("--")]
+SIZE = int(ARGS[0]) if ARGS else 1024
+SAMPLES = int(ARGS[1]) if len(ARGS) > 1 else 96
 
 
 def emission(name, color, strength):
@@ -120,8 +127,8 @@ def main():
     scene.render.engine = "CYCLES"
     scene.cycles.samples = SAMPLES
     scene.cycles.use_denoising = True
-    scene.render.resolution_x = SIZE
-    scene.render.resolution_y = SIZE
+    scene.render.resolution_x = 1080 if CARD else SIZE
+    scene.render.resolution_y = 1350 if CARD else SIZE
     scene.render.film_transparent = False
     scene.view_settings.view_transform = "AgX"
     scene.view_settings.look = "AgX - Punchy"
@@ -229,6 +236,20 @@ def main():
     # the title rides on the camera: always upright, low inside the circle crop
     title.parent = cam
     title.location = (0, -0.66, -3.0)
+    if CARD:
+        # no title (the card has its own), figures lifted into the upper part
+        title.hide_render = True
+        cam_data.shift_y = -0.2
+
+    if CARD:
+        path = os.path.join(ROOT, "server", "assets", "card", "card_bg.jpg")
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        scene.render.filepath = path
+        scene.render.image_settings.file_format = "JPEG"
+        scene.render.image_settings.quality = 88
+        bpy.ops.render.render(write_still=True)
+        print("wrote", path)
+        return
 
     os.makedirs(OUT, exist_ok=True)
     path = os.path.join(OUT, "bot_logo.png" if SIZE >= 1024 else "bot_logo_preview.png")

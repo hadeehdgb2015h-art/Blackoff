@@ -45,6 +45,9 @@ const EnvSchema = z.object({
   BLACKOFF_DOMAIN: z.string().default(""),
   /** Full game URL when it is not https://BLACKOFF_DOMAIN/. */
   GAME_URL: z.string().default(""),
+  /** Result cards (phase 25): where the JPEGs are written ("" = web/cards of a release) and their public URL ("" = GAME_URL or the domain + cards/). */
+  CARDS_DIR: z.string().default(""),
+  CARD_BASE_URL: z.string().default(""),
   /** Protects /admin/* (leaderboard with account ids, suspects). Unset = endpoints off. */
   ADMIN_TOKEN: z.string().optional(),
 });

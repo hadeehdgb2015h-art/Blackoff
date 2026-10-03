@@ -17,6 +17,8 @@
     "bundle": "node tools/bundle.mjs"
   },
   "dependencies": {
+    "@resvg/resvg-wasm": "^2.6.2",
+    "jpeg-js": "^0.4.4",
     "pg": "^8.23.1",
     "ws": "^8.22.0",
     "zod": "^4.6.5"

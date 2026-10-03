@@ -196,13 +196,24 @@ export class Zone {
   }
 
   private finish(m: Member, now: number): void {
+    this.onResult?.(this.resultOf(m, now));
+  }
+
+  /** A member's result so far: what is recorded when they leave (and what
+   *  their result card shows, phase 25). */
+  resultOf(m: Member, now = performance.now()): ZoneResult {
     const p = this.world.players.get(m.entityId);
-    this.onResult?.({
+    return {
       accountId: m.accountId, name: m.name, kills: p?.kills ?? 0, headshots: p?.headshots ?? 0,
       // a dropped player's time ends when the connection did, not after the grace period
       wave: this.world.director.wave, seconds: Math.max(0, (m.client ? now : m.disconnectedAt) - m.joinedAt) / 1000,
       shots: m.shots, hits: m.hits, mode: this.mode, bossKills: p?.bossKills ?? 0,
-    });
+    };
+  }
+
+  resultFor(entityId: number): ZoneResult | null {
+    const m = this.members.get(entityId);
+    return m ? this.resultOf(m) : null;
   }
 
   // ------------------------------------------------------------------ output

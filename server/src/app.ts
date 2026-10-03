@@ -103,6 +103,7 @@ export function createApp(env: Env, shared: SharedData, store: ProfileStore = ne
 
   zones.start();
   const bot = new TelegramBot(env, hub, () => ({ connections: wss.clients.size, uptimeSec: Math.round((Date.now() - startedAt) / 1000), version }));
+  hub.bot = bot;
   // never in tests; production and dev answer the bot when it has a token
   if (env.BOT_POLLING && env.NODE_ENV !== "test") bot.start();
   const sweeper = setInterval(() => hub.sweep(Date.now()), 10_000);
@@ -118,6 +119,7 @@ export function createApp(env: Env, shared: SharedData, store: ProfileStore = ne
       new Promise<void>((resolve) => {
         clearInterval(sweeper);
         bot.stop();
+        void hub.cards.close();
         zones.stop();
         for (const c of wss.clients) c.terminate();
         wss.close(() => server.close(() => void hub.flush().then(resolve)));

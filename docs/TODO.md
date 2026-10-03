@@ -131,7 +131,7 @@
 - [x] Three daily missions (easy, medium, hard) with progress after each online game, paid at once, bonus for all three
 - [x] Paid in TON points from the TON per kill in force; stored in Postgres (migration 4); protocol v11
 - [ ] Owner: decide whether the amounts suit the prize budget (`shared/constants.json` → `daily`)
-- [ ] Next: a result card image for sharing
+- [x] A result card image for sharing: phase 25
 
 ## Phase 24: languages
 - [x] English, Arabic, Russian: every menu, HUD, toast, prompt, sign and share text (264 texts), checked by tools/i18n.py in CI
@@ -139,6 +139,12 @@
 - [x] Arabic and Cyrillic fonts (subset, ~100 KB), right-to-left panels in Arabic
 - [ ] Owner: read the Arabic texts on the phone and send any wording to change
 - [ ] Later: the bot's messages in the player's language
+
+## Phase 25: result card
+- [x] Server-drawn card (Blender background, game fonts, 3 languages) from the server's own numbers
+- [x] Send to a chat with a Play button (prepared message), share to story, save; plain invite text as fallback
+- [ ] Owner: try CHALLENGE FRIENDS at game over on the phone
+- [ ] Next: player levels and ranks (phase 26)
 
 ## Open questions for the owner
 - Own subdomain or the free sslip.io address (installer default)

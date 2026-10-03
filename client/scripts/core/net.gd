@@ -11,6 +11,7 @@ signal failed(reason: String)
 signal leaderboard_received(board: Dictionary)
 signal voice_changed   ## mic or speaker state changed (buttons redraw)
 signal daily_received(daily: Dictionary)  ## daily reward and missions state (phase 23)
+signal card_received(card: Dictionary)    ## result card: status, url, preview, prepared (phase 25)
 
 const RETRY_SEC := 2.0
 
@@ -217,6 +218,8 @@ func _on_packet(data: PackedByteArray) -> void:
 		"daily":
 			daily = msg
 			daily_received.emit(msg)
+		"card":
+			card_received.emit(msg)
 		"voice":
 			if voice_speaker and voice_available:
 				Platform.voice_play(int(msg.entityId), int(msg.seq), msg.data)
@@ -311,6 +314,12 @@ func request_leaderboard() -> void:
 func request_daily() -> void:
 	if status in ["ready", "in_zone"]:
 		send("daily", {})
+
+
+## Asks the server for the result card of this game (answered with `card_received`).
+func request_card() -> void:
+	if status in ["ready", "in_zone"]:
+		send("card", {"lang": I18n.lang})
 
 
 ## Takes today's streak reward; the server answers with `daily` (and `profile`).

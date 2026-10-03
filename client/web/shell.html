@@ -109,6 +109,38 @@ window.BlackoffTG = (function () {
       } catch (e) {}
       return 'none';
     },
+    // Result card (phase 25). shareMessage sends the message the bot prepared
+    // (photo + Play button) to a chat the player picks (Telegram 8.0+).
+    shareMessage: function (id) {
+      const w = wa();
+      try {
+        if (w && w.initData && id && atLeast('8.0') && w.shareMessage) { w.shareMessage(id); return 'ok'; }
+      } catch (e) {}
+      return 'unsupported';
+    },
+    // the card as a Telegram story (7.8+)
+    shareToStory: function (url, text) {
+      const w = wa();
+      try {
+        if (w && w.initData && atLeast('7.8') && w.shareToStory) { w.shareToStory(url, { text: String(text || '').slice(0, 200) }); return 'ok'; }
+      } catch (e) {}
+      return 'unsupported';
+    },
+    // save the card to the phone (Telegram 8.0+), else open it in a new tab
+    downloadFile: function (url, name) {
+      const w = wa();
+      try {
+        if (w && w.initData && atLeast('8.0') && w.downloadFile) { w.downloadFile({ url: url, file_name: name }); return 'ok'; }
+        if (w && w.openLink) { w.openLink(url); return 'opened'; }
+        window.open(url, '_blank');
+        return 'opened';
+      } catch (e) {}
+      return 'none';
+    },
+    canShareCards: function () {
+      const w = wa();
+      return !!(w && w.initData && atLeast('7.8'));
+    },
     haptic: function (kind) {
       const w = wa();
       try { if (w && atLeast('6.1')) w.HapticFeedback.impactOccurred(kind || 'light'); } catch (e) {}

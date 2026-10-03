@@ -39,7 +39,7 @@
     "maxLevel": 100
   },
   "net": {
-    "protocolVersion": 11,
+    "protocolVersion": 12,
     "maxMessageBytes": 4096,
     "interestRadius": 45,
     "reconnectGraceSec": 30,

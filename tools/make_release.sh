@@ -12,7 +12,9 @@ ver="${3:-$(date -u +%Y%m%d%H%M)-$(git -C "$root" rev-parse --short=7 HEAD)}"
 stage="$(mktemp -d)"; trap 'rm -rf "$stage"' EXIT
 b="$stage/blackoff"
 mkdir -p "$b/server" "$b/shared" "$b/web" "$b/deploy"
-cp "$root"/server/dist-bundle/server.mjs* "$b/server/"
+cp "$root"/server/dist-bundle/*.mjs* "$root"/server/dist-bundle/resvg.wasm "$b/server/"
+# result card background and fonts (phase 25)
+cp -r "$root/server/assets" "$b/server/"
 cp -r "$root"/shared/*.json "$root/shared/maps" "$b/shared/"
 cp -r "$web"/. "$b/web/"
 rm -f "$b"/web/config.js "$b"/web/*.gz

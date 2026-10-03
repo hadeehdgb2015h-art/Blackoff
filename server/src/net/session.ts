@@ -22,6 +22,9 @@ import { flagsFor } from "../anticheat.js";
 import { RuntimeSettings } from "../admin/runtime.js";
 import { applyDev } from "../admin/devPowers.js";
 import { DailyService, type DailyUpdate } from "../daily/dailyService.js";
+import { CardService, cardsBaseUrl, cardsDir } from "../card/cardService.js";
+import type { CardLang } from "../card/cardRender.js";
+import type { TelegramBot } from "../bot/telegramBot.js";
 
 export interface Account { id: string; name: string; playerId: number; profile: Profile; weekly: WeeklyStanding }
 
@@ -45,6 +48,11 @@ export class SessionHub implements ZoneSink {
   readonly owners: Set<string>;
   /** Daily reward and missions (phase 23). */
   readonly daily: DailyService;
+  /** Result cards (phase 25) and the bot that prepares them as messages to share. */
+  readonly cards: CardService;
+  bot: TelegramBot | null = null;
+  /** Each account's last recorded game (its result card once it left the zone). */
+  readonly lastResult = new Map<string, ZoneResult>();
   private readonly inviteKey: Buffer;
   botUsername: string;
 
@@ -55,6 +63,7 @@ export class SessionHub implements ZoneSink {
     this.botUsername = env.TELEGRAM_BOT_USERNAME;
     this.settings = new RuntimeSettings(env, store);
     this.daily = new DailyService(store, shared.constants.daily, () => this.settings.tonPerKill());
+    this.cards = new CardService(cardsDir(env), cardsBaseUrl(env));
     this.owners = new Set(env.ADMIN_TELEGRAM_IDS.split(",").map((s) => s.trim()).filter(Boolean).map((id) => "tg:" + id));
   }
 
@@ -88,6 +97,9 @@ export class SessionHub implements ZoneSink {
    *  play statistics, then the profile and weekly standing are written, then
    *  the game counts towards the daily missions (which may pay more TON). */
   onResult(z: ZoneResult): void {
+    this.lastResult.delete(z.accountId);
+    this.lastResult.set(z.accountId, z);
+    if (this.lastResult.size > 5000) this.lastResult.delete(this.lastResult.keys().next().value!);
     const flags = flagsFor({ shots: z.shots, hits: z.hits, headshots: z.headshots, kills: z.kills, seconds: z.seconds }, this.shared.constants.anticheat);
     if (flags.length) {
       log.warn("anticheat flags", { account: z.accountId, name: z.name, flags, shots: z.shots, hits: z.hits, headshots: z.headshots, kills: z.kills, seconds: Math.round(z.seconds) });
@@ -142,6 +154,28 @@ export class SessionHub implements ZoneSink {
 }
 
 const HELLO_TIMEOUT_MS = 10_000;
+/** S2C card status (protocol enum cardStatus). */
+const CardStatus = { OK: 0, NOTHING: 1, UNAVAILABLE: 2, BUSY: 3, ERROR: 4 } as const;
+const CARD_COOLDOWN_MS = 8_000;
+const escHtml = (s: string) => s.replace(/[&<>]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" })[c]!);
+/** The caption and button of a shared result card, in the player's language. */
+const CARD_CAPTION: Record<CardLang, { zombies: (name: string, wave: number, kills: number) => string; infection: (name: string, kills: number) => string; button: string }> = {
+  en: {
+    zombies: (n, w, k) => `🧟 <b>${n}</b> held out to <b>wave ${w}</b> in BLACK OFF with <b>${k}</b> kills.\nCan you beat that? Join my squad 👇`,
+    infection: (n, k) => `🧟 <b>${n}</b> made <b>${k}</b> kills in BLACK OFF infection.\nCan you beat that? Join my squad 👇`,
+    button: "🎮 Play with me",
+  },
+  ar: {
+    zombies: (n, w, k) => `🧟 صمد <b>${n}</b> حتى <b>الموجة ${w}</b> في BLACK OFF وقتل <b>${k}</b> زومبي.\nهل تستطيع التفوّق عليه؟ انضم إلى فرقتي 👇`,
+    infection: (n, k) => `🧟 حقق <b>${n}</b> عدد <b>${k}</b> قتلات في وضع العدوى في BLACK OFF.\nهل تستطيع التفوّق عليه؟ انضم إلى فرقتي 👇`,
+    button: "🎮 العب معي",
+  },
+  ru: {
+    zombies: (n, w, k) => `🧟 <b>${n}</b> продержался до <b>волны ${w}</b> в BLACK OFF, убийств: <b>${k}</b>.\nСможешь лучше? Вступай в мой отряд 👇`,
+    infection: (n, k) => `🧟 <b>${n}</b>: убийств в режиме заражения BLACK OFF — <b>${k}</b>.\nСможешь лучше? Вступай в мой отряд 👇`,
+    button: "🎮 Играть со мной",
+  },
+};
 const MAX_STRIKES = 5;
 const ERR: Record<string, number> = {};
 
@@ -170,6 +204,7 @@ export class Session implements ZoneClient {
   private strikes = 0;
   private helloPending = false;
   private dropped = 0;
+  private lastCardAt = 0;
   private readonly inputs: Bucket;
   private readonly other = new Bucket(10, 20);
   private readonly voice: Bucket;
@@ -237,6 +272,7 @@ export class Session implements ZoneClient {
       case "dev": return this.onDev(msg);
       case "daily": return void this.onDaily(false);
       case "claimDaily": return void this.onDaily(true);
+      case "card": return void this.onCard(msg);
       default: return this.strike("unexpected message " + name);
     }
   }
@@ -324,6 +360,46 @@ export class Session implements ZoneClient {
       this.send("daily", u.msg);
     } catch (err) {
       log.warn("daily failed", { account: account.id, error: (err as Error).message });
+    }
+  }
+
+  /** The result card of the game being played (or the last one recorded): a JPEG
+   *  drawn by the server from its own numbers, plus a prepared Telegram message
+   *  with it and a Play button for the player's invite link (phase 25). */
+  private async onCard(msg: Msg): Promise<void> {
+    const account = this.account;
+    if (!account) return;
+    const reply = (status: number, url = "", prepared = "", preview = "") => {
+      if (this.account === account && this.ws.readyState === this.ws.OPEN) this.send("card", { status, url, prepared, preview });
+    };
+    const { cards } = this.hub;
+    if (!cards.enabled) return reply(CardStatus.UNAVAILABLE);
+    const now = Date.now();
+    if (now - this.lastCardAt < CARD_COOLDOWN_MS) return reply(CardStatus.BUSY);
+    const r = (this.zone ? this.zone.resultFor(this.entityId) : null) ?? this.hub.lastResult.get(account.id);
+    if (!r || (r.wave === 0 && r.kills === 0)) return reply(CardStatus.NOTHING);
+    this.lastCardAt = now;
+    const lang: CardLang = msg.lang === "ar" || msg.lang === "ru" ? msg.lang : "en";
+    try {
+      const card = await cards.make({
+        lang, name: account.name, mode: r.mode, wave: r.wave, kills: r.kills, headshots: r.headshots, seconds: r.seconds,
+        bestWave: Math.max(account.profile.bestWave, r.wave), bot: this.hub.botUsername,
+      });
+      let prepared = "";
+      const tg = /^tg:(\d+)$/.exec(account.id);
+      if (tg && this.hub.bot && this.hub.botUsername) {
+        const link = `https://t.me/${this.hub.botUsername}?startapp=sq${this.hub.inviteCodeFor(account.id)}`;
+        const c = CARD_CAPTION[lang];
+        const caption = r.mode === GameMode.INFECTION
+          ? c.infection(escHtml(account.name), r.kills)
+          : c.zombies(escHtml(account.name), r.wave, r.kills);
+        prepared = await this.hub.bot.prepareCard(Number(tg[1]), card.url, caption, c.button, link);
+      }
+      log.info("result card", { account: account.id, wave: r.wave, kills: r.kills, prepared: prepared !== "" });
+      reply(CardStatus.OK, card.url, prepared, card.preview);
+    } catch (err) {
+      log.warn("result card failed", { account: account.id, error: (err as Error).message });
+      reply(CardStatus.ERROR);
     }
   }
 

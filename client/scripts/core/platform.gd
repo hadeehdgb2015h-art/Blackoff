@@ -193,6 +193,34 @@ func reload_page() -> void:
 		_js("window.location.reload()")
 
 
+## Result cards (phase 25): send the bot's prepared message (photo + Play
+## button) to a chat the player picks; "ok" or "unsupported".
+func share_message(prepared_id: String) -> String:
+	if not is_web:
+		return "unsupported"
+	var v: Variant = _js("window.BlackoffTG ? window.BlackoffTG.shareMessage(%s) : 'unsupported'" % JSON.stringify(prepared_id))
+	return str(v) if v != null else "unsupported"
+
+
+func share_to_story(url: String, text: String) -> String:
+	if not is_web:
+		return "unsupported"
+	var v: Variant = _js("window.BlackoffTG ? window.BlackoffTG.shareToStory(%s, %s) : 'unsupported'" % [JSON.stringify(url), JSON.stringify(text)])
+	return str(v) if v != null else "unsupported"
+
+
+func download_file(url: String, file_name: String) -> String:
+	if not is_web:
+		return "none"
+	var v: Variant = _js("window.BlackoffTG ? window.BlackoffTG.downloadFile(%s, %s) : 'none'" % [JSON.stringify(url), JSON.stringify(file_name)])
+	return str(v) if v != null else "none"
+
+
+## Telegram can send, story-share and save cards (inside Telegram 7.8+).
+func can_share_cards() -> bool:
+	return is_web and bool(_js("window.BlackoffTG ? window.BlackoffTG.canShareCards() : false"))
+
+
 func haptic(kind: String = "light") -> void:
 	if is_telegram:
 		_js("window.BlackoffTG.haptic('%s')" % kind.replace("'", ""))
