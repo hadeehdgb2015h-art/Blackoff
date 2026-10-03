@@ -21,6 +21,7 @@ var soldiers_left: int = 0     ## infection: soldiers alive (snapshot)
 var phase_left: float = 0.0    ## infection: seconds left in the lobby countdown, round or result pause
 var round_result: int = -1     ## infection: 1 soldiers won, 0 infected won, -1 none yet
 var roster := {}             ## entity id -> display name
+var levels := {}             ## entity id -> level (roster, phase 26)
 var ready_to_play := false
 
 var _weapon_ids: Array = []
@@ -370,8 +371,10 @@ func _handle(msg_name: String, m: Dictionary) -> void:
 			_pending.clear()
 		"roster":
 			roster.clear()
+			levels.clear()
 			for r in m.players:
 				roster[int(r.id)] = str(r.name)
+				levels[int(r.id)] = int(r.get("level", 1))
 				if players.has(int(r.id)):
 					players[int(r.id)].name = str(r.name)
 			print("[net] roster: %d players" % roster.size())

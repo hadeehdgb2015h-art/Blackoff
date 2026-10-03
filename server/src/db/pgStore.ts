@@ -78,6 +78,11 @@ export const MIGRATIONS: Migration[] = [
         updated_at timestamptz NOT NULL DEFAULT now()
       );`,
   },
+  {
+    id: 5,
+    name: "experience",
+    sql: `ALTER TABLE players ADD COLUMN xp bigint NOT NULL DEFAULT 0;`,
+  },
 ];
 
 const LOCK_ID = 0x0b1ac0ff;
@@ -111,14 +116,14 @@ export async function migrate(pool: pg.Pool, migrations = MIGRATIONS): Promise<n
   return applied;
 }
 
-interface Row { games: number; kills: number; headshots: number; best_wave: number; play_seconds: string | number; ton_micro: string | number; suspicion: number }
+interface Row { games: number; kills: number; headshots: number; best_wave: number; play_seconds: string | number; ton_micro: string | number; suspicion: number; xp: string | number }
 
 const toProfile = (r: Row): Profile => ({
   games: r.games, kills: r.kills, headshots: r.headshots, bestWave: r.best_wave, playSeconds: Number(r.play_seconds),
-  tonMicro: Number(r.ton_micro), suspicion: r.suspicion,
+  tonMicro: Number(r.ton_micro), suspicion: r.suspicion, xp: Number(r.xp),
 });
 
-const COLS = "games, kills, headshots, best_wave, play_seconds, ton_micro, suspicion";
+const COLS = "games, kills, headshots, best_wave, play_seconds, ton_micro, suspicion, xp";
 
 export class PgProfileStore implements ProfileStore {
   readonly kind = "postgres";
@@ -151,8 +156,8 @@ export class PgProfileStore implements ProfileStore {
 
   async record(m: MatchResult): Promise<Profile> {
     const r = await this.pool.query<Row>(
-      `INSERT INTO players (account_id, name, games, kills, headshots, best_wave, play_seconds, ton_micro, suspicion, shots, hits)
-       VALUES ($1, $2, 1, $3, $4, $5, $6, $7, $8, $9, $10)
+      `INSERT INTO players (account_id, name, games, kills, headshots, best_wave, play_seconds, ton_micro, suspicion, shots, hits, xp)
+       VALUES ($1, $2, 1, $3, $4, $5, $6, $7, $8, $9, $10, $11)
        ON CONFLICT (account_id) DO UPDATE SET
          name = EXCLUDED.name,
          games = players.games + 1,
@@ -164,9 +169,10 @@ export class PgProfileStore implements ProfileStore {
          suspicion = players.suspicion + EXCLUDED.suspicion,
          shots = players.shots + EXCLUDED.shots,
          hits = players.hits + EXCLUDED.hits,
+         xp = players.xp + EXCLUDED.xp,
          last_seen = now()
        RETURNING ${COLS}`,
-      [m.accountId, m.name, m.kills, m.headshots, m.wave, Math.round(m.seconds), m.tonMicro, m.flags.length, m.shots, m.hits],
+      [m.accountId, m.name, m.kills, m.headshots, m.wave, Math.round(m.seconds), m.tonMicro, m.flags.length, m.shots, m.hits, Math.round(m.xp ?? 0)],
     );
     await this.pool.query(
       `INSERT INTO weekly_scores (week, account_id, name, kills, ton_micro, games) VALUES ($1, $2, $3, $4, $5, 1)

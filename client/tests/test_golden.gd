@@ -74,3 +74,14 @@ static func _same(a: Variant, b: Variant) -> bool:
 	if (a is float or a is int) and (b is float or b is int):
 		return absf(float(a) - float(b)) <= 1e-6 * maxf(1.0, absf(float(b)))
 	return a == b
+
+
+func test_progression() -> void:
+	# levels, ranks and game XP as the server counts them (phase 26)
+	for c in golden.levels:
+		var level := Progression.level_for(int(c.xp))
+		eq(level, int(c.level), "level for %d xp" % int(c.xp))
+		eq(str(Progression.rank_for(level).id), str(c.rank), "rank for %d xp" % int(c.xp))
+		eq(Progression.xp_to_reach(mini(int(Progression.defs().maxLevel), level + 1)), int(c.next), "xp to the next level after %d" % int(c.xp))
+	for g in golden.xpGames:
+		eq(Progression.xp_for(int(g.kills), int(g.headshots), int(g.wave), float(g.seconds), int(g.mode)), int(g.xp), "xp of a game")

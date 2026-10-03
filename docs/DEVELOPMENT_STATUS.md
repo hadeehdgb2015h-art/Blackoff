@@ -32,6 +32,7 @@ Read this first in a new session. Then read `docs/TECHNICAL_ARCHITECTURE.md`, `d
 | 23 Daily reward (7-day streak) and daily missions, paid in TON points (protocol v11) | done (`docs/systems/server.md`, `presentation.md`) |
 | 24 Interface in English, Arabic and Russian, chosen in Settings (page reloads), right-to-left panels | done (`docs/systems/presentation.md`) |
 | 25 Shareable result card drawn by the server, sent to chats / stories from the game (protocol v12) | done (`docs/systems/server.md`) |
+| 26 Levels (XP from the server's record) and 13 ranks with drawn insignia, level-up banner, ranks in the team list and on the card (protocol v13) | done (`docs/systems/server.md`, `presentation.md`) |
 
 ## Live preview
 

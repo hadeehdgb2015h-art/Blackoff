@@ -149,6 +149,8 @@ func _ready() -> void:
 		_apply_quality()
 		_hud.show_status(tr("Connecting..."))
 		Net.failed.connect(_on_net_failed)
+		Net.level_up.connect(func(_from: int, to: int):
+			_hud.show_toast(tr("LEVEL UP: %s  ·  Level %d") % [Progression.rank_name(str(Progression.rank_for(to).id)), to], 4.0))
 		Net.daily_received.connect(func(d: Dictionary):
 			if int(d.get("paidMicro", 0)) > 0 and int(d.get("paidKind", 0)) == 2:
 				_hud.show_toast(tr("Daily missions complete  +%s TON") % UiTheme.ton_text(int(d.paidMicro)), 4.0))

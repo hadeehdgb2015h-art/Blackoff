@@ -83,3 +83,6 @@ The menu's profile card has DAILY REWARD · MISSIONS (a pulsing ember dot while 
 - **3D**: the map's wall signs (weapon names, AMMO) are translated when the map loads (`game.gd: _translate_signs`); perk machine and power-up labels use `I18n.name_of`.
 - **Settings** scroll (they are taller than a phone screen with the language row).
 - Server texts written by the owner (maintenance message, weekly prize) are shown as written.
+
+## Levels and ranks in the game (phase 26)
+The profile card shows the rank insignia (`RankBadge`, drawn: chevrons, rockers, bars, diamonds or a crown in the tier's metal, no stars), "Rank · Level n" and an XP bar to the next level. When a recorded game raises the level (`Net.level_up`), the menu shows a banner (insignia popping in, LEVEL UP or NEW RANK, the new rank and level, a sound and a haptic); in a game it is a toast. The team list draws each teammate's insignia and level before the name (from the roster), and the game-over panel estimates the XP of the game (the server's count arrives with the profile). `?screen=profile` with `?server=` and `?name=` logs in for screenshots.

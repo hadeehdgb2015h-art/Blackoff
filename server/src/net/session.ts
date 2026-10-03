@@ -21,6 +21,7 @@ import type { ZoneResult } from "../zone/zone.js";
 import { flagsFor } from "../anticheat.js";
 import { RuntimeSettings } from "../admin/runtime.js";
 import { applyDev } from "../admin/devPowers.js";
+import { levelFor, rankFor, xpFor, type ProgressionDefs } from "../progression.js";
 import { DailyService, type DailyUpdate } from "../daily/dailyService.js";
 import { CardService, cardsBaseUrl, cardsDir } from "../card/cardService.js";
 import type { CardLang } from "../card/cardRender.js";
@@ -105,7 +106,10 @@ export class SessionHub implements ZoneSink {
       log.warn("anticheat flags", { account: z.accountId, name: z.name, flags, shots: z.shots, hits: z.hits, headshots: z.headshots, kills: z.kills, seconds: Math.round(z.seconds) });
     }
     // TON points come from AI zombies only: infection kills are players, never farmed for prizes
-    const r = { ...z, tonMicro: z.mode === GameMode.INFECTION ? 0 : z.kills * this.settings.tonPerKill(), flags };
+    const r = {
+      ...z, tonMicro: z.mode === GameMode.INFECTION ? 0 : z.kills * this.settings.tonPerKill(), flags,
+      xp: xpFor(z, this.shared.constants.progression),
+    };
     this.track(this.store.record(r).then(
       async (profile) => {
         let daily: DailyUpdate | null = null;
@@ -198,6 +202,10 @@ class Bucket {
 export class Session implements ZoneClient {
   account: Account | null = null;
   displayName = "Player";
+  /** level shown to teammates in the roster (phase 26) */
+  get level(): number {
+    return this.account ? levelFor(this.account.profile.xp, this.hub.shared.constants.progression) : 1;
+  }
   zone: Zone | null = null;
   entityId = 0;
   resumeToken = "";
@@ -327,7 +335,7 @@ export class Session implements ZoneClient {
     if (!this.account) return;
     this.account.profile = profile;
     this.account.weekly = weekly;
-    this.send("profile", profileMsg(profile, weekly, this.hub.settings.tonPerKill()));
+    this.send("profile", profileMsg(profile, weekly, this.hub.settings.tonPerKill(), this.hub.shared.constants.progression));
   }
 
   /** This week's top hunters plus the player's own standing. */
@@ -384,6 +392,8 @@ export class Session implements ZoneClient {
       const card = await cards.make({
         lang, name: account.name, mode: r.mode, wave: r.wave, kills: r.kills, headshots: r.headshots, seconds: r.seconds,
         bestWave: Math.max(account.profile.bestWave, r.wave), bot: this.hub.botUsername,
+        level: levelFor(account.profile.xp, this.hub.shared.constants.progression),
+        rank: rankFor(levelFor(account.profile.xp, this.hub.shared.constants.progression), this.hub.shared.constants.progression).id,
       });
       let prepared = "";
       const tg = /^tg:(\d+)$/.exec(account.id);
@@ -414,7 +424,7 @@ export class Session implements ZoneClient {
     this.resumeToken = token;
     this.send("welcome", {
       playerId: account.playerId, displayName: account.name, resumeToken: token,
-      tickRate: this.hub.shared.constants.sim.tickRate, ...profileMsg(account.profile, account.weekly, this.hub.settings.tonPerKill()),
+      tickRate: this.hub.shared.constants.sim.tickRate, ...profileMsg(account.profile, account.weekly, this.hub.settings.tonPerKill(), this.hub.shared.constants.progression),
       voice: this.hub.env.VOICE_CHAT,
       inviteCode: this.hub.inviteCodeFor(account.id), botUsername: this.hub.botUsername,
       dev: this.hub.isOwner(account.id),
@@ -542,8 +552,9 @@ export class Session implements ZoneClient {
   }
 }
 
-const profileMsg = (p: Profile, w: WeeklyStanding, tonPerKill: number) => ({
+const profileMsg = (p: Profile, w: WeeklyStanding, tonPerKill: number, prog: ProgressionDefs) => ({
   games: Math.min(p.games, 0xffffffff), kills: Math.min(p.kills, 0xffffffff), bestWave: Math.min(p.bestWave, 0xffff),
   tonMicro: Math.min(p.tonMicro, 0xffffffff), weekKills: Math.min(w.kills, 0xffffffff), weekRank: Math.min(w.rank, 0xffff),
   tonPerKill: Math.min(tonPerKill, 0xffffffff),
+  xp: Math.min(p.xp, 0xffffffff), level: levelFor(p.xp, prog),
 });

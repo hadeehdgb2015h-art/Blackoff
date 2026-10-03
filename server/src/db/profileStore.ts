@@ -14,6 +14,8 @@ export interface Profile {
   tonMicro: number;
   /** anti-cheat flags accumulated over all matches */
   suspicion: number;
+  /** experience from all recorded games (phase 26); the level follows from it */
+  xp: number;
 }
 
 export interface WeeklyRow { accountId: string; name: string; kills: number; tonMicro: number; games: number }
@@ -34,6 +36,8 @@ export interface MatchResult {
   tonMicro: number;
   /** anti-cheat flags raised for this match */
   flags: string[];
+  /** experience earned in this match (phase 26) */
+  xp?: number;
 }
 
 /** Monday 00:00 UTC of the week containing `at`, as YYYY-MM-DD. */
@@ -98,7 +102,7 @@ export interface ProfileStore {
   close(): Promise<void>;
 }
 
-export const emptyProfile = (): Profile => ({ games: 0, kills: 0, headshots: 0, bestWave: 0, playSeconds: 0, tonMicro: 0, suspicion: 0 });
+export const emptyProfile = (): Profile => ({ games: 0, kills: 0, headshots: 0, bestWave: 0, playSeconds: 0, tonMicro: 0, suspicion: 0, xp: 0 });
 
 export function addResult(p: Profile, r: MatchResult): Profile {
   return {
@@ -109,6 +113,7 @@ export function addResult(p: Profile, r: MatchResult): Profile {
     playSeconds: p.playSeconds + Math.round(r.seconds),
     tonMicro: p.tonMicro + r.tonMicro,
     suspicion: p.suspicion + r.flags.length,
+    xp: p.xp + (r.xp ?? 0),
   };
 }
 

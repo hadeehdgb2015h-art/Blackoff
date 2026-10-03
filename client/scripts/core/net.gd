@@ -12,6 +12,7 @@ signal leaderboard_received(board: Dictionary)
 signal voice_changed   ## mic or speaker state changed (buttons redraw)
 signal daily_received(daily: Dictionary)  ## daily reward and missions state (phase 23)
 signal card_received(card: Dictionary)    ## result card: status, url, preview, prepared (phase 25)
+signal level_up(from_level: int, to_level: int)  ## the server counted a game that raised the level (phase 26)
 
 const RETRY_SEC := 2.0
 
@@ -210,7 +211,10 @@ func _on_packet(data: PackedByteArray) -> void:
 				friend_code = ""  # an invite is used once
 			_set_status("in_zone")
 		"profile":
+			var before := int(profile.get("level", 0))
 			profile = _profile_of(msg)
+			if before > 0 and int(profile.level) > before:
+				level_up.emit(before, int(profile.level))
 			ton_per_kill = int(msg.get("tonPerKill", ton_per_kill))
 		"leaderboard":
 			leaderboard = msg
@@ -301,7 +305,8 @@ func voice_speaking() -> Array:
 
 static func _profile_of(msg: Dictionary) -> Dictionary:
 	return {"games": int(msg.games), "kills": int(msg.kills), "bestWave": int(msg.bestWave),
-		"tonMicro": int(msg.get("tonMicro", 0)), "weekKills": int(msg.get("weekKills", 0)), "weekRank": int(msg.get("weekRank", 0))}
+		"tonMicro": int(msg.get("tonMicro", 0)), "weekKills": int(msg.get("weekKills", 0)), "weekRank": int(msg.get("weekRank", 0)),
+		"xp": int(msg.get("xp", 0)), "level": maxi(1, int(msg.get("level", 1)))}
 
 
 ## Asks for this week's top hunters (answered with `leaderboard_received`).

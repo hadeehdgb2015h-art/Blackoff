@@ -33,22 +33,44 @@ export interface CardInput {
   bestWave: number;
   /** the bot's @username for the footer ("" = no footer handle) */
   bot: string;
+  /** the player's level and rank id (phase 26) */
+  level: number;
+  rank: string;
 }
 
-type CardText = Record<"zombies" | "infection" | "wave" | "kills" | "headshots" | "survived" | "best" | "challenge" | "play", string>;
+type CardText = Record<"zombies" | "infection" | "wave" | "kills" | "headshots" | "survived" | "best" | "challenge" | "play" | "level", string>;
 
 const TEXT: Record<CardLang, CardText> = {
   en: {
     zombies: "ZOMBIES  ·  CO-OP", infection: "INFECTION", wave: "WAVE", kills: "KILLS", headshots: "HEADSHOTS",
-    survived: "SURVIVED", best: "BEST WAVE", challenge: "Can you beat me?", play: "Play free in Telegram",
+    survived: "SURVIVED", best: "BEST WAVE", challenge: "Can you beat me?", play: "Play free in Telegram", level: "LEVEL",
   },
   ar: {
     zombies: "نجاة جماعية من الزومبي", infection: "العدوى", wave: "الموجة", kills: "القتلات", headshots: "في الرأس",
-    survived: "مدة الصمود", best: "أفضل موجة", challenge: "هل تستطيع التفوّق عليّ؟", play: "العب مجاناً في تيليجرام",
+    survived: "مدة الصمود", best: "أفضل موجة", challenge: "هل تستطيع التفوّق عليّ؟", play: "العب مجاناً في تيليجرام", level: "المستوى",
   },
   ru: {
     zombies: "ЗОМБИ  ·  КООП", infection: "ЗАРАЖЕНИЕ", wave: "ВОЛНА", kills: "УБИЙСТВА", headshots: "В ГОЛОВУ",
-    survived: "ВРЕМЯ", best: "ЛУЧШАЯ ВОЛНА", challenge: "Сможешь лучше?", play: "Играй бесплатно в Telegram",
+    survived: "ВРЕМЯ", best: "ЛУЧШАЯ ВОЛНА", challenge: "Сможешь лучше?", play: "Играй бесплатно в Telegram", level: "УРОВЕНЬ",
+  },
+};
+
+/** Rank names (phase 26, ids from shared constants.progression.ranks). */
+export const RANK_NAMES: Record<CardLang, Record<string, string>> = {
+  en: {
+    recruit: "Recruit", private: "Private", corporal: "Corporal", sergeant: "Sergeant", staff_sergeant: "Staff Sergeant",
+    master_sergeant: "Master Sergeant", lieutenant: "Lieutenant", captain: "Captain", major: "Major", colonel: "Colonel",
+    general: "General", warden_slayer: "Warden Slayer", legend: "Legend",
+  },
+  ar: {
+    recruit: "مجنَّد", private: "جندي", corporal: "عريف", sergeant: "رقيب", staff_sergeant: "رقيب أول",
+    master_sergeant: "رئيس رقباء", lieutenant: "ملازم", captain: "نقيب", major: "رائد", colonel: "عقيد",
+    general: "لواء", warden_slayer: "قاهر الحارس", legend: "أسطورة",
+  },
+  ru: {
+    recruit: "Новобранец", private: "Рядовой", corporal: "Капрал", sergeant: "Сержант", staff_sergeant: "Штаб-сержант",
+    master_sergeant: "Мастер-сержант", lieutenant: "Лейтенант", captain: "Капитан", major: "Майор", colonel: "Полковник",
+    general: "Генерал", warden_slayer: "Убийца Надзирателя", legend: "Легенда",
   },
 };
 
@@ -119,9 +141,10 @@ export function cardSvg(c: CardInput, background: string): string {
   <rect x="533" y="153" width="14" height="14" transform="rotate(45 540 160)" fill="#c9a050"/>
   <text x="540" y="206" font-family="${small}" font-size="30" letter-spacing="${c.lang === "ar" ? 0 : 4}" fill="#cdb48a" text-anchor="middle"${rtl}>${esc(infection ? t.infection : t.zombies)}</text>
 
-  <text x="540" y="930" font-family="${BODY}" font-size="54" fill="#efe8da" text-anchor="middle">${esc(cardName(c.name))}</text>
-  <text x="540" y="982" font-family="${disp}" font-size="34" letter-spacing="${c.lang === "ar" ? 0 : 6}" fill="#c9a050" text-anchor="middle"${rtl}>${esc(bigLabel)}</text>
-  <text x="540" y="1112" font-family="Cinzel" font-size="144" fill="url(#gold)" text-anchor="middle">${bigValue}</text>
+  <text x="540" y="910" font-family="${BODY}" font-size="52" fill="#efe8da" text-anchor="middle">${esc(cardName(c.name))}</text>
+  <text x="540" y="952" font-family="${small}" font-size="26" letter-spacing="${c.lang === "ar" ? 0 : 3}" fill="#bfa77a" text-anchor="middle"${rtl}>${esc(levelLine(c, t))}</text>
+  <text x="540" y="994" font-family="${disp}" font-size="30" letter-spacing="${c.lang === "ar" ? 0 : 6}" fill="#c9a050" text-anchor="middle"${rtl}>${esc(bigLabel)}</text>
+  <text x="540" y="1116" font-family="Cinzel" font-size="126" fill="url(#gold)" text-anchor="middle">${bigValue}</text>
   <line x1="120" y1="1140" x2="960" y2="1140" stroke="#b08a45" stroke-opacity="0.45" stroke-width="1.5"/>
 ${stats.map(([label, value], i) => `  <text x="${cols[i]}" y="1200" font-family="Cinzel" font-size="56" fill="#f2ead8" text-anchor="middle">${esc(value)}</text>
   <text x="${cols[i]}" y="1236" font-family="${small}" font-size="24" letter-spacing="${c.lang === "ar" ? 0 : 2}" fill="#a8977a" text-anchor="middle"${rtl}>${esc(label)}</text>`).join("\n")}
@@ -135,6 +158,18 @@ ${c.bot ? `  <text x="540" y="1308" font-family="Cinzel" font-size="24" letter-s
 export interface CardImages { jpg: Buffer; png: Buffer }
 
 export const PREVIEW_W = 432;
+
+/** "LEVEL 12 · SERGEANT", Arabic "رقيب ، المستوى ١٢". */
+function levelLine(c: CardInput, t: CardText): string {
+  const rank = (RANK_NAMES[c.lang] ?? RANK_NAMES.en)[c.rank] ?? RANK_NAMES.en[c.rank] ?? "";
+  const name = c.lang === "en" ? rank.toUpperCase() : c.lang === "ru" ? rank.toUpperCase() : rank;
+  if (c.lang === "ar") {
+    // one Arabic run: Arabic-Indic digits and the Arabic comma (the Arabic face has no Latin ones)
+    const digits = String(c.level).replace(/[0-9]/g, (d) => String.fromCharCode(0x0660 + Number(d)));
+    return `${name} ، ${t.level} ${digits}`;
+  }
+  return `${t.level} ${c.level}  ·  ${name}`;
+}
 
 export interface CardRenderer {
   render(c: CardInput): CardImages;

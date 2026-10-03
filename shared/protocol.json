@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "protocolVersion": 12,
+  "protocolVersion": 13,
   "endianness": "little",
   "frame": "u8 messageId followed by fields in declared order; one message per WebSocket binary frame. Decoders reject unknown ids, short frames and trailing bytes.",
   "primitives": {
@@ -97,7 +97,7 @@
       ["flags", "u8"]
     ],
     "weaponSlot": [["weapon", "u8"], ["mag", "u8"], ["reserve", "u16"]],
-    "rosterEntry": [["id", "u16"], ["name", "str8"]],
+    "rosterEntry": [["id", "u16"], ["name", "str8"], ["level", "u8"]],
     "entitySub": "u8: zombieType index for zombies, held weapon index for players",
     "scoreEntry": [
       ["id", "u16"],
@@ -158,7 +158,9 @@
           ["voice", "bool"],
           ["inviteCode", "str8"],
           ["botUsername", "str8"],
-          ["dev", "bool"]
+          ["dev", "bool"],
+          ["xp", "u32"],
+          ["level", "u16"]
         ]
       },
       "zoneJoined": {
@@ -222,7 +224,9 @@
           ["tonMicro", "u32"],
           ["weekKills", "u32"],
           ["weekRank", "u16"],
-          ["tonPerKill", "u32"]
+          ["tonPerKill", "u32"],
+          ["xp", "u32"],
+          ["level", "u16"]
         ]
       },
       "scoreboard": {"id": 74, "fields": [["wave", "u16"], ["players", "array8:scoreEntry"]]},
@@ -305,6 +309,7 @@
   },
   "_dailyNote": "Phase 23. C2S daily asks for the state, claimDaily takes today's streak reward. S2C daily is sent after welcome, on request, after a claim and after each recorded game; paidMicro/paidKind tell what that message just paid (missions are paid automatically when done, the all-missions bonus with them). nextDay = the streak day (1-7) today's claim pays, or paid if already claimed; resetSec = seconds to the next day (00:00 UTC).",
   "_cardNote": "Phase 25. C2S card {lang} asks for the result card of the game being played (or the last one recorded); S2C card answers with the status (cardStatus), the public URL of the JPEG the server drew from its own numbers, a small PNG preview (the web engine has no JPEG decoder), and the id of a prepared Telegram message (savePreparedInlineMessage) for WebApp.shareMessage, \"\" when there is none.",
+  "_levelNote": "Phase 26. welcome and profile carry the account's xp and level (computed by the server from shared constants.progression); roster entries carry each player's level so teammates see ranks.",
   "_tonNote": "tonMicro = TON points in millionths (1000 = 0.001 TON). Earned per kill in online zones only; the server owns every number. Prizes are paid by the owner by hand from the weekly leaderboard.",
   "_voiceNote": "Voice frames are opaque to the server: it relays each C2S voice frame to the other connected members of the zone that listen (voiceListen), stamped with the speaker's entityId. Format (client/web/voice.js): 40 ms of 16 kHz mono IMA ADPCM, 4-byte header + 320 bytes.",
   "_infectionNote": "Infection mode (gameMode 1): no AI zombies. Player entities on the infected team carry entityFlags.zombie; selfState.flags bit 4 marks the local player infected. snapshot.wave is the round, remaining the soldiers left, timer tenths of a second left in the lobby countdown, round or result pause. Events: playerKilled (a victim, b killer, flags 1 head), infected (a victim, b by), roundStart (a round, b infected count, value seconds), roundEnd (a round, flags 1 soldiers win)."

@@ -144,7 +144,12 @@
 - [x] Server-drawn card (Blender background, game fonts, 3 languages) from the server's own numbers
 - [x] Send to a chat with a Play button (prepared message), share to story, save; plain invite text as fallback
 - [ ] Owner: try CHALLENGE FRIENDS at game over on the phone
-- [ ] Next: player levels and ranks (phase 26)
+- [x] Player levels and ranks: phase 26
+
+## Phase 26: levels and ranks
+- [x] XP per game counted by the server, 100 levels, 13 ranks (Recruit to Legend) with drawn insignia
+- [x] Profile card with insignia and XP bar, level-up banner, ranks beside teammates' names, XP at game over, rank on the result card and in the bot's stats
+- [ ] Owner: say if the level speed suits (shared/constants.json → progression)
 
 ## Open questions for the owner
 - Own subdomain or the free sslip.io address (installer default)

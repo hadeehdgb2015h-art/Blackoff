@@ -4,7 +4,7 @@ extends Control
 ## profile card (name and record when logged in through Telegram).
 ## ?autostart=1 jumps straight into solo practice (browser smoke test with
 ## ?bot=1); with ?server=… or ?online=1 it starts quick play online instead.
-## ?screen=layout|settings|howto|hunt opens that screen at once (screenshot tests).
+## ?screen=layout|settings|howto|hunt|daily|profile opens that screen at once (screenshot tests).
 ## Opened from a friend's invite (t.me/<bot>?startapp=sq<code>, or ?startapp= in
 ## a browser with ?server=) it goes straight into that friend's game.
 
@@ -21,6 +21,10 @@ var _overlay: Control
 var _board_button: Button
 var _invite: Button
 var _daily_btn: Button
+var _rank_row: Control
+var _rank_badge: RankBadge
+var _rank_label: Label
+var _xp_bar: XpBar
 var _daily_dot: Control
 var _toast: Label
 static var _daily_opened := false   ## the daily panel opens by itself once per session when a reward waits
@@ -56,6 +60,7 @@ func _ready() -> void:
 	Net.status_changed.connect(_on_net_status)
 	Net.message.connect(_on_net_message)
 	Net.daily_received.connect(_on_daily)
+	Net.level_up.connect(_on_level_up)
 	if Net.is_online_available() and Platform.is_telegram and Net.status in ["offline", "failed"]:
 		Net.connect_to_server(false)
 	_show_profile()
@@ -65,6 +70,10 @@ func _ready() -> void:
 		_settings.call_deferred()
 	elif Platform.query_param("screen") == "howto":
 		_how_to_play.call_deferred()
+	elif Platform.query_param("screen") == "profile":
+		# screenshot tests: log in (needs ?server= and ?name=) and show the profile card
+		if Net.status in ["offline", "failed"] and Net.is_online_available():
+			Net.connect_to_server(false)
 	elif Platform.query_param("screen") == "daily":
 		# screenshot tests: open the daily panel once logged in (needs ?server= and ?name=)
 		_daily_opened = true
@@ -238,6 +247,23 @@ func _build_profile_card() -> void:
 	v.add_child(UiTheme.title(UiTheme.spaced(tr("player")), 12, UiTheme.GOLD))
 	_profile_name = UiTheme.title(tr("Guest"), 26, UiTheme.TEXT)
 	v.add_child(_profile_name)
+	# rank and level (phase 26)
+	var rr := HBoxContainer.new()
+	rr.add_theme_constant_override("separation", 10)
+	I18n.dir(rr)
+	_rank_badge = RankBadge.new({}, 46.0)
+	rr.add_child(_rank_badge)
+	var rv := VBoxContainer.new()
+	rv.add_theme_constant_override("separation", 2)
+	rv.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_rank_label = UiTheme.label("", 17, UiTheme.TEXT)
+	rv.add_child(_rank_label)
+	_xp_bar = XpBar.new()
+	rv.add_child(_xp_bar)
+	rr.add_child(rv)
+	_rank_row = rr
+	_rank_row.visible = false
+	v.add_child(rr)
 	v.add_child(UiTheme.rule(300, UiTheme.BRASS_DARK))
 	_profile_stats = UiTheme.label("", 18, UiTheme.GOLD)
 	v.add_child(_profile_stats)
@@ -337,6 +363,69 @@ func _show_profile() -> void:
 	_invite.visible = Social.can_invite()
 	_daily_btn.visible = true
 	_update_daily_badge()
+	_show_rank(int(p.get("xp", 0)), int(p.get("level", 1)))
+
+
+func _show_rank(xp: int, level: int) -> void:
+	var rank := Progression.rank_for(level)
+	_rank_badge.set_rank(rank)
+	_rank_label.text = tr("%s  ·  Level %d") % [Progression.rank_name(str(rank.id)), level]
+	var lo := Progression.xp_to_reach(level)
+	var hi := Progression.xp_to_reach(level + 1)
+	if level >= int(Progression.defs().maxLevel):
+		_xp_bar.set_values(1, 1, tr("MAX LEVEL"))
+	else:
+		_xp_bar.set_values(xp - lo, hi - lo, tr("%d / %d XP") % [xp - lo, hi - lo])
+	_rank_row.visible = true
+
+
+## A game raised the level: a banner with the insignia (and the new rank).
+func _on_level_up(from_level: int, to_level: int) -> void:
+	_show_profile()
+	var new_rank := Progression.rank_for(to_level)
+	var ranked_up := str(new_rank.id) != str(Progression.rank_for(from_level).id)
+	var cover := Control.new()
+	cover.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	add_child(cover)
+	var dim := ColorRect.new()
+	dim.color = Color(0, 0, 0, 0.82)
+	dim.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	cover.add_child(dim)
+	var center := CenterContainer.new()
+	center.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	center.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	cover.add_child(center)
+	var frame := PanelContainer.new()
+	frame.add_theme_stylebox_override("panel", UiTheme.panel_box(28))
+	frame.custom_minimum_size = Vector2(460, 0)
+	frame.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	center.add_child(frame)
+	var box := VBoxContainer.new()
+	box.alignment = BoxContainer.ALIGNMENT_CENTER
+	box.add_theme_constant_override("separation", 8)
+	frame.add_child(box)
+	var badge := RankBadge.new(new_rank, 132.0)
+	badge.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	box.add_child(badge)
+	var t := UiTheme.title(tr("NEW RANK") if ranked_up else tr("LEVEL UP"), 44, UiTheme.GOLD)
+	t.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	box.add_child(t)
+	var sub := UiTheme.title(tr("%s  ·  Level %d") % [Progression.rank_name(str(new_rank.id)), to_level], 24, UiTheme.TEXT)
+	sub.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	box.add_child(sub)
+	Audio.ui_sound("powerup", -4.0)
+	Platform.haptic("heavy")
+	badge.pivot_offset = Vector2(66, 66)
+	badge.scale = Vector2(0.4, 0.4)
+	var tw := cover.create_tween()
+	tw.tween_property(badge, "scale", Vector2.ONE, 0.45).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	tw.tween_interval(3.2)
+	tw.tween_property(cover, "modulate:a", 0.0, 0.6)
+	tw.tween_callback(cover.queue_free)
+	dim.gui_input.connect(func(e: InputEvent):
+		if e is InputEventMouseButton and e.pressed or e is InputEventScreenTouch and e.pressed:
+			cover.queue_free())
+	print("[menu] level up %d -> %d" % [from_level, to_level])
 
 
 # ------------------------------------------------------------------ daily (phase 23)
@@ -578,3 +667,27 @@ func _how_to_play() -> void:
 	v.add_child(UiTheme.gold_button(tr("CLOSE"), func():
 		_overlay.queue_free()
 		_overlay = null))
+
+
+## A thin XP bar with its numbers under it.
+class XpBar extends Control:
+	var value := 0
+	var goal := 1
+	var text := ""
+
+	func _init() -> void:
+		custom_minimum_size = Vector2(0, 26)
+		size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		mouse_filter = Control.MOUSE_FILTER_IGNORE
+
+	func set_values(v: int, g: int, t: String) -> void:
+		value = v
+		goal = maxi(1, g)
+		text = t
+		queue_redraw()
+
+	func _draw() -> void:
+		draw_rect(Rect2(0, 3, size.x, 6), Color(0.06, 0.055, 0.07))
+		draw_rect(Rect2(0, 3, size.x * clampf(float(value) / float(goal), 0.0, 1.0), 6), UiTheme.GOLD)
+		draw_rect(Rect2(0, 3, size.x, 6), UiTheme.BRASS_DARK, false, 1.0)
+		draw_string(ThemeDB.fallback_font, Vector2(0, 24), text, HORIZONTAL_ALIGNMENT_LEFT, size.x, 13, UiTheme.MUTED)

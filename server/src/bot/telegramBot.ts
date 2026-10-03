@@ -17,6 +17,8 @@ import { recentProblems, log } from "../log.js";
 import type { SessionHub } from "../net/session.js";
 import { GameMode } from "../sim/simWorld.js";
 import { weekLabel, weekStart } from "../db/profileStore.js";
+import { levelFor, rankFor } from "../progression.js";
+import { RANK_NAMES } from "../card/cardRender.js";
 
 type Json = Record<string, unknown>;
 interface TgUser { id: number; first_name?: string; last_name?: string; username?: string }
@@ -208,10 +210,12 @@ export class TelegramBot {
     const id = "tg:" + u.id;
     const p = await this.hub.store.load(id, nameOf(u));
     const w = await this.hub.store.weekly(id);
+    const prog = this.hub.shared.constants.progression;
     const hours = Math.floor(p.playSeconds / 3600);
     const mins = Math.floor((p.playSeconds % 3600) / 60);
     await this.send(chat,
       `📊 <b>إحصائيات ${esc(nameOf(u))}</b>\n\n` +
+      `🎖 الرتبة: <b>${RANK_NAMES.ar[rankFor(levelFor(p.xp, prog), prog).id] ?? ""}</b>، المستوى <b>${levelFor(p.xp, prog)}</b> (${p.xp} خبرة)\n` +
       `🎯 القتلى: <b>${p.kills}</b> (رأس: ${p.headshots})\n` +
       `🌊 أعلى موجة: <b>${p.bestWave}</b>\n` +
       `🕹 المباريات: <b>${p.games}</b>\n` +

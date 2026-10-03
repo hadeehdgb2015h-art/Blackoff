@@ -131,7 +131,14 @@ class TeamPanel extends Control:
 			if r.get("infected", false) and r.state != SimPlayer.State.DEAD:
 				tags = PackedStringArray([str(r.name), tr("INFECTED")])
 			var text := "  ".join(tags)
-			draw_string(font, Vector2(160, y + 14), text, HORIZONTAL_ALIGNMENT_LEFT, -1, 18, col)
+			var x := 160.0
+			var level := int(r.get("level", 0))
+			if level > 0:
+				# the teammate's rank insignia and level (phase 26)
+				RankBadge.draw_insignia(self, Rect2(x, y - 1, 20, 20), Progression.rank_for(level))
+				draw_string(font, Vector2(x + 22, y + 14), str(level), HORIZONTAL_ALIGNMENT_LEFT, -1, 13, UiTheme.GOLD)
+				x += 46.0
+			draw_string(font, Vector2(x, y + 14), text, HORIZONTAL_ALIGNMENT_LEFT, -1, 18, col)
 			y += 26.0
 
 
@@ -378,7 +385,8 @@ func update_state(p: SimPlayer, w: SimWorld, interact: Dictionary, delta: float)
 		if o.is_alive():
 			mates += 1
 		rows.append({"name": o.name, "hp_k": clampf(o.hp / maxf(1.0, o.max_hp), 0.0, 1.0), "state": o.state,
-			"bleed": w.bleedout_left(o), "revived": w.is_being_revived(o), "speaking": o.id in speaking, "infected": o.team == 1})
+			"bleed": w.bleedout_left(o), "revived": w.is_being_revived(o), "speaking": o.id in speaking, "infected": o.team == 1,
+			"level": int(w.levels.get(o.id, 0)) if "levels" in w else 0})
 	_team.rows = rows
 	_team.queue_redraw()
 	var prog := w.revive_progress(p)
@@ -517,6 +525,9 @@ func show_game_over(wave: int, p: SimPlayer, scores: Array = []) -> void:
 	_go_stats.text = tr("Reached wave %d") % wave
 	if _ton_game > 0:
 		_go_stats.text += "\n" + (tr("TON earned this game: %s  (credited to your weekly hunt)") % UiTheme.ton_text(_ton_game))
+	if Net.online_requested and p:
+		# experience (phase 26): the server's count arrives with the profile after the game
+		_go_stats.text += "\n" + (tr("Experience: +%d XP") % Progression.xp_for(p.kills, p.headshots, wave, 0.0, 0))
 	for c in _go_table.get_children():
 		c.queue_free()
 	if scores.is_empty():

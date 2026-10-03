@@ -27,6 +27,8 @@ export interface ZoneResult {
 /** What a zone needs from a connection (implemented by Session). */
 export interface ZoneClient {
   readonly displayName: string;
+  /** the player's level, shown to teammates (phase 26) */
+  readonly level?: number;
   /** false while the player has the speaker off: no voice frames are sent to them */
   readonly voiceListen?: boolean;
   sendBytes(bytes: Uint8Array): void;
@@ -36,6 +38,7 @@ export interface ZoneClient {
 export interface Member {
   entityId: number;
   name: string;
+  level: number;
   accountId: string;
   client: ZoneClient | null;
   disconnectedAt: number;
@@ -103,7 +106,7 @@ export class Zone {
   join(client: ZoneClient, accountId: string, now = performance.now(), friend: FriendJoin = NO_FRIEND): Member {
     const entityId = this.world.addPlayer(client.displayName);
     const m: Member = {
-      entityId, name: client.displayName, accountId, client, disconnectedAt: 0,
+      entityId, name: client.displayName, level: Math.max(1, Math.min(255, client.level ?? 1)), accountId, client, disconnectedAt: 0,
       latest: { ...emptyIntent(), yaw: this.world.players.get(entityId)!.yaw }, queue: [], latched: 0, joinedAt: now, shots: 0, hits: 0, lastSeq: 0, appliedSeq: 0, known: new Set(),
     };
     this.members.set(entityId, m);
@@ -224,7 +227,7 @@ export class Zone {
   }
 
   private broadcastRoster(): void {
-    const players = [...this.members.values()].map((m) => ({ id: m.entityId, name: m.name }));
+    const players = [...this.members.values()].map((m) => ({ id: m.entityId, name: m.name, level: m.level }));
     this.broadcast("roster", { players });
   }
 

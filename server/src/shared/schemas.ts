@@ -26,8 +26,12 @@ export const ConstantsSchema = z.object({
   maps: z.object({ default: z.string(), navCellSize: num.positive(), navAgentRadius: pos }),
   supplyBox: z.object({ price: z.number().int().nonnegative(), rollSec: num.positive(), offerSec: num.positive() }),
   progression: z.object({
-    xpPerKill: pos, xpPerHeadshot: pos, xpPerWaveReached: pos, levelXpBase: pos, levelXpGrowth: num.min(1),
+    xpPerKill: pos, xpPerHeadshot: pos, xpPerWaveReached: pos, xpPerInfectionMinute: pos, levelXpBase: num.positive(), levelXpStep: pos,
     maxLevel: z.number().int().positive(),
+    ranks: z.array(z.object({
+      id: z.string(), level: z.number().int().positive(), insignia: z.enum(["chevron", "rocker", "bar", "diamond", "crown"]),
+      count: z.number().int().min(1).max(3), metal: z.enum(["iron", "bronze", "silver", "gold", "crimson"]),
+    })).min(1),
   }),
   net: z.object({
     protocolVersion: z.number().int().positive(), maxMessageBytes: z.number().int().positive(), interestRadius: pos,

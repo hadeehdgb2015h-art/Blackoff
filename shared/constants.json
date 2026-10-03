@@ -31,15 +31,32 @@
   },
   "economy": {"hitReward": 10, "headshotKillBonus": 40, "reviveReward": 100},
   "progression": {
+    "_comment": "Levels and ranks (phase 26, server-owned). XP per recorded online game: kills, headshot kills and the wave reached (zombies); infection games give kills, headshots and xpPerInfectionMinute for each minute played. Level n -> n+1 costs levelXpBase + levelXpStep * (n - 1). A rank is held from its level up; insignia: chevrons, rockers, bars, diamonds or a crown, in the tier's metal.",
     "xpPerKill": 10,
     "xpPerHeadshot": 5,
     "xpPerWaveReached": 50,
+    "xpPerInfectionMinute": 20,
     "levelXpBase": 500,
-    "levelXpGrowth": 1.15,
-    "maxLevel": 100
+    "levelXpStep": 150,
+    "maxLevel": 100,
+    "ranks": [
+      {"id": "recruit", "level": 1, "insignia": "chevron", "count": 1, "metal": "iron"},
+      {"id": "private", "level": 5, "insignia": "chevron", "count": 2, "metal": "iron"},
+      {"id": "corporal", "level": 10, "insignia": "chevron", "count": 3, "metal": "iron"},
+      {"id": "sergeant", "level": 15, "insignia": "rocker", "count": 1, "metal": "bronze"},
+      {"id": "staff_sergeant", "level": 20, "insignia": "rocker", "count": 2, "metal": "bronze"},
+      {"id": "master_sergeant", "level": 25, "insignia": "rocker", "count": 3, "metal": "bronze"},
+      {"id": "lieutenant", "level": 30, "insignia": "bar", "count": 1, "metal": "silver"},
+      {"id": "captain", "level": 40, "insignia": "bar", "count": 2, "metal": "silver"},
+      {"id": "major", "level": 50, "insignia": "bar", "count": 3, "metal": "silver"},
+      {"id": "colonel", "level": 60, "insignia": "diamond", "count": 1, "metal": "gold"},
+      {"id": "general", "level": 70, "insignia": "diamond", "count": 2, "metal": "gold"},
+      {"id": "warden_slayer", "level": 80, "insignia": "diamond", "count": 3, "metal": "gold"},
+      {"id": "legend", "level": 100, "insignia": "crown", "count": 1, "metal": "crimson"}
+    ]
   },
   "net": {
-    "protocolVersion": 12,
+    "protocolVersion": 13,
     "maxMessageBytes": 4096,
     "interestRadius": 45,
     "reconnectGraceSec": 30,
