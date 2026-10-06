@@ -85,7 +85,6 @@
  "FULL HEAL": "شفاء كامل",
  "Finish %d online games": "أكمل %d ألعاب أونلاين",
  "Finish all three for a bonus of +%s TON. Missions count online games.": "أنجز المهام الثلاث لتحصل على مكافأة +%s TON. تُحتسب الألعاب الأونلاين فقط.",
- "Frame rate  (Auto: a steady 30 on phones, cooler and smoother; try 60 if your phone is strong)": "معدّل الإطارات  (التلقائي: 30 ثابتة على الهواتف، أبرد وأنعم؛ جرّب 60 إن كان هاتفك قوياً)",
  "Fullscreen": "ملء الشاشة",
  "GET READY": "استعد",
  "GOD MODE: OFF": "وضع الخلود: متوقف",
@@ -319,5 +318,7 @@
  "AI soldier %s joined your squad": "انضم الجندي الآلي %s إلى فرقتك",
  "%s left to make room for a player": "غادر %s ليفسح المكان للاعب",
  "Ember Reaper": "حاصد الجمر",
- "ENTER": "إدخال"
+ "ENTER": "إدخال",
+ "Frame rate  (Auto: 60, or a steady 30 if the device cannot hold 60; Max: every refresh of 90/120 Hz screens)": "معدل الإطارات  (تلقائي: 60، أو 30 ثابتة إذا لم يتحمل الجهاز 60؛ الأقصى: كل تحديث لشاشات 90/120 هرتز)",
+ "Max": "الأقصى"
 }

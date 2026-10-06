@@ -29,6 +29,9 @@ The client plays online through the same game scene as offline practice. Only th
    - A difference under 2 m is blended in (35 % per tick); a larger one snaps.
    - Magazine counts are the server's, minus the shots predicted after `ackSeq`.
 5. Measured in the CI end-to-end run (2 bots, waves 1–3): **0 corrections** above 5 cm. Prediction matches the server exactly.
+6. Phase 32 fixed two disagreements that pulled players back on every snapshot (felt as lag):
+   - the client's speed now includes the perks' `moveSpeedMul` and the aiming slowdown (`adsMoveMul`), as the server's does;
+   - the input's aim bit (64) is sent: it used to be masked off (`& 63`), so the server never knew the player was aiming.
 
 ## Remote entities: interpolation
 - Snapshots (15 Hz) are buffered with their server tick. Remote players and zombies render `INTERP_TICKS` = 2 ticks (100 ms) behind the newest snapshot, interpolated between the two snapshots around that time. The render clock nudges toward its target, so it never drifts.

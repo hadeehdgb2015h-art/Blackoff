@@ -85,7 +85,6 @@
  "FULL HEAL": "ПОЛНОЕ ЛЕЧЕНИЕ",
  "Finish %d online games": "Сыграйте онлайн-игр: %d",
  "Finish all three for a bonus of +%s TON. Missions count online games.": "Выполните все три и получите бонус +%s TON. Засчитываются онлайн-игры.",
- "Frame rate  (Auto: a steady 30 on phones, cooler and smoother; try 60 if your phone is strong)": "Частота кадров  («Авто»: стабильные 30 на телефонах, прохладнее и плавнее; попробуйте 60 на мощном телефоне)",
  "Fullscreen": "Во весь экран",
  "GET READY": "ПРИГОТОВЬТЕСЬ",
  "GOD MODE: OFF": "БЕССМЕРТИЕ: ВЫКЛ",
@@ -319,5 +318,7 @@
  "AI soldier %s joined your squad": "Боец ИИ %s вступил в ваш отряд",
  "%s left to make room for a player": "%s уступил место игроку",
  "Ember Reaper": "Жнец углей",
- "ENTER": "ВВОД"
+ "ENTER": "ВВОД",
+ "Frame rate  (Auto: 60, or a steady 30 if the device cannot hold 60; Max: every refresh of 90/120 Hz screens)": "Частота кадров  (Авто: 60, или стабильные 30, если устройство не тянет 60; Макс: каждый кадр экрана 90/120 Гц)",
+ "Max": "Макс"
 }

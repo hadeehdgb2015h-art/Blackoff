@@ -31,6 +31,8 @@ var _perf_t: float = 0.0
 var _perf_frames: int = 0
 var _perf_good: int = 0
 var _perf_dropped: bool = false
+var _gov_age := 0.0                ## seconds since the match started (the governor waits 10)
+var _gov_slow := 0                 ## windows in a row below target
 var _light_t: float = 0.0
 var _light_scan: int = 0
 var _map_lights: Array[Light3D] = []
@@ -483,14 +485,12 @@ func _sync_views() -> void:
 		pv.set_state(p)
 	for id in _zviews.keys():
 		if not world.zombies.has(id):  # online: left the interest radius
-			_zviews[id].queue_free()
+			_zviews[id].recycle()
 			_zviews.erase(id)
 	for z in world.zombies.values():
 		var v: ZombieView = _zviews.get(z.id)
 		if v == null:
-			v = ZombieView.new()
-			add_child(v)
-			v.setup(z.id, z.type, z.def, z.pos, z.yaw)
+			v = ZombieView.take(self, z.id, z.type, z.def, z.pos, z.yaw)
 			_zviews[z.id] = v
 		else:
 			v.set_sim_state(z.pos, z.yaw, z.moving)
@@ -1037,6 +1037,9 @@ func _prewarm_gpu() -> void:
 	_effects.clear_gore()
 	for n in temp:
 		n.queue_free()
+	# zombie views ready for the first waves (phase 32: building them mid-fight was a hitch)
+	for type in _defs.zombies:
+		ZombieView.fill_pool(self, type, _defs.zombies[type], 2 if type == "boss" else 10)
 	cover.queue_free()
 	print("[load] prewarmed shaders in %d ms" % (Time.get_ticks_msec() - t0))
 
@@ -1109,10 +1112,16 @@ func _prof_breakdown() -> void:
 	print("[perf] in view: " + ", ".join(parts))
 
 
-## Auto quality: phones start low and climb while the frame rate holds; any
-## tier that cannot hold ~42 FPS drops. Measured over 4-second windows.
+## Auto frame rate and quality (phase 32). Every device starts at 60. Measured
+## over 4-second windows after a 10-second warm-up (loading and first shader
+## compiles are not the device's real speed):
+## - 60 not held (under 45) twice in a row: a steady 30 for the session;
+## - 30 not held (under 26) twice in a row: the 3D resolution steps down;
+## - desktops climb quality tiers while the frame rate holds; phones keep low;
+##   any tier that cannot hold 70 % of the cap drops (and never climbs back).
 func _govern_quality(delta: float) -> void:
-	if Settings.quality != "auto":
+	_gov_age += delta
+	if _gov_age < 10.0 or _paused:
 		return
 	_perf_t += delta
 	_perf_frames += 1
@@ -1122,12 +1131,23 @@ func _govern_quality(delta: float) -> void:
 	_perf_t = 0.0
 	_perf_frames = 0
 	var cap := Settings.effective_fps_cap()
-	# Frame cap first: a screen that cannot hold ~50 of 60 runs at a steady 30
-	# for the rest of the session (steady beats stuttering, and it runs cooler).
-	if Settings.fps_cap == 0 and cap == 60 and fps < 50.0:
-		Settings.auto_fps = 30
-		Settings.apply_fps_cap()
-		print("[perf] frame cap -> 30 (%.0f fps)" % fps)
+	if Settings.fps_cap == 0 and cap == 60:
+		_gov_slow = _gov_slow + 1 if fps < 45.0 else 0
+		if _gov_slow >= 2:
+			_gov_slow = 0
+			Settings.auto_fps = 30
+			Settings.apply_fps_cap()
+			print("[perf] frame cap -> 30 (%.0f fps)" % fps)
+		return
+	if cap <= 30 and fps < 26.0 and Settings.auto_scale > 0.71:
+		_gov_slow += 1
+		if _gov_slow >= 2:
+			_gov_slow = 0
+			Settings.auto_scale = maxf(0.7, Settings.auto_scale - 0.15)
+			print("[perf] 3D resolution -> %d%% (%.0f fps)" % [roundi(Settings.auto_scale * 100.0), fps])
+			_apply_quality()
+		return
+	if Settings.quality != "auto":
 		return
 	var tiers := ["low", "medium", "high"]
 	var i := tiers.find(Settings.auto_tier)
@@ -1152,7 +1172,7 @@ func _govern_quality(delta: float) -> void:
 
 func _apply_quality() -> void:
 	var q := Settings.quality_params()
-	get_viewport().scaling_3d_scale = q.scale
+	get_viewport().scaling_3d_scale = q.scale * Settings.auto_scale
 	get_viewport().msaa_3d = {0: Viewport.MSAA_DISABLED, 2: Viewport.MSAA_2X, 4: Viewport.MSAA_4X}[int(q.msaa)]
 	_rig.camera.far = q.far
 	_rig.muzzle_light_enabled = q.muzzle_light
@@ -1239,6 +1259,7 @@ func _on_puzzle_msg(text: String, big: bool) -> void:
 
 func _exit_tree() -> void:
 	_send_perf()
+	ZombieView.clear_pool()
 	if Net.puzzle_msg.is_connected(_on_puzzle_msg):
 		Net.puzzle_msg.disconnect(_on_puzzle_msg)
 	if world is NetWorld:

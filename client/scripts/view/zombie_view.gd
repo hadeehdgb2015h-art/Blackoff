@@ -8,6 +8,13 @@ extends Node3D
 const CORPSE_SEC := 4.0
 
 static var _mesh_cache := {}
+## Phase 32: zombie views are reused. Building one (a skinned model with its
+## animation player) takes milliseconds on a phone, and a wave builds dozens:
+## that was a hitch every time one appeared. Dead or out-of-range views go back
+## here, ready, and the game fills it while the match loads.
+static var _pool := {}  ## type -> Array[ZombieView] (out of the tree)
+const POOL_MAX := 14
+var pooled := false     ## true for views that may go back to the pool (not infected players)
 static var _flash_mat: StandardMaterial3D
 static var _shadow_mesh: QuadMesh
 
@@ -40,6 +47,86 @@ var _meshes: Array[MeshInstance3D] = []
 const STRIKE_SEC := 13.0 / 30.0   ## frame the attack lands in the authored animation
 const LOOPING := ["idle", "walk", "run"]
 static var _eye_mats := {}  ## zombie type -> shared eye material
+
+
+## A ready view of this type from the pool (or a new one), added to `parent`.
+static func take(parent: Node, zombie_id: int, type: String, zombie_def: Dictionary, pos: Vector2, yaw: float) -> ZombieView:
+	var list: Array = _pool.get(type, [])
+	var v: ZombieView = null
+	while not list.is_empty() and v == null:
+		v = list.pop_back()
+		if not is_instance_valid(v):
+			v = null
+	if v == null:
+		v = ZombieView.new()
+		v.pooled = true
+		parent.add_child(v)
+		v.setup(zombie_id, type, zombie_def, pos, yaw)
+	else:
+		parent.add_child(v)
+		v._reuse(zombie_id, pos, yaw)
+	return v
+
+
+## Builds views ahead (behind the loading cover) so the first waves never wait.
+static func fill_pool(parent: Node, type: String, zombie_def: Dictionary, count: int) -> void:
+	var list: Array = _pool.get(type, [])
+	while list.size() < mini(count, POOL_MAX):
+		var v := ZombieView.new()
+		v.pooled = true
+		parent.add_child(v)
+		v.setup(0, type, zombie_def, Vector2.ZERO, 0.0)
+		parent.remove_child(v)
+		list.append(v)
+	_pool[type] = list
+
+
+## Empties the pool (the scene is leaving: the views die with it).
+static func clear_pool() -> void:
+	for list in _pool.values():
+		for v in list:
+			if is_instance_valid(v):
+				v.free()
+	_pool.clear()
+
+
+## Back to the pool (or freed when it is full or the view is not poolable).
+func recycle() -> void:
+	if not pooled or not is_inside_tree():
+		queue_free()
+		return
+	var list: Array = _pool.get(ztype, [])
+	if list.size() >= POOL_MAX:
+		queue_free()
+		return
+	get_parent().remove_child(self)
+	list.append(self)
+	_pool[ztype] = list
+
+
+func _reuse(zombie_id: int, pos: Vector2, yaw: float) -> void:
+	zid = zombie_id
+	prev_pos = pos
+	cur_pos = pos
+	prev_yaw = yaw
+	cur_yaw = yaw
+	dead = false
+	_death_t = 0.0
+	_busy_t = 0.0
+	_flash_t = 0.0
+	_attack_t = -1.0
+	_speed = 0.0
+	position.y = 0.0
+	visible = true
+	if _rig:
+		_rig.rotation = Vector3.ZERO
+		_rig.position = Vector3.ZERO
+	_set_overlay(null)
+	if _anim:
+		_anim.speed_scale = 1.0
+		_anim.play("idle" if _anim.has_animation("idle") else "walk", 0.0)
+		_anim.seek(randf() * 1.5, true)
+	_apply_transform(1.0)
 
 
 func setup(zombie_id: int, type: String, zombie_def: Dictionary, pos: Vector2, yaw: float) -> void:
@@ -207,7 +294,7 @@ func _update_death(delta: float) -> void:
 	if _death_t > CORPSE_SEC:
 		position.y -= delta * 0.5
 	if _death_t > CORPSE_SEC + 1.5:
-		queue_free()
+		recycle()
 
 
 func _apply_transform(alpha: float) -> void:

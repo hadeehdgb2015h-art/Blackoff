@@ -90,7 +90,7 @@ func set_input(pid: int, intent: PlayerIntent) -> void:
 	var turns := intent.yaw / TAU - floorf(intent.yaw / TAU)
 	q.yaw = float(roundi(turns * 65536.0) & 0xffff) / 65536.0 * TAU
 	q.pitch = float(clampi(roundi(intent.pitch / (PI / 2.0) * 32767.0), -32767, 32767)) / 32767.0 * (PI / 2.0)
-	q.buttons = intent.buttons & 63
+	q.buttons = intent.buttons & 127  # 64 = aim down sights (it was cut off before phase 32)
 	_current = q
 	Net.send("input", {"seq": q.seq, "moveX": roundi(q.move.x * 127.0), "moveY": roundi(q.move.y * 127.0),
 		"yaw": q.yaw, "pitch": q.pitch, "buttons": q.buttons})
@@ -140,7 +140,13 @@ func _move(pos: Vector2, inp: PlayerIntent) -> Vector2:
 	var yaw := SimMath.wrap_angle(inp.yaw)
 	var dir := SimMath.right(yaw) * mv.x + SimMath.forward(yaw) * mv.y
 	var p: SimPlayer = players.get(local_pid)
+	# exactly the server's speed (PlayerSystem.move): perks and aiming slow or
+	# speed it up, and any difference shows as the player being pulled back
 	var speed := float(constants.player.moveSpeed) * (float(constants.infection.zombieSpeedMul) if p and p.team == 1 else 1.0)
+	if p:
+		speed *= player_sys.perk_mul(p, "moveSpeedMul")
+		if player_sys.aiming(p, inp):
+			speed *= float(constants.player.adsMoveMul)
 	return map.move_circle(pos, dir * speed * dt, float(constants.player.radius))
 
 

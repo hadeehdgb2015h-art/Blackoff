@@ -178,5 +178,12 @@
 - [x] Bot 🧩 page: key, reward, how to solve (owner only), the answers of every running match
 - [ ] Owner: send the key to the bot (/admin → 🧩 → 🔑), then try the first puzzle with the answers page open
 
+## Phase 32: radical frame-rate fix (owner: "everyone complains of lag and stutter, even strong phones")
+- [x] Frame pacing by time (a slow frame no longer halves the rate)
+- [x] Phones start at 60 (no more forced 30); auto drops to a steady 30 only if 60 cannot be held; Max option for 90/120 Hz
+- [x] Online rubber-banding: the phone's movement prediction ignored the Longstride perk and aiming, and the aim bit never reached the server
+- [x] Map draw calls 126 → 64 merged meshes (same look); zombie views pooled (no hitch when they spawn); team list redrawn only on change
+- [ ] Owner: ask the players who complained to try again, and read FPS per device in 📈 after a day
+
 ## Open questions for the owner
 - Own subdomain or the free sslip.io address (installer default)

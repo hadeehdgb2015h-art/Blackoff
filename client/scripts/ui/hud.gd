@@ -400,8 +400,10 @@ func update_state(p: SimPlayer, w: SimWorld, interact: Dictionary, delta: float)
 			"bleed": w.bleedout_left(o), "revived": w.is_being_revived(o), "speaking": o.id in speaking, "infected": o.team == 1,
 			"level": int(w.levels.get(o.id, 0)) if "levels" in w else 0,
 			"bot": "levels" in w and w.levels.has(o.id) and int(w.levels[o.id]) == 0})
-	_team.rows = rows
-	_team.queue_redraw()
+	# redraw the team list only when something on it changed (phase 32)
+	if rows != _team.rows:
+		_team.rows = rows
+		_team.queue_redraw()
 	var prog := w.revive_progress(p)
 	if infection and p.state == SimPlayer.State.DEAD:
 		var left := float(w.constants.infection.zombieRespawnSec) - (w.time - _dead_at) if _dead_at >= 0.0 else 0.0

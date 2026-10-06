@@ -34,44 +34,45 @@ $GODOT_HEAD_INCLUDE
 </div>
 
 <script>
-// ---- Even frame pacing (phase 30). The engine's own frame cap on the web skips
-// display frames by comparing clocks, so a 30 FPS cap on a 60 Hz screen lands
-// frames at 33 or 50 ms depending on timer jitter: visible judder. Instead the
-// display's refresh interval is measured and the engine runs on every Nth
-// refresh (60 Hz: 2nd, 90 Hz: 3rd, 120 Hz: 4th for 30 FPS): each frame lasts
-// exactly the same. The game sets the cap with BlackoffPace.setCap(fps) and
+// ---- Even frame pacing (phases 30 and 32). The engine's own frame cap on the
+// web compares clocks and lands 30 FPS frames at 33 or 50 ms. Instead the page
+// hands the engine display refreshes at the cap's pace, by time: a refresh is
+// used once at least (1000 / cap - half a refresh) ms passed since the last
+// frame given to that loop. So a slow frame is followed by the very next
+// refresh (phase 30 counted refreshes, and one slow frame halved the rate).
+// The game sets the cap with BlackoffPace.setCap(fps), 0 = every refresh, and
 // leaves Engine.max_fps at 0. Installed before the engine script loads.
 window.BlackoffPace = (function () {
   const raf = window.requestAnimationFrame.bind(window);
-  let cap = 0, interval = 1000 / 60, last = 0, epoch = 0;
-  // each animation loop (the engine's, the loader's...) skips on its own count:
-  // one shared count would starve one loop when two run at once
-  const counts = new WeakMap();
+  let cap = 0, interval = 1000 / 60, last = 0;
+  // each animation loop (the engine's, the loader's...) is paced on its own
+  const lastOf = new WeakMap();
   const delivered = [];  // the last frames given to the engine (tests read the spacing)
   window.requestAnimationFrame = function (cb) {
     return raf(function step(ts) {
-      if (last) {
+      if (last && ts !== last) {
         const d = ts - last;
-        if (d > 4 && d < 60) interval += (d - interval) * 0.05;
+        if (d > 4 && d < 40) interval += (d - interval) * 0.05;  // the display's refresh interval
       }
-      if (ts !== last) last = ts;
+      last = ts;
       if (cap > 0) {
-        const every = Math.max(1, Math.round(1000 / cap / interval));
-        let c = counts.get(cb);
-        if (!c || c.epoch !== epoch) counts.set(cb, (c = { n: 0, epoch: epoch }));
-        if (++c.n < every) { raf(step); return; }
-        c.n = 0;
+        const prev = lastOf.get(cb) || 0;
+        if (prev && ts - prev < 1000 / cap - interval * 0.5) { raf(step); return; }
       }
+      lastOf.set(cb, ts);
       delivered.push(ts);
       if (delivered.length > 120) delivered.shift();
       cb(ts);
     });
   };
   return {
-    setCap: function (fps) { cap = Math.max(0, fps | 0); epoch += 1; },
-    // the display's refresh rate and the frame rate the cap gives on it
+    setCap: function (fps) { cap = Math.max(0, fps | 0); },
     gaps: function () { return delivered.slice(1).map(function (t, i) { return Math.round(t - delivered[i]); }); },
-    info: function () { const hz = 1000 / interval; return { hz: Math.round(hz), fps: cap > 0 ? Math.round(hz / Math.max(1, Math.round(hz / cap))) : Math.round(hz) }; },
+    // the display's refresh rate and the frame rate the cap gives on it
+    info: function () {
+      const hz = 1000 / interval;
+      return { hz: Math.round(hz), fps: cap > 0 ? Math.round(hz / Math.max(1, Math.ceil(hz / cap - 0.5))) : Math.round(hz) };
+    },
   };
 })();
 

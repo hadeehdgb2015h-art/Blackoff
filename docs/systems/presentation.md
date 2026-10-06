@@ -70,7 +70,21 @@ Every 20-32 s a vision fades in beside the moon (3.5 s), lingers 10 s with a slo
 ## Aim down sights and third person (phase 22)
 **ADS** (`scripts/view/fp_rig.gd`, `scripts/ui/scope_overlay.gd`): the AIM button (hold right mouse on desktop) sets intent bit 64. The server and the client sim both honour it (`aiming()`: not while reloading, switching or infected): spread × the weapon's `adsSpreadMul` (sniper 0.02, rifle 0.3, shotgun 0.7) and walk speed × `player.adsMoveMul` (0.55). The view eases in over 0.16 s (smoothstep): field of view from 75° to the weapon's `adsFov` (`client/data/visuals.json`, sniper 18°), bob and shake cut, look speed × (fov/75)^0.7 so far targets stay steady without the scope feeling stuck. The gun is brought to the eye each frame: the barrel is levelled along the camera axis and the muzzle moved under the screen centre, so every model lines up without hand-tuned offsets. Iron sights show a red dot; the sniper (`scope: true`) shows a black scope with a lens rim, a mil reticle and a red centre dot, and hides the gun. Reload or swap drops ADS.
 
-**Frame pacing (phase 30)**: on the web `Engine.max_fps` stays 0 and `BlackoffPace` in `shell.html` wraps `requestAnimationFrame`. It measures the display interval and hands the engine every Nth refresh for the cap (30 FPS: every 2nd at 60 Hz, 3rd at 90 Hz, 4th at 120 Hz). The engine's own cap compared clocks and landed frames at 33 or 50 ms. `Settings.apply_fps_cap()` sets it.
+**Frame pacing (phases 30 and 32)**: on the web `Engine.max_fps` stays 0 and `BlackoffPace` in `shell.html` wraps `requestAnimationFrame`; each animation loop is paced on its own.
+- A refresh goes to the engine once (1000/cap − half a refresh) ms have passed since its last frame. Pacing is by time: phase 30 counted refreshes, and one slow frame halved the rate.
+- Cap 0 means every refresh, which is what the **Max** setting uses for 90/120 Hz screens.
+- `Settings.apply_fps_cap()` sets the cap.
+
+**Auto frame rate (phase 32)**: every device starts at 60 (phones used to be held at 30, which felt choked on strong phones). `_govern_quality` waits 10 s after the match starts, then measures 4-second windows:
+- two windows under 45 → a steady 30 for the session;
+- at 30, two windows under 26 → 3D resolution −15 %, down to 70 %;
+- desktops still climb quality tiers.
+
+Settings offer Auto / Max / 60 / 30. Saved settings are migrated once back to Auto.
+
+**Draw calls (phase 32)**: `MapBatcher` merges walls and floors map-wide (one mesh per material), keeps decoration in 36 m chunks (hidden by distance), and puts every flat glowing colour (`emit_*`) into one shared shader material whose colour and glow strength ride in vertex colours. The map went from 126 merged meshes to 64 with the same look. No tier runs more than 8 extra lights, the per-object limit.
+
+**No hitches when zombies appear (phase 32)**: `ZombieView.take()` reuses views from a pool, which the match fills behind the loading cover (10 per type, 2 bosses); dead and out-of-range views go back to it. Building a skinned model mid-fight was a stall every time one spawned.
 
 **Third person** (default on; VIEW button reads TPP/FPP, key V, or Settings → Third-person camera): the camera sits over the right shoulder (0.62 right, 0.3 up, 2.6 back of the eye) and the local soldier is drawn with the same model teammates see. The camera never goes through walls: a map ray from the head pulls it in at once and eases back out, with a ceiling clamp indoors. Shots go where the crosshair is: the sim aims from the eye at the point under the crosshair (map ray and zombie hit test), so the server sees an ordinary aim and nothing is trusted; tracers start at the soldier's muzzle. Aiming in third person is GTA-style (phase 28): the camera eases in over the shoulder (0.82 right, 0.12 up, 1.7 back) while the field of view narrows to the weapon's `adsFov`, and the crosshair becomes a red dot; only the scoped sniper switches to the first-person scope. The infected always play in first person.
 

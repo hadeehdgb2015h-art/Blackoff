@@ -128,13 +128,13 @@ func _ready() -> void:
 		b.pressed.connect(func(): Settings.quality = name)
 		q.add_child(b)
 	v.add_child(q)
-	v.add_child(UiTheme.label(tr("Frame rate  (Auto: a steady 30 on phones, cooler and smoother; try 60 if your phone is strong)"), 18, UiTheme.MUTED))
+	v.add_child(UiTheme.label(tr("Frame rate  (Auto: 60, or a steady 30 if the device cannot hold 60; Max: every refresh of 90/120 Hz screens)"), 18, UiTheme.MUTED))
 	var fr := HBoxContainer.new()
 	fr.add_theme_constant_override("separation", 8)
 	var fgroup := ButtonGroup.new()
-	for cap in [0, 60, 30]:
+	for cap in [0, Settings.MAX_FPS, 60, 30]:
 		var b := Button.new()
-		b.text = tr("Auto") if cap == 0 else tr("%d FPS") % cap
+		b.text = tr("Auto") if cap == 0 else (tr("Max") if cap == Settings.MAX_FPS else tr("%d FPS") % cap)
 		b.toggle_mode = true
 		b.button_group = fgroup
 		b.button_pressed = Settings.fps_cap == cap
